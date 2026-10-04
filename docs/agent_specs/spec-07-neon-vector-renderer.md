@@ -121,7 +121,6 @@ export class ParticleSystem {
 ## 6. Forbidden Boundaries & Anti-Patterns
 - Strictly FORBIDDEN from importing `.png`, `.jpg`, `.webp`, `.svg`, or `.gltf` model files.
 - Do NOT use heavy CPU vertex loops when GLSL shaders or typed array strides can execute efficiently.
-- Do NOT mention the trademarked title "Geometry Wars" in code comments, UI, or documentation.
 
 ## 7. Test Specifications
 - Confirm `packages/client` compiles cleanly with Three.js shaders and vector scene classes.
