@@ -1,212 +1,138 @@
-// ============================================================================
-// CYBERANTE: Classical Deterministic Game AI (Offline Solo Mode & Balance Sim)
-// ============================================================================
-
-import {
-  Card,
-  Stance,
-  BotDecision,
-} from '../types.js';
+// CYBERANTE: Classical deterministic bot shared by solo and headless simulation.
+import type { Card, Stance, BotDecision, BotPersonality, HandEvaluation3, HandTier3 } from '../types.js';
+import { GAME_CONSTANTS, SUIT_RING } from '../constants.js';
 import { evaluateAssaultHand, evaluateAegisHand } from '../pokerEvaluator.js';
 import { nudgeRank } from '../fluxEngine.js';
-import { PRNG, DefaultPRNG } from '../MatchEngine.js';
-import { BotConfig, BOT_PROFILES } from './BotProfiles.js';
+import { DefaultPRNG, type MatchEngine, type PRNG } from '../MatchEngine.js';
+import { BOT_PROFILES, type BotConfig } from './BotProfiles.js';
+
+const ASSAULT_INDICES = [
+  [0, 1, 2], [0, 1, 3], [0, 1, 4], [0, 2, 3], [0, 2, 4],
+  [0, 3, 4], [1, 2, 3], [1, 2, 4], [1, 3, 4], [2, 3, 4],
+] as const;
+const TIER_ORDER: Record<HandTier3, number> = {
+  HIGH_CARD: 0, PAIR: 1, FLUSH: 2, STRAIGHT: 3, THREE_OF_A_KIND: 4, STRAIGHT_FLUSH: 5,
+};
+interface Partition {
+  assault: [Card, Card, Card];
+  aegis: [Card, Card];
+  evaluation: HandEvaluation3;
+  utility: number;
+}
 
 export class ClassicalBotAI {
   private config: BotConfig;
-  private prng: PRNG;
 
-  constructor(
-    profileName: keyof typeof BOT_PROFILES = 'CIPHER_ZERO',
-    prng: PRNG = new DefaultPRNG()
-  ) {
-    this.config = BOT_PROFILES[profileName];
-    this.prng = prng;
+  constructor(profileName: BotPersonality = 'CIPHER_ZERO', private readonly prng: PRNG = new DefaultPRNG()) {
+    this.config = this.profile(profileName);
   }
 
-  public setProfile(profileName: keyof typeof BOT_PROFILES): void {
-    this.config = BOT_PROFILES[profileName];
-  }
+  public setProfile(profileName: BotPersonality): void { this.config = this.profile(profileName); }
+  public getProfile(): BotConfig { return { ...this.config }; }
 
-  public getProfile(): BotConfig {
-    return this.config;
-  }
-
-  /**
-   * Generates optimal tactical decision for the given 5-card hand.
-   */
   public evaluateHand(
-    hand: Card[],
-    ownGuardHp: number,
-    opponentGuardHp: number,
-    availableFlux: number = 3,
-    canBurn: boolean = true
+    hand: Card[], ownGuardHp: number, opponentGuardHp: number,
+    availableFlux: number = GAME_CONSTANTS.STARTING_FLUX, canBurn = true
   ): BotDecision {
-    if (hand.length !== 5) {
-      throw new Error(`Bot requires exactly 5 cards to evaluate hand, received ${hand.length}`);
+    if (!Array.isArray(hand) || hand.length !== 5) throw new Error('Bot requires exactly 5 cards');
+    if (hand.some(c => !c || typeof c.id !== 'string' || !c.id || !Number.isInteger(c.rank) ||
+        c.rank < 2 || c.rank > 14 || !Object.hasOwn(SUIT_RING, c.suit)) || new Set(hand.map(c => c.id)).size !== 5) {
+      throw new Error('Bot requires five valid cards with distinct IDs');
     }
-
-    const currentCards = hand.map(c => ({ ...c }));
+    if (!Number.isSafeInteger(availableFlux) || availableFlux < 0) throw new Error('Flux must be a nonnegative integer');
+    if (![ownGuardHp, opponentGuardHp].every(hp => Number.isFinite(hp) && hp >= 0)) throw new Error('Guard HP must be finite and nonnegative');
+    const cards = hand.map(c => ({ ...c }));
+    let best = this.bestPartition(cards);
+    const burn = canBurn && this.prng.random() < this.config.burnAggression
+      ? this.burnCandidate(cards, ownGuardHp, opponentGuardHp) : null;
     const fluxActions: BotDecision['fluxActions'] = [];
-    let burnCardId: string | undefined = undefined;
 
-    // 1. Evaluate tactical Burn-to-Cast
-    if (canBurn && this.prng.random() < this.config.burnAggression) {
-      const candidateBurn = this.findBurnCandidate(currentCards, ownGuardHp);
-      if (candidateBurn) {
-        burnCardId = candidateBurn.id;
-      }
-    }
-
-    // 2. Evaluate Flux Transmutation (Nudge)
-    let remainingFlux = availableFlux;
-    if (remainingFlux >= 1) {
-      const bestNudge = this.findBestNudge(currentCards, remainingFlux);
-      if (bestNudge) {
-        fluxActions.push({
-          type: 'NUDGE',
-          cardId: bestNudge.cardId,
-          direction: bestNudge.direction,
-        });
-        remainingFlux -= 1;
-
-        const targetIdx = currentCards.findIndex(c => c.id === bestNudge.cardId);
-        if (targetIdx !== -1) {
-          currentCards[targetIdx] = nudgeRank(currentCards[targetIdx], bestNudge.direction);
+    if (availableFlux >= GAME_CONSTANTS.FLUX_COST_NUDGE) {
+      let bestNudge: { cardId: string; direction: 'UP' | 'DOWN'; partition: Partition } | null = null;
+      // An Aegis-only nudge cannot upgrade this partition's Assault tier.
+      for (let index = 0; index < best.assault.length; index++) {
+        // Burn is applied first by callers, so never propose a mutation of its retired ID.
+        const card = best.assault[index];
+        if (card.id === burn?.id) continue;
+        for (const direction of ['UP', 'DOWN'] as const) {
+          const assault = [...best.assault] as [Card, Card, Card];
+          assault[index] = nudgeRank(card, direction);
+          const candidate = this.partition(assault, best.aegis);
+          if (TIER_ORDER[candidate.evaluation.tier] > TIER_ORDER[best.evaluation.tier] &&
+              candidate.utility - best.utility >= 3.0 &&
+              (!bestNudge || candidate.utility > bestNudge.partition.utility)) {
+            bestNudge = { cardId: card.id, direction, partition: candidate };
+          }
         }
       }
-    }
-
-    // 3. Evaluate all 10 possible 3-card assault / 2-card aegis combinations
-    const splits = this.generateAllSplits(currentCards);
-    let bestScore = -Infinity;
-    let bestSplit = splits[0];
-
-    for (const split of splits) {
-      const assaultEval = evaluateAssaultHand(split.assault);
-      const aegisEval = evaluateAegisHand(split.aegis);
-
-      const score =
-        assaultEval.baseDamage * this.config.assaultBias +
-        aegisEval.mitigation * this.config.aegisBias;
-
-      if (score > bestScore) {
-        bestScore = score;
-        bestSplit = split;
+      if (bestNudge) {
+        fluxActions.push({ type: 'NUDGE', cardId: bestNudge.cardId, direction: bestNudge.direction });
+        best = bestNudge.partition;
       }
     }
 
-    // 4. Select Stance based on profile, lethal opportunities, and Guard HP
-    let stance: Stance = 'BRACE';
-    const assaultEval = evaluateAssaultHand(bestSplit.assault);
-
-    // Lethal finisher check: if assault base damage * 2.0 >= opponent HP, favor Overcharge
-    if (assaultEval.baseDamage * 2.0 >= opponentGuardHp && ownGuardHp > 6) {
-      stance = 'OVERCHARGE';
-    } else {
-      const roll = this.prng.random();
-      if (roll < this.config.overchargeTendency && ownGuardHp > 8) {
-        stance = 'OVERCHARGE';
-      } else if (roll < this.config.overchargeTendency + this.config.parryTendency) {
-        stance = 'PARRY';
-      } else {
-        stance = 'BRACE';
-      }
-    }
-
-    const assaultCards: [Card, Card, Card] = [bestSplit.assault[0], bestSplit.assault[1], bestSplit.assault[2]];
-    const aegisCards: [Card, Card] = [bestSplit.aegis[0], bestSplit.aegis[1]];
-    const nudges = fluxActions
-      .filter(a => a.type === 'NUDGE' && a.direction)
-      .map(a => ({ cardId: a.cardId, direction: a.direction! }));
-    const candidateBurn = burnCardId ? hand.find(c => c.id === burnCardId) || null : null;
-
+    const stance = this.stance(best.evaluation.baseDamage, ownGuardHp, opponentGuardHp);
+    const nudges = fluxActions.map(action => ({ cardId: action.cardId, direction: action.direction! }));
     return {
-      fluxActions,
-      burnCardId,
-      assaultCardIds: [
-        bestSplit.assault[0].id,
-        bestSplit.assault[1].id,
-        bestSplit.assault[2].id,
-      ],
-      aegisCardIds: [
-        bestSplit.aegis[0].id,
-        bestSplit.aegis[1].id,
-      ],
-      stance,
-      // Spec-05 compatibility aliases
-      assaultCards,
-      aegisCards,
-      chosenStance: stance,
-      cardToBurn: candidateBurn,
-      nudges,
+      assaultCards: best.assault, aegisCards: best.aegis, chosenStance: stance,
+      assaultCardIds: best.assault.map(c => c.id) as [string, string, string],
+      aegisCardIds: best.aegis.map(c => c.id) as [string, string], stance,
+      fluxActions, nudges, burnCardId: burn?.id, cardToBurn: burn ? { ...burn } : null,
     };
   }
 
-  private findBurnCandidate(cards: Card[], ownGuardHp: number): Card | null {
-    if (ownGuardHp <= 10) {
-      const diamond = cards.find(c => c.suit === 'DIAMONDS');
-      if (diamond) return diamond;
-    }
-    const sorted = [...cards].sort((a, b) => a.rank - b.rank);
-    return sorted[0] || null;
+  private profile(name: BotPersonality): BotConfig {
+    if (!Object.hasOwn(BOT_PROFILES, name)) throw new Error(`Unknown bot profile: ${name}`);
+    return { ...BOT_PROFILES[name] };
   }
 
-  private findBestNudge(cards: Card[], flux: number): { cardId: string; direction: 'UP' | 'DOWN' } | null {
-    if (flux < 1) return null;
-
-    const baseSplits = this.generateAllSplits(cards);
-    let currentBest = this.getMaxSplitScore(baseSplits);
-
-    let bestMove: { cardId: string; direction: 'UP' | 'DOWN' } | null = null;
-    let maxDelta = 0;
-
-    for (const card of cards) {
-      for (const dir of ['UP', 'DOWN'] as const) {
-        const mutatedCards = cards.map(c => c.id === card.id ? nudgeRank(c, dir) : c);
-        const splits = this.generateAllSplits(mutatedCards);
-        const score = this.getMaxSplitScore(splits);
-        const delta = score - currentBest;
-
-        if (delta > 2.0 && delta > maxDelta) {
-          maxDelta = delta;
-          bestMove = { cardId: card.id, direction: dir };
-        }
-      }
+  private bestPartition(cards: Card[]): Partition {
+    let best: Partition | null = null;
+    for (const [i, j, k] of ASSAULT_INDICES) {
+      const assault: [Card, Card, Card] = [cards[i], cards[j], cards[k]];
+      const aegis = cards.filter((_c, index) => index !== i && index !== j && index !== k) as [Card, Card];
+      const candidate = this.partition(assault, aegis);
+      if (!best || candidate.utility > best.utility) best = candidate;
     }
-
-    return bestMove;
+    return best!;
   }
 
-  private getMaxSplitScore(splits: Array<{ assault: [Card, Card, Card]; aegis: [Card, Card] }>): number {
-    let max = -Infinity;
-    for (const s of splits) {
-      const a = evaluateAssaultHand(s.assault);
-      const d = evaluateAegisHand(s.aegis);
-      const val = a.baseDamage * this.config.assaultBias + d.mitigation * this.config.aegisBias;
-      if (val > max) max = val;
-    }
-    return max;
+  private partition(assault: [Card, Card, Card], aegis: [Card, Card]): Partition {
+    const evaluation = evaluateAssaultHand(assault);
+    return { assault, aegis, evaluation, utility: evaluation.baseDamage * this.config.assaultBias +
+      evaluateAegisHand(aegis).mitigation * this.config.aegisBias + evaluation.score * 0.0001 };
   }
 
-  private generateAllSplits(cards: Card[]): Array<{
-    assault: [Card, Card, Card];
-    aegis: [Card, Card];
-  }> {
-    const results: Array<{ assault: [Card, Card, Card]; aegis: [Card, Card] }> = [];
-    const n = cards.length;
+  private burnCandidate(cards: Card[], ownHp: number, opponentHp: number): Card | null {
+    const diamond = ownHp <= 10 ? cards.find(c => c.suit === 'DIAMONDS') : undefined;
+    if (diamond) return diamond;
+    const club = this.config.personality === 'VEKTOR_AGGRO' ? cards.find(c => c.suit === 'CLUBS') : undefined;
+    if (club) return club;
+    const heart = ownHp <= 14 ? cards.find(c => c.suit === 'HEARTS') : undefined;
+    if (heart) return heart;
+    return opponentHp > ownHp ? cards.find(c => c.suit === 'SPADES') ?? null : null;
+  }
 
-    for (let i = 0; i < n; i++) {
-      for (let j = i + 1; j < n; j++) {
-        for (let k = j + 1; k < n; k++) {
-          const assault: [Card, Card, Card] = [cards[i], cards[j], cards[k]];
-          const aegisCards = cards.filter((_, idx) => idx !== i && idx !== j && idx !== k);
-          const aegis: [Card, Card] = [aegisCards[0], aegisCards[1]];
-          results.push({ assault, aegis });
-        }
-      }
-    }
+  private stance(baseDamage: number, ownHp: number, opponentHp: number): Stance {
+    if (baseDamage * GAME_CONSTANTS.STANCE_OVERCHARGE_MULTIPLIER >= opponentHp && ownHp > 6) return 'OVERCHARGE';
+    const roll = this.prng.random();
+    if (ownHp <= 5) return roll < this.config.parryTendency * 1.2 ? 'PARRY' : 'BRACE';
+    if (roll < this.config.overchargeTendency) return 'OVERCHARGE';
+    if (roll < this.config.overchargeTendency + this.config.parryTendency) return 'PARRY';
+    return 'BRACE';
+  }
+}
 
-    return results;
+/** Apply a shaping proposal before re-evaluating the actual hand for commitment. */
+export function applyBotShaping(engine: MatchEngine, playerId: string, decision: BotDecision): void {
+  if (decision.burnCardId && !engine.burnCard(playerId, decision.burnCardId)) {
+    throw new Error('Bot burn was rejected');
+  }
+  for (const action of decision.fluxActions) {
+    const accepted = action.type === 'NUDGE' && action.direction
+      ? engine.nudgeRank(playerId, action.cardId, action.direction)
+      : action.type === 'BLEED' && action.targetSuit
+        ? engine.bleedSuit(playerId, action.cardId, action.targetSuit) : false;
+    if (!accepted) throw new Error('Bot Flux action was rejected');
   }
 }

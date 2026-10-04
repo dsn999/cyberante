@@ -2,7 +2,7 @@
 // CYBERANTE: Classical Bot Personalities & Heuristic Weights
 // ============================================================================
 
-import { BotPersonality } from '../types.js';
+import type { BotPersonality } from '../types.js';
 
 export interface BotConfig {
   name: string;

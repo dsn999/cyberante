@@ -12,6 +12,7 @@
   - `packages/client/src/ai/ClassicalBotAI.ts` (re-export)
   - `packages/client/src/ai/BotProfiles.ts` (re-export)
   - `packages/server/src/__tests__/balanceSimulator.test.ts`
+  - `packages/server/src/__tests__/botAI.test.ts`
 - **Dependencies:**
   - `@cyberante/shared` contracts (`Card`, `Stance`, `BotDecision`, `BotPersonality`, `BotConfig`, `evaluateAssaultHand`, `evaluateAegisHand`, `PRNG`, `SeededPRNG`).
   - Zero external machine learning or runtime dependencies. NodeNext ESM compliant.
@@ -62,7 +63,9 @@ export class ClassicalBotAI {
 ### 3.3 Applying Shaping Decisions
 Apply the proposed burn and Flux actions during SHAPING. After applying them,
 re-evaluate the current five-card hand with `availableFlux = 0` and `canBurn = false`
-before committing in COMMITMENT. A replacement draw can invalidate the original
+before committing in COMMITMENT. Solo and simulation share the exported
+`applyBotShaping(engine, playerId, decision): void` helper, which checks every burn
+and Flux result and throws if an action is rejected. A replacement draw can invalidate the original
 partition. Check every action/commit result; do not resolve an incomplete partition.
 
 ## 4. Detailed Behavior & Decision Heuristics
@@ -84,12 +87,14 @@ Three distinct playstyles are codified in `packages/shared/src/ai/BotProfiles.ts
    - Aegis evaluation: $\text{eval2} = \text{evaluateAegisHand}(cards[3], cards[4])$
    - Utility scoring function:
      $$\text{Utility}(k) = (\text{eval3.baseDamage} \times \text{assaultBias}) + (\text{eval2.mitigation} \times \text{aegisBias}) + (\text{eval3.score} \times 0.0001)$$
-3. The candidate partition yielding the maximum utility score is initially selected.
+3. The candidate partition yielding the maximum utility score is initially selected. On an exact utility tie, preserve the first enumerated partition.
 
 ### 4.3 Flux Transmutation Search
 1. If $\text{availableFlux} \ge 1$:
    - Simulates 1-step pip nudges (`UP` and `DOWN`) on each card in the selected partition.
-   - If a nudge upgrades the Assault tier (e.g. completes a Straight or turns a Pair into Three of a Kind) and improves utility by $\ge 3.0$ points, the nudge is scheduled in `BotDecision.nudges`.
+   - Evaluate the initially selected partition with unchanged lane membership, rather than rerunning the ten-partition search for each nudge. An Aegis-only mutation cannot upgrade its Assault tier.
+   - If a nudge upgrades the Assault tier (e.g. completes a Straight or turns a Pair into Three of a Kind) and improves utility by $\ge 3.0$ points, the nudge is eligible. Select the eligible mutation with greatest utility; preserve the first on a tie. Schedule at most one one-step nudge per evaluation in `BotDecision.nudges` / `fluxActions`.
+   - Exclude the proposed burn card from nudge targets because callers burn first. Returned card objects describe the proposed shaped partition; after actual burn/draw, callers must re-evaluate before commitment.
 
 ### 4.4 Tactical Burn Decision
 1. If $\text{canBurn} = \text{true}$ and `prng.random() < burnAggression`:
@@ -97,6 +102,7 @@ Three distinct playstyles are codified in `packages/shared/src/ai/BotProfiles.ts
    - **Club (Sunder):** If personality is `VEKTOR_AGGRO` and hand contains a Club $\to$ schedule burn for `CLUB_SUNDER`.
    - **Heart (Siphon):** If $\text{ownGuardHp} \le 14$ and hand contains a Heart $\to$ schedule burn for `HEART_SIPHON`.
    - **Spade (Veil):** If $\text{opponentGuardHp} > \text{ownGuardHp}$ and hand contains a Spade $\to$ schedule burn for `SPADE_VEIL`.
+2. Apply these priorities in order, choosing the first matching card of that suit in hand order. If no priority matches, do not burn an arbitrary low card.
 
 ### 4.5 Stance Selection Algorithm
 1. **Lethal Finisher Check:** If $(\text{eval3.baseDamage} \times 2.0) \ge \text{opponentGuardHp}$ and $\text{ownGuardHp} > 6$:
@@ -113,7 +119,8 @@ Three distinct playstyles are codified in `packages/shared/src/ai/BotProfiles.ts
 1. **Hand Size:** Hand must contain exactly 5 cards. If fewer or more are passed, throws an `Error`.
 2. **Deterministic Reproducibility:** When initialized with `SeededPRNG(seed)`, all hand partitions and stance decisions must be 100% identical on repeated runs.
 3. **Zero Network Calls:** Must execute completely synchronously in $< 1\text{ms}$ per evaluation.
-4. **Card Object Integrity:** Input card arrays and card objects must never be mutated.
+4. **Card Object Integrity:** Input card arrays and card objects must never be mutated. Return cloned card objects and a copy from `getProfile`, so caller edits do not affect the hand or active profile.
+5. **Invalid Input:** Reject duplicate/empty card IDs, invalid ranks/suits, negative/fractional/nonfinite Flux, nonfinite/negative HP, and unknown profiles without consuming PRNG state. Duplicate rank/suit values with distinct IDs remain legal after shaping.
 
 ## 6. Forbidden Boundaries & Anti-Patterns
 - Strictly FORBIDDEN from using external LLM APIs (OpenAI, Gemini, Anthropic) or loading offline ONNX/TensorFlow weights.
@@ -123,7 +130,10 @@ Three distinct playstyles are codified in `packages/shared/src/ai/BotProfiles.ts
 ## 7. Test Specifications (`packages/server/src/__tests__/balanceSimulator.test.ts`)
 - **Mirror Match Simulation:** Simulate 200 matches between identical archetypes (Cipher vs Cipher). Assert 0 runtime errors, average exchanges per round between 1.5 and 5.0, and average rounds per match $\ge 2.0$.
 - **Asymmetric Match Simulation:** Simulate 100 matches of Aggro (`VEKTOR_AGGRO`) vs Wall (`AEGIS_WALL`). Assert that both archetypes win $\ge 20\%$ of matches, confirming viable competitive counter-play.
-- **Deterministic Replay Test:** Initialize bot with fixed seed `42`, evaluate 10 fixed hands, verify the exact same output array across runs.
+- **Deterministic Replay Test:** Initialize every profile with fixed seed `42`, evaluate 10 fixed hands, verify the exact same output array across runs.
+- **Focused Decision Tests:** Independent ten-partition utility and fixed-partition nudge oracles; burn priority/probability and HP boundaries; stance thresholds; immutable input and decision aliases; post-burn action validity and fresh commitment.
+- **Performance:** Measure the complete 300-match computation once, reuse its reports and assert <1000ms. Benchmark 1000 warmed decisions per profile, reporting mean/p95/max and checking mean/p95/max <1ms. Timing samples describe this runtime; OS scheduling and CLI startup are separate from deterministic replay.
+- Retain the original 1.5–5.0 pacing gate and additionally assert the simulator's narrower 1.8–4.5 target, plus <=2.8 mean rounds per match. Every simulated match must finish with exactly two wins and a valid 2–3-round count.
 
 ## 8. Exact Verification Command
 ```bash
@@ -149,8 +159,24 @@ Requirements:
 ```
 
 ## 10. Definition of Done Checklist
-- [ ] Three personality archetypes (`CIPHER_ZERO`, `VEKTOR_AGGRO`, `AEGIS_WALL`) defined.
-- [ ] Exact combinatorial 10-partition generator implemented.
-- [ ] Stance selection matrix with lethal finisher and defense checks.
-- [ ] Deterministic PRNG injection supporting seedable replays.
-- [ ] Headless balance simulator running 300 matches under 1 second via `npm run sim`.
+- [x] Three personality archetypes (`CIPHER_ZERO`, `VEKTOR_AGGRO`, `AEGIS_WALL`) defined.
+- [x] Exact combinatorial 10-partition generator implemented.
+- [x] Stance selection matrix with lethal finisher and defense checks.
+- [x] Deterministic PRNG injection supporting seedable replays.
+- [x] Headless balance simulator running 300 matches under 1 second via `npm run sim`.
+
+### Dispatch evidence (2026-10-03)
+- Focused AI suite: 44 tests covering all profiles and exact utility/nudge oracles,
+  boundaries, frozen inputs, invalid input, shared shaping and timing.
+- `npm run sim`: four tests pass, including seed-42 replay for ten fixed hands
+  per profile and a timed 300-match computation. Mirror results: 93/107 wins,
+  2.52 rounds/match, 2.20 exchanges/round. Aggro/Wall results: 50/50 wins,
+  2.14 exchanges/round. All original gates and narrower pacing targets pass.
+- Standalone 300-match compute: 92.54ms; complete `npm run sim` wall time:
+  768.32ms. Evaluation benchmarks sample 1000 warmed decisions per profile;
+  observed maximum under 1ms, with mean roughly 0.007–0.011ms.
+- Full `npm run build && npm test && npm run sim`: exit 0, 212 tests and no
+  build warnings. Combat constants, profile weights and original thresholds
+  are unchanged. Client combined JS gzip remains about 134 kB.
+- Human thinking delays and complete playable-browser acceptance remain the
+  planned Spec-10A controller/integration milestone.

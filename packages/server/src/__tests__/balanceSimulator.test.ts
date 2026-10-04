@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { beforeAll, describe, it, expect } from 'vitest';
 import {
   MatchEngine,
   SeededPRNG,
@@ -7,6 +7,8 @@ import {
   BurnType,
   BotPersonality,
   ClassicalBotAI,
+  applyBotShaping,
+  type Card,
 } from '@cyberante/shared';
 
 interface SimulationReport {
@@ -69,7 +71,6 @@ function runMatchSeries(
 
     let roundsInMatch = 0;
     let exchangesInMatch = 0;
-    let lastRoundSeen = 1;
 
     // Safety watchdog: max 100 exchanges per match
     for (let step = 0; step < 100; step++) {
@@ -77,10 +78,6 @@ function runMatchSeries(
         break;
       }
 
-      if (engine.currentRound !== lastRoundSeen) {
-        roundsInMatch++;
-        lastRoundSeen = engine.currentRound;
-      }
       exchangesInMatch++;
       engine.phase = 'SHAPING';
 
@@ -105,37 +102,11 @@ function runMatchSeries(
         !p2Private.hasBurnedCard
       );
 
-      // Apply Burns
-      if (d1.burnCardId) {
-        const card = p1Private.cards.find(c => c.id === d1.burnCardId);
-        if (card) {
-          const ok = engine.burnCard('p1', d1.burnCardId);
-          if (ok && p1Private.activeBurn) {
-            report.burnCounts[p1Private.activeBurn]++;
-          }
-        }
-      }
-      if (d2.burnCardId) {
-        const card = p2Private.cards.find(c => c.id === d2.burnCardId);
-        if (card) {
-          const ok = engine.burnCard('p2', d2.burnCardId);
-          if (ok && p2Private.activeBurn) {
-            report.burnCounts[p2Private.activeBurn]++;
-          }
-        }
-      }
-
-      // Apply Flux Actions (Nudge)
-      for (const act of d1.fluxActions) {
-        if (act.type === 'NUDGE' && act.direction && p1Private.cards.some(c => c.id === act.cardId)) {
-          engine.nudgeRank('p1', act.cardId, act.direction);
-        }
-      }
-      for (const act of d2.fluxActions) {
-        if (act.type === 'NUDGE' && act.direction && p2Private.cards.some(c => c.id === act.cardId)) {
-          engine.nudgeRank('p2', act.cardId, act.direction);
-        }
-      }
+      // Solo and simulation use the same checked shaping flow.
+      applyBotShaping(engine, 'p1', d1);
+      applyBotShaping(engine, 'p2', d2);
+      if (p1Private.activeBurn) report.burnCounts[p1Private.activeBurn]++;
+      if (p2Private.activeBurn) report.burnCounts[p2Private.activeBurn]++;
 
       // Re-evaluate hand splits with post-burn/nudge cards
       const finalD1 = bot1.evaluateHand(
@@ -162,6 +133,7 @@ function runMatchSeries(
 
       // Resolve Clash
       const outcome = engine.resolveClash();
+      if (outcome.isRoundOver) roundsInMatch++;
 
       report.tierCounts[outcome.p1Eval3.tier]++;
       report.tierCounts[outcome.p2Eval3.tier]++;
@@ -170,10 +142,7 @@ function runMatchSeries(
         report.parryReflects++;
       }
 
-      if (engine.matchWinnerId) {
-        roundsInMatch++;
-        break;
-      }
+      if (engine.matchWinnerId) break;
 
       // Advance exchange
       engine.phase = 'ROUND_RESOLVE';
@@ -188,7 +157,11 @@ function runMatchSeries(
       throw new Error(`Match ${m} timed out without a winner`);
     }
 
-    report.totalRounds += Math.max(1, roundsInMatch);
+    expect(roundsInMatch).toBe(engine.currentRound);
+    expect(roundsInMatch).toBeGreaterThanOrEqual(2);
+    expect(roundsInMatch).toBeLessThanOrEqual(3);
+    expect(engine.getPlayer(engine.matchWinnerId)!.roundWins).toBe(2);
+    report.totalRounds += roundsInMatch;
     report.totalExchanges += exchangesInMatch;
   }
 
@@ -199,8 +172,22 @@ function runMatchSeries(
 }
 
 describe('Headless Balance Simulator (Option A Multi-Exchange)', () => {
+  let mirror: SimulationReport;
+  let asymmetric: SimulationReport;
+  let simulationMs = 0;
+  beforeAll(() => {
+    const start = performance.now();
+    mirror = runMatchSeries('CIPHER_ZERO', 'CIPHER_ZERO', 200, 1001);
+    asymmetric = runMatchSeries('VEKTOR_AGGRO', 'AEGIS_WALL', 100, 2002);
+    simulationMs = performance.now() - start;
+  });
+  it('completes all 300 matches in under one second', () => {
+    console.log(`300-match simulation compute time: ${simulationMs.toFixed(2)}ms`);
+    expect(simulationMs).toBeLessThan(1000);
+  });
+
   it('runs 200 mirror matches between Cipher-0 bots with balanced win rates', () => {
-    const report = runMatchSeries('CIPHER_ZERO', 'CIPHER_ZERO', 200, 1001);
+    const report = mirror;
 
     console.log('\n======================================================');
     console.log('   CYBERANTE HEADLESS BALANCE SIMULATOR: CIPHER-0 MIRROR');
@@ -226,10 +213,14 @@ describe('Headless Balance Simulator (Option A Multi-Exchange)', () => {
     expect(report.avgExchangesPerRound).toBeGreaterThanOrEqual(1.5);
     expect(report.avgExchangesPerRound).toBeLessThanOrEqual(5.0);
     expect(report.avgRoundsPerMatch).toBeGreaterThanOrEqual(2.0);
+    // Also enforce the narrower pacing targets reported by the simulator.
+    expect(report.avgExchangesPerRound).toBeGreaterThanOrEqual(1.8);
+    expect(report.avgExchangesPerRound).toBeLessThanOrEqual(4.5);
+    expect(report.avgRoundsPerMatch).toBeLessThanOrEqual(2.8);
   });
 
   it('runs Aggro vs Wall matchup: high damage meets high mitigation', () => {
-    const report = runMatchSeries('VEKTOR_AGGRO', 'AEGIS_WALL', 100, 2002);
+    const report = asymmetric;
 
     console.log('\n======================================================');
     console.log('   CYBERANTE SIMULATOR: VEKTOR-AGGRO vs AEGIS-WALL');
@@ -245,5 +236,22 @@ describe('Headless Balance Simulator (Option A Multi-Exchange)', () => {
     // Both archetypes must have viable win conditions (neither 0%)
     expect(report.p1Wins).toBeGreaterThanOrEqual(20);
     expect(report.p2Wins).toBeGreaterThanOrEqual(20);
+  });
+});
+
+describe('Spec-05 seed-42 decision replay', () => {
+  it('repeats the exact decisions for ten fixed hands', () => {
+    const prng = new SeededPRNG(2026);
+    const hands: Card[][] = Array.from({ length: 10 }, (_, h) => Array.from({ length: 5 }, (_, c) => ({
+      id: `replay_${h}_${c}`, rank: prng.nextInt(2, 15) as Card['rank'],
+      suit: (['SPADES', 'CLUBS', 'DIAMONDS', 'HEARTS'] as const)[prng.nextInt(0, 4)],
+    })));
+    for (const profile of ['CIPHER_ZERO', 'VEKTOR_AGGRO', 'AEGIS_WALL'] as const) {
+      const replay = () => {
+        const bot = new ClassicalBotAI(profile, new SeededPRNG(42));
+        return hands.map((hand, i) => bot.evaluateHand(hand, 20 - i * 2, 20 - i, i % 4, true));
+      };
+      expect(replay()).toEqual(replay());
+    }
   });
 });

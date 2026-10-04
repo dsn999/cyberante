@@ -2,7 +2,7 @@
 
 Audit date: 2026-10-03. Second review: committed baseline `fe9fc48`. Scope: the master design, all ten subsidiary specs,
 workspace configuration, shared/server/client source, existing tests, and CI.
-This strategy records audit findings and dispatch progress. Specs 01–04 are implemented and verified; later dispatches remain outstanding.
+This strategy records audit findings and dispatch progress. Specs 01–05 are implemented and verified; later dispatches remain outstanding.
 
 ## Architectural authority
 
@@ -181,12 +181,40 @@ This section supersedes the historical deck/Flux/engine findings above.
 This section supersedes the historical server/recovery findings and bundle
 warning above. The remaining table entries belong to their numbered dispatches.
 
+## Spec-05 dispatch completion (2026-10-03)
+
+- AI uses all ten unique partitions and the exact weighted utility, including
+  the Assault score term. Nudge search holds the initially selected partition
+  fixed, upgrades its Assault tier, requires >=3 utility and schedules one step.
+  Burn targets are excluded from nudges, preserving validity after retirement.
+- Burn priority is Diamond at <=10 HP, Aggro Club, Heart at <=14 HP, then Spade
+  when behind. Stances use the >6 HP lethal finisher, <=5 HP critical defense,
+  and exact tendency rolls. Presets and combat constants are unchanged.
+- Shared checked shaping code drives both solo and simulation. Every proposed
+  burn/Flux action must succeed; final commitments use freshly evaluated hands.
+  Input cards, returned profile copies and deterministic seeded decisions are
+  covered by tests; invalid inputs do not consume random state.
+- Verification: focused AI suite (44 tests), simulator/replay/performance suite
+  (four tests), and full warning-free build/test/sim: 212 repository tests pass.
+  Each of the 300 simulated matches terminates with exactly two wins and a
+  validated 2–3-round count. No original threshold was weakened.
+- Mirror results: 93/107 wins, 2.52 rounds/match, 2.20 exchanges/round; Aggro/Wall
+  50/50 wins, 2.14 exchanges/round. The old 1.72 pacing discrepancy is resolved;
+  the narrower 1.8–4.5 target is now asserted alongside the original 1.5–5.0 gate.
+- Standalone compute 92.54ms; complete `npm run sim` wall time 768.32ms. Across
+  1000 warmed decisions per profile, observed maximum <1ms; mean approximately
+  0.007–0.011ms. Benchmarks report mean/p95/max and enforce the 1ms budget.
+- Spec-05 checklist is checked. Implementation is committed to main separately
+  from the concurrent unrelated Spec-07 documentation edit. Browser timing,
+  profile selection and full playable flow remain later integration/UI work.
+
+This section supersedes historical Spec-05 findings and pacing follow-ups above.
+
 ## Dispatch readiness
 
-**Specs 01–04 are complete. Spec-05 is next.** Both boundary decisions are
-resolved and documented. Implement the AI API and specified heuristics, verify
-post-shaping partitions and seeded replays, measure performance, and review the
-mirror pacing discrepancy against the stated target without weakening gates.
+**Specs 01–05 are complete. Spec-10A is next.** Deliver the first complete
+playable solo/multiplayer slice using the current UI/render/audio foundation,
+then continue the planned polish dispatches and final Spec-10B acceptance.
 
 Completed dispatches cover strict COMMITMENT-only lock-in,
 full payload validation, cryptographic token generation, disconnected-seat-only
@@ -253,13 +281,13 @@ working directory if the documented invocation needs correction.
 
 ## Recommended next dispatch
 
-Proceed to **Spec-05: Classical Bot AI & Balance Simulator**. Align the public
-API and heuristics, cover seed-42 replay across ten hands, ensure every partition
-is valid after burn/shaping, measure evaluation/simulation performance, and
-review the current 1.72 mirror exchanges/round against the stated 1.8 target.
-Preserve combat constants and avoid weakening acceptance thresholds.
+Proceed to **Spec-10A: Playable Integration**. Implement the solo timed phase
+loop and bot thinking delays, correct online seat/perspective mapping, complete
+Bo3 results/rematches/exit, room sharing, token storage and automatic reconnect,
+and mode cleanup. Verify actual solo and two-browser play plus the existing
+single-port production path. This is the first Spec-10 milestone; final audio,
+visual, mobile/performance and CI acceptance remains Spec-10B after polish.
 
-Then execute Spec-10A for the first complete playable solo/multiplayer slice.
 Continue with 08, 06, 07, 09 and 10B.
 
 Contest cover capture and submission copy follow the completed playable build.

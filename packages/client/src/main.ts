@@ -18,6 +18,7 @@ import {
   Suit,
   MatchEngine,
   SeededPRNG,
+  applyBotShaping,
   RoundResolution,
 } from '@cyberante/shared';
 
@@ -238,12 +239,12 @@ class CyberanteGame {
       if (this.localEngine.phase === 'SHAPING') {
         const decision = this.botAI.evaluateHand(botState.cards, botState.guardHp,
           playerState.guardHp, botState.fluxRemaining, !botState.hasBurnedCard);
-        if (decision.burnCardId) this.localEngine.burnCard('bot', decision.burnCardId);
-        for (const act of decision.fluxActions) {
-          // A proposed nudge on a burned card is obsolete after its replacement draw.
-          if (!botState.cards.some(card => card.id === act.cardId)) continue;
-          if (act.type === 'NUDGE' && act.direction) this.localEngine.nudgeRank('bot', act.cardId, act.direction);
-          if (act.type === 'BLEED' && act.targetSuit) this.localEngine.bleedSuit('bot', act.cardId, act.targetSuit);
+        try {
+          applyBotShaping(this.localEngine, 'bot', decision);
+        } catch {
+          this.gameBoard.showBanner('Bot shaping action rejected');
+          this.updateSoloBoard();
+          return;
         }
         this.localEngine.phase = 'COMMITMENT';
       }

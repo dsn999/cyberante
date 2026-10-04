@@ -268,16 +268,16 @@ The AI evaluates its 5-card hand across a weighted utility scoring matrix:
 ┌───────────────────────────────┐             ┌───────────────────────────────┐
 │ Combinatorial Hand Generator  │             │ Tactical Burn Evaluator       │
 │ • Generates all 10 possible   │             │ • Evaluates value of burning  │
-│   3-card/2-card split subsets │             │   low card for shield/sunder  │
+│   3-card/2-card split subsets │             │   suit/HP burn priorities     │
 └───────────────┬───────────────┘             └───────────────┬───────────────┘
                 │                                             │
                 └──────────────────────┬──────────────────────┘
                                        │
                                        ▼
 ┌─────────────────────────────────────────────────────────────┐
-│ Flux Optimizer (Rank Nudge / Suit Bleed Search)             │
-│ • Simulates 1-step and 2-step Flux mutations                │
-│ • Selects mutation that yields highest Δ (Assault + Aegis)   │
+│ Flux Optimizer (Selected-Partition Pip Nudge Search)        │
+│ • Simulates one-step nudges; requires Assault tier upgrade  │
+│ • Requires utility gain >= 3; schedules at most one nudge   │
 └──────────────────────────────┬──────────────────────────────┘
                                │
                                ▼
@@ -535,7 +535,7 @@ To ensure rapid, defect-free execution without hallucination or architectural dr
     *   *Invariants:* Authoritative phase timer transitions (Deal $\rightarrow$ Shaping 15s $\rightarrow$ Commitment 10s $\rightarrow$ Clash $\rightarrow$ Resolve); auto-lock fallback on timeout; anti-cheat card hiding.
 *   **`spec-05-classical-bot-ai.md` (Solo Mode Offline Classical Game AI):**
     *   *Scope:* Implement `packages/client/src/ai/ClassicalBotAI.ts` and `BotProfiles.ts`.
-    *   *Invariants:* Strictly non-LLM; deterministic utility calculation; evaluates split partitions and Flux permutations; simulates 1–2s human thinking pauses.
+    *   *Invariants:* Strictly non-LLM; deterministic ten-partition utility calculation, one-step Pip Nudge and prioritized tactical burns. Spec-10 owns the 1–2s human thinking pauses in the solo controller.
 *   **`spec-06-procedural-audio-engine.md` (Web Audio API Synthesizer):**
     *   *Scope:* Implement `packages/client/src/audio/AudioEngine.ts`, `ProceduralMusic.ts`, and `SoundEffects.ts`.
     *   *Invariants:* Zero audio file downloads; procedural dual-oscillator synthwave arpeggiator; responsive SFX triggers; dynamic audio-reactive FFT node.
