@@ -16,8 +16,9 @@
     "dev:client": "npm --workspace=packages/client run dev",
     "build": "npm --workspace=packages/shared run build && npm --workspace=packages/server run build && npm --workspace=packages/client run build",
     "start": "npm --workspace=packages/server run start",
-    "test": "npm --workspace=packages/server test",
-    "sim": "npm --workspace=packages/server run sim"
+    "test": "npm --workspace=packages/server test && npm --workspace=packages/client test",
+    "sim": "npm --workspace=packages/server run sim",
+    "test:e2e": "npm run build && playwright test"
   },
   "keywords": [
     "poker",
@@ -31,5 +32,8 @@
     "openai-codex"
   ],
   "author": "Blaze Giroux",
-  "license": "MIT"
+  "license": "MIT",
+  "devDependencies": {
+    "@playwright/test": "^1.63.0"
+  }
 }

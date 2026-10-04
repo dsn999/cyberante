@@ -140,9 +140,24 @@ Requirements:
 ```
 
 ## 10. Definition of Done Checklist
-- [ ] End-to-end playable Solo Mode with local `MatchEngine` and `ClassicalBotAI`.
-- [ ] End-to-end playable Multiplayer Mode with WebSockets and room codes.
+- [x] End-to-end playable Solo Mode with local `MatchEngine` and `ClassicalBotAI`.
+- [x] End-to-end playable Multiplayer Mode with WebSockets and room codes.
 - [ ] Seamless audio unlocking and phase-adaptive music/SFX coupling.
 - [ ] Three.js reactive vector grid and particle explosions synchronized to combat events.
-- [ ] Single-port production static client serving and WebSocket matchmaking.
-- [ ] Full monorepo verification passing: `npm run build && npm test && npm run sim`.
+- [x] Single-port production static client serving and WebSocket matchmaking.
+- [x] Full monorepo verification passing: `npm run build && npm test && npm run sim`.
+
+### Spec-10A milestone evidence
+
+- [x] Local DEAL → SHAPING → COMMITMENT → CLASH_REVEAL → ROUND_RESOLVE loop, 1–1.5-second bot commitment pause, idle auto-lock, HP carry/reset and complete Bo3.
+- [x] Browser play against all three bot profiles while offline, solo rematch and exit, tutorial mode handoff, and one persistent canvas across mode switches.
+- [x] Two independent browser sessions host/join through the production server with local lower-dock mapping, full clash reveals, Bo3 results, mutual rematch and deliberate-leave forfeit.
+- [x] Clipboard copying of room codes and direct join links; join-link prefill.
+- [x] Unexpected socket drop and page reload recover the original seat without joining again; recovery expiry clears credentials and the remaining player wins by forfeit.
+- [x] Production-server commitment timeout auto-locks idle users and reveals their hands.
+
+Executable evidence: `packages/client/src/__tests__/`, `e2e/integration.spec.ts`,
+and the existing server transport/lifecycle suites. Run `npm run test:e2e` after
+installing Chromium with `npx playwright install --with-deps chromium`.
+Spec-10B finishes the audio/renderer polish and final mobile/performance acceptance
+after Specs 08, 06, 07 and 09; the remaining full-spec checkboxes stay open.

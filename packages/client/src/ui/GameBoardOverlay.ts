@@ -8,6 +8,7 @@ import {
   Stance,
   Suit,
   Rank,
+  RoundResolution,
   SUIT_GLYPHS,
   SUIT_COLORS,
   SUIT_RING,
@@ -25,6 +26,8 @@ export interface GameBoardCallbacks {
   onToggleRules: () => void;
   onToggleCrt?: () => void;
   onReady?: () => void;
+  onRematch?: () => void;
+  onExit?: () => void;
 }
 
 export class GameBoardOverlay {
@@ -35,6 +38,13 @@ export class GameBoardOverlay {
   private aegisCardIds: string[] = [];
   private currentCards: Card[] = [];
   private isCrtClean: boolean = false;
+  private phase: GamePhase = 'LOBBY_WAIT';
+  private committed = false;
+  private burned = false;
+  private flux = 0;
+  private exchangeKey = '';
+  private connected = true;
+  private bannerTimer: ReturnType<typeof setTimeout> | undefined;
 
   constructor(parent: HTMLElement, callbacks: GameBoardCallbacks) {
     this.callbacks = callbacks;
@@ -167,6 +177,24 @@ export class GameBoardOverlay {
     `;
 
     parent.appendChild(this.container);
+    const actions = document.createElement('div');
+    actions.className = 'interactive';
+    actions.style.cssText = 'display:flex;gap:12px;justify-content:center;flex-wrap:wrap';
+    actions.innerHTML = '<span id="room-code"></span><button id="btn-copy-code" hidden>COPY CODE</button><button id="btn-copy-link" hidden>COPY JOIN LINK</button><button id="btn-ready">READY FOR COMMITMENT</button><button id="btn-rematch" hidden>REMATCH</button><button id="btn-exit">MAIN MENU</button>';
+    this.container.insertBefore(actions, this.container.querySelector('#center-banner'));
+    const reveal = document.createElement('div');
+    reveal.id = 'clash-reveal';
+    reveal.style.cssText = 'white-space:pre-line;text-align:center;color:#e5e7eb;font-family:var(--font-mono);background:rgba(11,19,41,.8)';
+    this.container.insertBefore(reveal, this.container.querySelector('#center-banner'));
+    const opponentName = document.createElement('span');
+    opponentName.id = 'opponent-name';
+    this.container.querySelector('#opponent-hp')?.parentElement?.prepend(opponentName);
+    const dockName = document.createElement('div');
+    dockName.id = 'local-dock-name';
+    this.container.querySelector('#hand-cards')?.before(dockName);
+    this.container.querySelector('#btn-ready')?.addEventListener('click', () => this.callbacks.onReady?.());
+    this.container.querySelector('#btn-rematch')?.addEventListener('click', () => this.callbacks.onRematch?.());
+    this.container.querySelector('#btn-exit')?.addEventListener('click', () => this.callbacks.onExit?.());
     this.bindEvents();
   }
 
@@ -187,10 +215,12 @@ export class GameBoardOverlay {
 
     const autoSplitBtn = this.container.querySelector('#btn-auto-split');
     autoSplitBtn?.addEventListener('click', () => {
+      if (!this.canSelect()) return;
       this.autoAssignSplit();
     });
 
     const setStance = (stance: Stance) => {
+      if (!this.canSelect()) return;
       this.selectedStance = stance;
       sfx.playStanceSelect(stance);
 
@@ -212,6 +242,7 @@ export class GameBoardOverlay {
     this.container.querySelector('#stance-parry')?.addEventListener('click', () => setStance('PARRY'));
 
     this.container.querySelector('#btn-lock-in')?.addEventListener('click', () => {
+      if (this.phase !== 'COMMITMENT' || this.committed || this.currentCards.length !== 5) return;
       if (this.assaultCardIds.length === 3 && this.aegisCardIds.length === 2) {
         sfx.playClick();
         this.callbacks.onCommitHand(
@@ -243,6 +274,11 @@ export class GameBoardOverlay {
     opponentWins: number = 0,
     activeBarrier: number = 0
   ): void {
+    const exchangeKey = `${roundNumber}/${exchangeNumber}`;
+    if (exchangeKey !== this.exchangeKey || (phase === 'DEAL' && this.phase !== 'DEAL')) this.resetHandSelection();
+    this.exchangeKey = exchangeKey;
+    this.phase = phase;
+    this.flux = playerFlux;
     this.currentCards = cards;
 
     const phaseLabel = this.container.querySelector('#phase-label');
@@ -286,13 +322,116 @@ export class GameBoardOverlay {
   }
 
   public showBanner(text: string, durationMs: number = 3000): void {
+    clearTimeout(this.bannerTimer);
     const banner = this.container.querySelector('#center-banner') as HTMLElement;
     if (banner) {
       banner.textContent = text;
-      setTimeout(() => {
+      if (durationMs > 0) this.bannerTimer = setTimeout(() => {
         if (banner.textContent === text) banner.textContent = '';
       }, durationMs);
     }
+  }
+
+  public resetHandSelection(): void {
+    clearTimeout(this.bannerTimer);
+    this.assaultCardIds = [];
+    this.aegisCardIds = [];
+    this.currentCards = [];
+    this.selectedStance = 'BRACE';
+    this.committed = false;
+    this.burned = false;
+    const banner = this.container.querySelector('#center-banner');
+    if (banner) banner.textContent = '';
+    this.container.querySelector('#clash-reveal')!.textContent = '';
+    this.renderSlots();
+    this.renderHand([], this.flux);
+    this.container.querySelectorAll<HTMLButtonElement>('.stance-btn').forEach(button => {
+      button.style.borderColor = button.id === 'stance-brace' ? '#00f3ff' : '#4b5563';
+      button.style.color = button.id === 'stance-brace' ? '#00f3ff' : '#9ca3af';
+    });
+  }
+
+  public resetView(): void {
+    this.resetHandSelection();
+    this.updateState('LOBBY_WAIT', 0, 20, 3, 20, []);
+    this.setControls('LOBBY_WAIT', false, false);
+    this.setNames('Operative', 'Waiting for opponent', true);
+    this.setRoom('');
+  }
+
+  public setNames(self: string, opponent: string, connected: boolean): void {
+    this.container.querySelector('#player-name')!.textContent = self;
+    this.container.querySelector('#local-dock-name')!.textContent = `${self} • YOUR HAND`;
+    this.container.querySelector('#opponent-name')!.textContent = `${opponent}${connected ? '' : ' • reconnecting'} `;
+  }
+
+  public setRoom(code: string): void {
+    this.container.querySelector('#room-code')!.textContent = code ? `ROOM ${code}` : '';
+    const link = new URL(window.location.pathname, window.location.origin);
+    link.searchParams.set('room', code);
+    const bindCopy = (selector: string, value: string) => {
+      const button = this.container.querySelector<HTMLButtonElement>(selector)!;
+      button.hidden = !code;
+      button.onclick = () => {
+        if (!navigator.clipboard) { this.showBanner(value, 10000); return; }
+        navigator.clipboard.writeText(value).then(() => this.showBanner('Copied')).catch(() => this.showBanner(value, 10000));
+      };
+    };
+    bindCopy('#btn-copy-code', code);
+    bindCopy('#btn-copy-link', link.href);
+  }
+
+  public showResolution(resolution: RoundResolution, selfPlayerId: string): void {
+    const p1Self = selfPlayerId === resolution.p1PlayerId;
+    const cards = (hand: Card[]) => hand.map(card => `${this.formatRank(card.rank)}${SUIT_GLYPHS[card.suit]}`).join(' ');
+    const line = (p1: boolean, label: string) => {
+      const assault = p1 ? resolution.p1Assault : resolution.p2Assault;
+      const aegis = p1 ? resolution.p1Aegis : resolution.p2Aegis;
+      const stance = p1 ? resolution.p1Stance : resolution.p2Stance;
+      const burn = p1 ? resolution.p1Burn : resolution.p2Burn;
+      const evaluation = p1 ? resolution.p1Eval3 : resolution.p2Eval3;
+      const incoming = p1 ? resolution.p1NetDamageReceived : resolution.p2NetDamageReceived;
+      return `${label}: ASSAULT ${cards(assault)} (${evaluation.description}) • AEGIS ${cards(aegis)} • ${stance} • ${burn ?? 'NO BURN'} • RECEIVED ${incoming}`;
+    };
+    this.container.querySelector('#clash-reveal')!.textContent = `${line(!p1Self, 'OPPONENT')}\n${line(p1Self, 'YOU')}`;
+  }
+
+  public updateCountdown(timeRemainingMs: number): void {
+    const display = this.container.querySelector('#timer-display');
+    if (display) display.textContent = `${(timeRemainingMs / 1000).toFixed(1)}s`;
+  }
+
+  public setControls(phase: GamePhase, committed: boolean, burned: boolean): void {
+    this.phase = phase;
+    this.committed = committed;
+    this.burned = burned;
+    this.updateControls();
+  }
+
+  private canSelect(): boolean {
+    return this.connected && !this.committed && (this.phase === 'SHAPING' || this.phase === 'COMMITMENT');
+  }
+
+  public setConnected(connected: boolean): void {
+    this.connected = connected;
+    this.updateControls();
+  }
+
+  private updateControls(): void {
+    const disable = (selector: string, disabled: boolean) => {
+      this.container.querySelectorAll<HTMLButtonElement>(selector).forEach(button => button.disabled = disabled);
+    };
+    const shaping = this.connected && this.phase === 'SHAPING' && !this.committed;
+    disable('.nudge-up-btn,.nudge-down-btn', !shaping || this.flux < 1);
+    disable('.bleed-btn', !shaping || this.flux < 2);
+    disable('.burn-btn', !shaping || this.burned);
+    disable('.stance-btn,#btn-auto-split', !this.canSelect());
+    disable('#btn-lock-in', !this.connected || this.phase !== 'COMMITMENT' || this.committed || this.assaultCardIds.length !== 3 || this.aegisCardIds.length !== 2);
+    disable('#btn-ready,#btn-rematch', !this.connected);
+    const ready = this.container.querySelector<HTMLButtonElement>('#btn-ready')!;
+    ready.hidden = this.phase !== 'SHAPING';
+    const rematch = this.container.querySelector<HTMLButtonElement>('#btn-rematch')!;
+    rematch.hidden = this.phase !== 'MATCH_OVER';
   }
 
   private autoAssignSplit(): void {
@@ -325,10 +464,11 @@ export class GameBoardOverlay {
     this.assaultCardIds = bestAssault;
     this.aegisCardIds = bestAegis;
     this.renderSlots();
-    this.renderHand(this.currentCards, 3);
+    this.renderHand(this.currentCards, this.flux);
   }
 
   private toggleCardSlot(cardId: string): void {
+    if (!this.canSelect()) return;
     if (this.assaultCardIds.includes(cardId)) {
       this.assaultCardIds = this.assaultCardIds.filter(id => id !== cardId);
       if (this.aegisCardIds.length < 2) {
@@ -348,7 +488,7 @@ export class GameBoardOverlay {
     }
 
     this.renderSlots();
-    this.renderHand(this.currentCards, 3);
+    this.renderHand(this.currentCards, this.flux);
   }
 
   private renderSlots(): void {
@@ -503,6 +643,7 @@ export class GameBoardOverlay {
 
       handContainer.appendChild(cardEl);
     });
+    this.updateControls();
   }
 
   private formatRank(rank: Rank): string {

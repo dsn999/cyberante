@@ -2,7 +2,9 @@
 
 Audit date: 2026-10-03. Second review: committed baseline `fe9fc48`. Scope: the master design, all ten subsidiary specs,
 workspace configuration, shared/server/client source, existing tests, and CI.
-This strategy records audit findings and dispatch progress. Specs 01–05 are implemented and verified; later dispatches remain outstanding.
+This strategy records audit findings and dispatch progress. Specs 01–05 and the
+Spec-10A playable milestone are implemented and verified; later dispatches remain
+outstanding.
 
 ## Architectural authority
 
@@ -212,9 +214,9 @@ This section supersedes historical Spec-05 findings and pacing follow-ups above.
 
 ## Dispatch readiness
 
-**Specs 01–05 are complete. Spec-10A is next.** Deliver the first complete
-playable solo/multiplayer slice using the current UI/render/audio foundation,
-then continue the planned polish dispatches and final Spec-10B acceptance.
+**Specs 01–05 and the Spec-10A playable milestone are complete. Spec-08 is next.**
+Continue the planned UI, audio, renderer and tutorial dispatches, then final
+Spec-10B acceptance.
 
 Completed dispatches cover strict COMMITMENT-only lock-in,
 full payload validation, cryptographic token generation, disconnected-seat-only
@@ -281,14 +283,40 @@ working directory if the documented invocation needs correction.
 
 ## Recommended next dispatch
 
-Proceed to **Spec-10A: Playable Integration**. Implement the solo timed phase
-loop and bot thinking delays, correct online seat/perspective mapping, complete
-Bo3 results/rematches/exit, room sharing, token storage and automatic reconnect,
-and mode cleanup. Verify actual solo and two-browser play plus the existing
-single-port production path. This is the first Spec-10 milestone; final audio,
-visual, mobile/performance and CI acceptance remains Spec-10B after polish.
+Proceed to **Spec-08: Client Tactical UI**. Spec-10A now supplies the timed solo
+loop, bot pauses, perspective mapping, full reveals/results/rematches, exit,
+clipboard room sharing, tab-local token recovery and mode cleanup. Chromium
+acceptance covers offline Bo3 against all three profiles, two independent online
+seats, mutual rematch, timeout, socket/reload recovery and grace-expiry forfeit
+through the single-port production server. CI is configured to run the browser
+tests and simulator.
+Final audio, visual, mobile/performance and deployment acceptance remain Spec-10B.
 
 Continue with 08, 06, 07, 09 and 10B.
+
+### Spec-10A implementation evidence
+
+- `SoloMatchSession` owns cancellable phase/bot timers and emits the same tick
+  and outcome contracts as online play. The shared engine retains game authority.
+- `NetworkClient` matches the command API, uses same-host `/ws`, retries lost
+  connections for at most 30 seconds, authenticates seat recovery and rejects
+  late callbacks from abandoned sockets. Reload recovery uses sessionStorage;
+  deliberate exit clears the token and sends leave.
+- The controller maps each seat, updates a real countdown, routes all modes,
+  presents actual clash cards and persistent results, and clears active clocks,
+  sockets, music and overlays on exit. Audio unlock and existing visual/SFX
+  hooks are connected; their detailed polish remains Specs 06/07.
+- Client lifecycle/transport tests join the root `npm test` gate. Playwright
+  acceptance runs the compiled production server with real browser/WebSocket
+  sessions; solo clock acceleration leaves engine/combat code unchanged.
+- This evidence supersedes historical integration gaps above. The concurrent
+  unrelated Spec-07 documentation edit is preserved separately.
+- Final verification on 2026-10-03: warning-free `npm run build && npm test &&
+  npm run sim` passes (212 server/shared tests, 15 client tests, 300 simulated
+  matches). Six Chromium acceptance cases pass against the compiled server.
+  Emitted JavaScript totals 138,043 bytes gzipped, with no image/model/audio
+  files. One preceding run exceeded the existing 1ms worst-sample AI assertion
+  (1.26ms); isolation and the final full rerun passed with that assertion unchanged.
 
 Contest cover capture and submission copy follow the completed playable build.
 The contest claims/deadline in the master document were read as project context,

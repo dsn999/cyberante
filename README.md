@@ -57,6 +57,21 @@ npm run dev:client
 npm test
 ```
 
+Production and browser verification:
+
+```bash
+npm run build && npm test && npm run sim
+npm start
+
+# One-time browser setup; system dependencies may require sudo.
+npx playwright install --with-deps chromium
+npm run test:e2e
+```
+
+The production server serves the client and `/ws` on `PORT` (default 8080).
+Vite proxies `/ws` to the development server. Share rooms with `?room=ABCD`;
+each browser tab retains its seat token for automatic recovery within 30 seconds.
+
 ---
 
 ## License

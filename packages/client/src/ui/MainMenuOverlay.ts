@@ -3,20 +3,22 @@
 // ============================================================================
 
 import { masterAudio } from '../audio/AudioEngine';
-import { musicPlayer } from '../audio/ProceduralMusic';
+import type { BotPersonality } from '@cyberante/shared';
 import { sfx } from '../audio/SoundEffects';
 
-export interface MenuCallbacks {
-  onPlaySolo: () => void;
-  onPlayMultiplayer: (roomCode: string) => void;
+export interface MainMenuCallbacks {
+  onStartSolo: (profile: BotPersonality) => void;
+  onCreateMultiplayer: (playerName: string) => void;
+  onJoinMultiplayer: (roomCode: string, playerName: string) => void;
+  onToggleRules: () => void;
   onStartTutorial: () => void;
 }
 
 export class MainMenuOverlay {
   private container: HTMLElement;
-  private callbacks: MenuCallbacks;
+  private callbacks: MainMenuCallbacks;
 
-  constructor(parent: HTMLElement, callbacks: MenuCallbacks) {
+  constructor(parent: HTMLElement, callbacks: MainMenuCallbacks) {
     this.callbacks = callbacks;
     this.container = document.createElement('div');
     this.container.id = 'main-menu-overlay';
@@ -51,6 +53,15 @@ export class MainMenuOverlay {
       </div>
 
       <div style="display: flex; flex-direction: column; gap: 14px; width: 90%; max-width: 380px;">
+        <label>Solo opponent
+          <select id="bot-profile" aria-label="Solo opponent">
+            <option value="CIPHER_ZERO">Cipher Zero</option>
+            <option value="VEKTOR_AGGRO">Vektor Aggro</option>
+            <option value="AEGIS_WALL">Aegis Wall</option>
+          </select>
+        </label>
+        <label>Player name <input id="player-name-input" aria-label="Player name" maxlength="16" value="Operative" /></label>
+        <p id="menu-error" role="alert"></p>
         <button id="btn-solo" class="menu-btn" style="
           background: rgba(0, 243, 255, 0.12);
           border: 1px solid #00f3ff;
@@ -111,6 +122,7 @@ export class MainMenuOverlay {
       </div>
 
       <div style="margin-top: 36px; display: flex; gap: 20px;">
+        <button id="btn-menu-rules">RULES</button>
         <button id="btn-mute" style="
           background: transparent; border: 1px solid #4b5563; color: #9ca3af;
           padding: 6px 12px; font-family: 'Share Tech Mono', monospace; font-size: 12px;
@@ -130,17 +142,21 @@ export class MainMenuOverlay {
     const muteBtn = this.container.querySelector('#btn-mute');
     const roomInput = this.container.querySelector('#input-room') as HTMLInputElement;
 
+    roomInput.value = new URLSearchParams(window.location.search).get('room')?.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 4) ?? '';
+    roomInput.addEventListener('input', () => roomInput.value = roomInput.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 4));
+    this.container.querySelector('#btn-menu-rules')?.addEventListener('click', () => this.callbacks.onToggleRules());
+
     const startAudio = () => {
       masterAudio.init();
       masterAudio.resume();
-      musicPlayer.start();
     };
 
     soloBtn?.addEventListener('click', () => {
       startAudio();
       sfx.playClick();
       this.hide();
-      this.callbacks.onPlaySolo();
+      const profile = (this.container.querySelector('#bot-profile') as HTMLSelectElement).value as BotPersonality;
+      this.callbacks.onStartSolo(profile);
     });
 
     multiBtn?.addEventListener('click', () => {
@@ -148,7 +164,10 @@ export class MainMenuOverlay {
       sfx.playClick();
       const code = roomInput?.value.trim().toUpperCase() || '';
       this.hide();
-      this.callbacks.onPlayMultiplayer(code);
+      const playerName = (this.container.querySelector('#player-name-input') as HTMLInputElement).value.trim().slice(0, 16);
+      if (!playerName) { this.show(); this.showError('Enter a player name.'); return; }
+      if (code) this.callbacks.onJoinMultiplayer(code, playerName);
+      else this.callbacks.onCreateMultiplayer(playerName);
     });
 
     tutorialBtn?.addEventListener('click', () => {
@@ -168,6 +187,19 @@ export class MainMenuOverlay {
 
   public show(): void {
     this.container.style.display = 'flex';
+    const error = this.container.querySelector('#menu-error');
+    if (error) error.textContent = '';
+  }
+
+  public showError(message: string): void {
+    let error = this.container.querySelector('#menu-error');
+    if (!error) {
+      error = document.createElement('p');
+      error.id = 'menu-error';
+      error.setAttribute('role', 'alert');
+      this.container.appendChild(error);
+    }
+    error.textContent = message;
   }
 
   public hide(): void {

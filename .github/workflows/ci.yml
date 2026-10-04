@@ -28,3 +28,12 @@ jobs:
 
       - name: Run Test Suites
         run: npm test
+
+      - name: Run Balance Simulator
+        run: npm run sim
+
+      - name: Install Browser Runtime
+        run: npx playwright install --with-deps chromium
+
+      - name: Verify Production Browser Flows
+        run: npx playwright test

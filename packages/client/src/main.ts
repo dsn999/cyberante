@@ -7,18 +7,16 @@ import { MainMenuOverlay } from './ui/MainMenuOverlay';
 import { GameBoardOverlay } from './ui/GameBoardOverlay';
 import { RulesModal } from './ui/RulesModal';
 import { TutorialManager } from './tutorial/TutorialManager';
-import { ClassicalBotAI } from './ai/ClassicalBotAI';
+import { SoloMatchSession } from './game/SoloMatchSession';
 import { NetworkClient } from './net/NetworkClient';
 import { musicPlayer } from './audio/ProceduralMusic';
 import { masterAudio } from './audio/AudioEngine';
+import { sfx } from './audio/SoundEffects';
 import {
-  Card,
-  GamePhase,
   Stance,
   Suit,
-  MatchEngine,
-  SeededPRNG,
-  applyBotShaping,
+  BotPersonality,
+  ServerMessage,
   RoundResolution,
 } from '@cyberante/shared';
 
@@ -28,14 +26,20 @@ class CyberanteGame {
   private gameBoard: GameBoardOverlay;
   private rulesModal: RulesModal;
   private tutorial: TutorialManager;
-  private botAI: ClassicalBotAI;
   private networkClient: NetworkClient;
 
   // Local game state for Offline Solo Mode
   private isSoloMode: boolean = false;
-  private localEngine: MatchEngine | null = null;
-  private localTimerId: number | null = null;
+  private soloSession: SoloMatchSession | null = null;
+  private countdownTimer: ReturnType<typeof setInterval> | undefined;
+  private deadline = 0;
+  private mode: 'menu' | 'solo' | 'online' | 'tutorial' = 'menu';
+  private generation = 0;
+  private joinTimer: ReturnType<typeof setTimeout> | undefined;
+  private joined = false;
   private selfPlayerId: string = 'player';
+  private previousHand = '';
+  private previousPhase = '';
 
   constructor() {
     const uiRoot = document.getElementById('ui-overlay') || document.getElementById('ui-root') || document.body;
@@ -48,11 +52,8 @@ class CyberanteGame {
 
     // Initialize Tutorial
     this.tutorial = new TutorialManager(uiRoot, () => {
-      this.mainMenu.show();
+      this.returnToMenu();
     });
-
-    // Initialize Classical Bot AI
-    this.botAI = new ClassicalBotAI('CIPHER_ZERO');
 
     // Initialize Network Client
     this.networkClient = new NetworkClient();
@@ -66,23 +67,43 @@ class CyberanteGame {
       onCommitHand: (assault, aegis, stance) => this.handleCommit(assault, aegis, stance),
       onToggleRules: () => this.rulesModal.toggle(),
       onToggleCrt: () => {},
+      onReady: () => {
+        if (this.isSoloMode) this.soloSession?.ready();
+        else this.networkClient.send({ type: 'CMD_READY' });
+      },
+      onRematch: () => {
+        if (this.isSoloMode) this.soloSession?.rematch();
+        else this.networkClient.send({ type: 'CMD_REMATCH' });
+      },
+      onExit: () => this.returnToMenu(),
     });
 
     // Initialize Main Menu
     this.mainMenu = new MainMenuOverlay(uiRoot, {
-      onPlaySolo: () => {
+      onStartSolo: (profile) => {
         this.unlockAudio();
-        this.startSoloMatch();
+        this.startSoloMatch(profile);
       },
-      onPlayMultiplayer: (code) => {
-        this.unlockAudio();
-        this.startMultiplayerMatch(code);
-      },
-      onStartTutorial: () => {
-        this.unlockAudio();
-        this.tutorial.start();
-      },
+      onCreateMultiplayer: (name) => this.createMultiplayerMatch(name),
+      onJoinMultiplayer: (code, name) => this.joinMultiplayerMatch(code, name),
+      onToggleRules: () => this.rulesModal.toggle(),
+      onStartTutorial: () => this.startTutorial(),
     });
+    uiRoot.addEventListener('pointerdown', () => {
+      this.unlockAudio();
+      if (this.mode === 'solo' || this.mode === 'online') musicPlayer.start();
+    });
+    if (this.networkClient.hasSession) this.resumeMultiplayerMatch();
+  }
+
+  private resumeMultiplayerMatch(): void {
+    this.mode = 'online';
+    this.mainMenu.hide();
+    this.gameBoard.show();
+    this.gameBoard.setConnected(false);
+    this.startCountdown();
+    // Transport recovery owns retries and its thirty-second deadline.
+    void this.networkClient.connect().catch(() => {});
   }
 
   private unlockAudio(): void {
@@ -90,98 +111,163 @@ class CyberanteGame {
     masterAudio.resume();
   }
 
+  private startTutorial(): void {
+    this.unlockAudio();
+    this.returnToMenu();
+    this.mode = 'tutorial';
+    this.mainMenu.hide();
+    this.tutorial.start();
+  }
+
   // --------------------------------------------------------------------------
   // Solo Mode (Offline Deterministic MatchEngine)
   // --------------------------------------------------------------------------
-  private startSoloMatch(): void {
+  private startSoloMatch(profile: BotPersonality = 'CIPHER_ZERO'): void {
+    this.returnToMenu();
     this.isSoloMode = true;
+    this.mode = 'solo';
     this.selfPlayerId = 'player';
-    const seed = crypto.getRandomValues(new Uint32Array(1))[0];
-    this.botAI = new ClassicalBotAI('CIPHER_ZERO', new SeededPRNG(seed ^ 0x9e3779b9));
-    this.localEngine = new MatchEngine('player', 'Operative', 'bot', 'CIPHER-0', new SeededPRNG(seed));
-    this.localEngine.startMatch();
-    this.localEngine.phase = 'SHAPING';
-
     this.mainMenu.hide();
     this.gameBoard.show();
+    this.gameBoard.setConnected(true);
     musicPlayer.start();
-    musicPlayer.setPhase('SHAPING');
-
-    this.updateSoloBoard();
+    const seed = crypto.getRandomValues(new Uint32Array(1))[0];
+    this.soloSession = new SoloMatchSession(profile, seed, message => this.handleMessage(message));
+    this.soloSession.start();
+    this.startCountdown();
   }
 
-  private updateSoloBoard(): void {
-    if (!this.localEngine) return;
+  private returnToMenu(): void {
+    this.generation++;
+    this.mode = 'menu';
+    this.joined = false;
+    clearTimeout(this.joinTimer);
+    this.soloSession?.destroy();
+    this.soloSession = null;
+    this.networkClient.disconnect();
+    clearInterval(this.countdownTimer);
+    this.countdownTimer = undefined;
+    this.isSoloMode = false;
+    this.gameBoard.resetView();
+    this.previousHand = '';
+    this.previousPhase = '';
+    this.deadline = 0;
+    this.gameBoard.hide();
+    this.tutorial.hide();
+    this.rulesModal.hide();
+    musicPlayer.stop();
+    this.mainMenu.show();
+  }
 
-    const p1 = this.localEngine.getPlayer('player')!;
-    const p2 = this.localEngine.getPlayer('bot')!;
-
-    this.gameBoard.updateState(
-      this.localEngine.phase,
-      15000,
-      p1.guardHp,
-      p1.fluxRemaining,
-      p2.guardHp,
-      p1.cards,
-      this.localEngine.currentRound,
-      this.localEngine.currentExchange,
-      p1.roundWins,
-      p2.roundWins,
-      p1.activeBarrier
-    );
+  private startCountdown(): void {
+    clearInterval(this.countdownTimer);
+    this.countdownTimer = setInterval(() => {
+      this.gameBoard.updateCountdown(this.deadline ? Math.max(0, this.deadline - Date.now()) : 0);
+    }, 100);
   }
 
   // --------------------------------------------------------------------------
   // Multiplayer Mode (WebSockets)
   // --------------------------------------------------------------------------
-  private startMultiplayerMatch(roomCode: string): void {
+  private createMultiplayerMatch(playerName: string): void {
+    this.unlockAudio();
+    this.startMultiplayerMatch('', playerName);
+  }
+
+  private joinMultiplayerMatch(roomCode: string, playerName: string): void {
+    this.unlockAudio();
+    this.startMultiplayerMatch(roomCode, playerName);
+  }
+
+  private startMultiplayerMatch(roomCode: string, playerName: string): void {
+    this.returnToMenu();
     this.isSoloMode = false;
+    this.mode = 'online';
+    const generation = this.generation;
     this.mainMenu.hide();
     this.gameBoard.show();
+    this.gameBoard.setConnected(false);
     musicPlayer.start();
 
-    this.networkClient.connect(roomCode, 'Operative').catch((err) => {
-      alert(`Could not connect to multiplayer server: ${err.message}. Defaulting to Solo Mode.`);
-      this.startSoloMatch();
+    this.startCountdown();
+    this.joinTimer = setTimeout(() => {
+      if (this.mode !== 'online' || generation !== this.generation || this.joined) return;
+      this.returnToMenu();
+      this.mainMenu.showError('The room did not respond. Please try again.');
+    }, 10000);
+    this.networkClient.connect().then(() => {
+      if (this.mode !== 'online' || generation !== this.generation) return;
+      if (roomCode) this.networkClient.joinRoom(roomCode, playerName);
+      else this.networkClient.createRoom(playerName);
+    }).catch((err) => {
+      if (this.mode !== 'online' || generation !== this.generation) return;
+      this.returnToMenu();
+      this.mainMenu.showError(`Could not connect: ${err.message}`);
     });
   }
 
   private setupNetworkHandlers(): void {
-    this.networkClient.onMessage((msg) => {
-      if (msg.type === 'STATE_INIT') {
-        this.selfPlayerId = msg.playerId;
-        this.gameBoard.showBanner(`MATCH READY • ROOM ${msg.roomCode}`);
-      } else if (msg.type === 'STATE_TICK') {
-        const myPublic = msg.players[this.selfPlayerId];
-        const oppPublic = Object.values(msg.players).find(p => p.playerId !== this.selfPlayerId);
-
-        if (myPublic) {
-          this.gameBoard.updateState(
-            msg.phase,
-            msg.timeRemainingMs,
-            myPublic.guardHp,
-            myPublic.fluxRemaining,
-            oppPublic ? oppPublic.guardHp : 20,
-            msg.selfCards,
-            msg.roundNumber,
-            msg.exchangeNumber,
-            myPublic.roundWins,
-            oppPublic ? oppPublic.roundWins : 0,
-            myPublic.activeBarrier
-          );
-        }
-        musicPlayer.setPhase(msg.phase);
-      } else if (msg.type === 'ROUND_OUTCOME') {
-        this.handleClashOutcome(msg.resolution);
-      } else if (msg.type === 'ERROR_REJECTED') {
-        this.gameBoard.showBanner(`ERROR: ${msg.reason}`);
+    this.networkClient.on('status', status => {
+      if (this.mode !== 'online') return;
+      this.gameBoard.setConnected(status === 'connected');
+      if (status === 'reconnecting') this.gameBoard.showBanner('Connection lost • reconnecting…', 0);
+      else if (status === 'connected') this.gameBoard.showBanner('Connected');
+      else if (status === 'sessionExpired') {
+        this.returnToMenu();
+        this.mainMenu.showError('Your room session expired. Join or host another room.');
       }
+    });
+    this.networkClient.onMessage(message => {
+      if (this.mode === 'online') this.handleMessage(message);
     });
   }
 
+  private handleMessage(msg: ServerMessage): void {
+    if (msg.type === 'STATE_INIT') {
+      clearTimeout(this.joinTimer);
+      this.joined = true;
+      this.gameBoard.setRoom(msg.roomCode);
+      this.selfPlayerId = msg.playerId;
+      this.gameBoard.showBanner(`MATCH READY • ROOM ${msg.roomCode}`);
+    } else if (msg.type === 'STATE_TICK') {
+      const self = msg.players[this.selfPlayerId];
+      const opponent = Object.values(msg.players).find(p => p.playerId !== this.selfPlayerId);
+      if (self) {
+        const hand = JSON.stringify(msg.selfCards);
+        if (msg.phase === 'SHAPING' && this.previousPhase === 'SHAPING' && hand !== this.previousHand) {
+          this.scene.triggerSparks(0, 0, 0x00f3ff);
+        }
+        this.previousHand = hand;
+        this.previousPhase = msg.phase;
+        this.gameBoard.setNames(self.name, opponent?.name ?? 'Waiting for opponent', opponent?.connected ?? true);
+        this.deadline = msg.timeRemainingMs ? Date.now() + msg.timeRemainingMs : 0;
+        this.gameBoard.updateState(msg.phase, msg.timeRemainingMs, self.guardHp,
+          self.fluxRemaining, opponent?.guardHp ?? 20, msg.selfCards,
+          msg.roundNumber, msg.exchangeNumber, self.roundWins, opponent?.roundWins ?? 0,
+          self.activeBarrier);
+        this.gameBoard.setControls(msg.phase, self.hasCommitted, self.hasBurnedCard);
+        if (msg.phase === 'MATCH_OVER') {
+          this.gameBoard.showBanner(msg.matchWinnerId === this.selfPlayerId ? 'MATCH VICTORY!' : 'MATCH DEFEAT!', 0);
+        }
+      }
+      musicPlayer.setPhase(msg.phase);
+    } else if (msg.type === 'ROUND_OUTCOME') {
+      this.handleClashOutcome(msg.resolution);
+    } else if (msg.type === 'ERROR_REJECTED') {
+      if (this.mode === 'online' && !this.joined) {
+        this.returnToMenu();
+        this.mainMenu.showError(msg.reason);
+        return;
+      }
+      this.gameBoard.showBanner(`ERROR: ${msg.reason}`);
+    }
+  }
+
   private handleClashOutcome(resolution: RoundResolution): void {
+    this.gameBoard.showResolution(resolution, this.selfPlayerId);
     this.scene.triggerShockwave(0, 0, 2.0);
     this.scene.triggerSparks(0, 0, 0x00f3ff);
+    sfx.playClashDamage(Math.max(resolution.p1NetDamageReceived, resolution.p2NetDamageReceived));
 
     const isP1 = resolution.p1PlayerId
       ? this.selfPlayerId === resolution.p1PlayerId
@@ -203,86 +289,28 @@ class CyberanteGame {
   // User Tactical Actions
   // --------------------------------------------------------------------------
   private handleNudge(cardId: string, direction: 'UP' | 'DOWN'): void {
-    if (this.isSoloMode && this.localEngine) {
-      const ok = this.localEngine.nudgeRank('player', cardId, direction);
-      if (ok) this.updateSoloBoard();
-    } else {
-      this.networkClient.send({ type: 'CMD_NUDGE_RANK', cardId, direction });
-    }
+    if (this.isSoloMode) {
+      this.soloSession?.nudgeRank(cardId, direction);
+    } else this.networkClient.send({ type: 'CMD_NUDGE_RANK', cardId, direction });
   }
 
   private handleBleed(cardId: string, targetSuit: Suit): void {
-    if (this.isSoloMode && this.localEngine) {
-      const ok = this.localEngine.bleedSuit('player', cardId, targetSuit);
-      if (ok) this.updateSoloBoard();
-    } else {
-      this.networkClient.send({ type: 'CMD_BLEED_SUIT', cardId, targetSuit });
-    }
+    if (this.isSoloMode) {
+      this.soloSession?.bleedSuit(cardId, targetSuit);
+    } else this.networkClient.send({ type: 'CMD_BLEED_SUIT', cardId, targetSuit });
   }
 
   private handleBurn(cardId: string): void {
-    if (this.isSoloMode && this.localEngine) {
-      const ok = this.localEngine.burnCard('player', cardId);
-      if (ok) this.updateSoloBoard();
-    } else {
-      this.networkClient.send({ type: 'CMD_BURN_CAST', cardId });
-    }
+    if (this.isSoloMode) {
+      this.soloSession?.burnCard(cardId);
+    } else this.networkClient.send({ type: 'CMD_BURN_CAST', cardId });
   }
 
   private handleCommit(assault: [string, string, string], aegis: [string, string], stance: Stance): void {
-    if (this.isSoloMode && this.localEngine) {
-      if (this.localEngine.phase !== 'SHAPING' && this.localEngine.phase !== 'COMMITMENT') return;
-      const botState = this.localEngine.getPlayer('bot')!;
-      const playerState = this.localEngine.getPlayer('player')!;
-
-      // Bot shaping finishes before either hand is committed.
-      if (this.localEngine.phase === 'SHAPING') {
-        const decision = this.botAI.evaluateHand(botState.cards, botState.guardHp,
-          playerState.guardHp, botState.fluxRemaining, !botState.hasBurnedCard);
-        try {
-          applyBotShaping(this.localEngine, 'bot', decision);
-        } catch {
-          this.gameBoard.showBanner('Bot shaping action rejected');
-          this.updateSoloBoard();
-          return;
-        }
-        this.localEngine.phase = 'COMMITMENT';
-      }
-      if (!this.localEngine.commitHand('player', assault, aegis, stance)) {
-        this.gameBoard.showBanner('Invalid hand commitment');
-        this.updateSoloBoard();
-        return;
-      }
-      const finalDecision = this.botAI.evaluateHand(botState.cards, botState.guardHp, playerState.guardHp, 0, false);
-      if (!this.localEngine.commitHand('bot', finalDecision.assaultCardIds, finalDecision.aegisCardIds, finalDecision.stance)) {
-        this.localEngine.autoLockUncommitted();
-      }
-
-      // 3. Resolve Clash!
-      const outcome = this.localEngine.resolveClash();
-      this.handleClashOutcome(outcome);
-      this.updateSoloBoard();
-
-      // Automatically advance to next exchange after 3.5s
-      setTimeout(() => {
-        if (this.localEngine && !this.localEngine.matchWinnerId) {
-          this.localEngine.phase = 'ROUND_RESOLVE';
-          this.localEngine.startExchange();
-          this.localEngine.phase = 'SHAPING';
-          this.updateSoloBoard();
-        } else if (this.localEngine) {
-          this.localEngine.phase = 'MATCH_OVER';
-        }
-      }, 3500);
-    } else {
-      this.networkClient.send({
-        type: 'CMD_COMMIT_HAND',
-        assaultCardIds: assault,
-        aegisCardIds: aegis,
-        stance,
-      });
-    }
+    if (this.isSoloMode) this.soloSession?.commitHand(assault, aegis, stance);
+    else this.networkClient.send({ type: 'CMD_COMMIT_HAND', assaultCardIds: assault, aegisCardIds: aegis, stance });
   }
+
 }
 
 // Bootstrap application once DOM is loaded

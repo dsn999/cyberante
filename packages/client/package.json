@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "vitest run"
   },
   "dependencies": {
     "@cyberante/shared": "*",
@@ -15,6 +16,7 @@
   "devDependencies": {
     "@types/three": "^0.166.0",
     "typescript": "^5.5.0",
-    "vite": "^5.3.4"
+    "vite": "^5.3.4",
+    "vitest": "^2.0.0"
   }
 }
