@@ -1,33 +1,148 @@
 # SPEC-02: Deterministic Poker Evaluator & Combat Calculator
 
-## 1. Context & Objective
-Implement deterministic 3-card Assault evaluation, 2-card Aegis mitigation evaluation, and combat resolution formulas (damage, barrier, parry reflection).
+## 1. Goal & Non-Goals
+- **Goal:** Implement the deterministic combinatorial evaluation of 3-card Assault hands, 2-card Aegis mitigation hands, and Option A multi-exchange combat damage resolution with stances and tactical burns.
+- **Non-Goals:** Do not handle network sockets, real-time timers, or visual effects in this package.
 
-## 2. Target Files
+## 2. Inputs & Dependencies
+- **Target Files:**
+  - `packages/shared/src/pokerEvaluator.ts`
+  - `packages/shared/src/combatCalculator.ts`
+  - `packages/server/src/__tests__/evaluator.test.ts`
+  - `packages/server/src/__tests__/combat.test.ts`
+- **Dependencies:** Imports types and constants from `@cyberante/shared`.
+
+## 3. Public API & Contracts
+```typescript
+export function evaluateAssaultHand(cards: [Card, Card, Card]): HandEvaluation3;
+export function evaluateAegisHand(cards: [Card, Card]): HandEvaluation2;
+
+export interface CombatantInput {
+  playerId: string;
+  assaultCards: [Card, Card, Card];
+  aegisCards: [Card, Card];
+  stance: Stance;
+  currentGuardHp: number;
+  activeBarrier: number;
+  burnType?: BurnType | null;
+}
+
+export function resolveCombatRound(
+  c1: CombatantInput,
+  c2: CombatantInput,
+  exchangeNumber?: number,
+  roundNumber?: number
+): RoundResolution;
+```
+
+## 4. Behavior & Mathematical Formulas
+
+### 4.1 3-Card Assault Evaluation
+Evaluates 3 cards according to official 3-Card Poker ranking hierarchy:
+
+| Tier | Condition | Base Damage | Score Formula (Tie-Breaker) |
+|---|---|---|---|
+| `STRAIGHT_FLUSH` | 3 cards sequential & same suit | `18` | `60000 + highRank` (Wheel A-2-3: highRank = 3) |
+| `THREE_OF_A_KIND` | 3 cards matching rank | `14` | `50000 + rank` |
+| `STRAIGHT` | 3 cards sequential | `10` | `40000 + highRank` (Wheel A-2-3: highRank = 3) |
+| `FLUSH` | 3 cards same suit | `8` | `30000 + (r0 * 256) + (r1 * 16) + r2` |
+| `PAIR` | 2 cards matching rank | `5` | `20000 + (pairRank * 16) + kickerRank` |
+| `HIGH_CARD` | Default | `2` | `10000 + (r0 * 256) + (r1 * 16) + r2` |
+
+**Ace Straight Rules:**
+- Ace-high straight: `12-13-14` (Q-K-A), highRank = 14.
+- Ace-low wheel straight: `14-3-2` (A-2-3), highRank = 3.
+
+### 4.2 2-Card Aegis Mitigation
+Evaluates 2 cards according to defensive mitigation rules:
+
+| Tier | Condition | Mitigation Block | Score Formula |
+|---|---|---|---|
+| `PAIR` | 2 cards matching rank | `8` Block | `2000 + rank` |
+| `SUITED` | 2 cards same suit | `4` Block | `1000 + (r0 * 16) + r1` |
+| `HIGH_CARD` | Default | `2` Block | `(r0 * 16) + r1` |
+
+### 4.3 Combat Resolution Mathematics (Option A)
+Given attacker $A$ and defender $D$:
+
+1. **Stance Multipliers:**
+   - `BRACE`: $1.0\times$
+   - `OVERCHARGE`: $2.0\times$ (Defender Aegis mitigation becomes 0)
+   - `PARRY`: $0.5\times$
+   - *Static Veil Suppression:* If defender burned Spade (`SPADE_VEIL`), attacker's Overcharge multiplier is reduced to $1.0\times$ and attacker's Parry reflect is disabled.
+
+2. **Mitigation & Sunder:**
+   $$\text{Mitigation}_{\text{eff}} = \begin{cases} 0 & \text{if Stance is OVERCHARGE} \\ \lfloor \text{Mitigation} \times 0.5 \rfloor & \text{if Opponent burned Club (Sunder)} \\ \text{Mitigation} & \text{otherwise} \end{cases}$$
+   $$\text{Barrier}_{\text{eff}} = \begin{cases} \lfloor \text{Barrier} \times 0.5 \rfloor & \text{if Opponent burned Club (Sunder)} \\ \text{Barrier} & \text{otherwise} \end{cases}$$
+
+3. **Net Damage to Defender:**
+   $$\text{NetDmg}_{D} = \max\Big(0, \, \text{Round}(\text{RankVal}(H_A) \times M_{\text{stance}, A}) - \text{Mitigation}_{\text{eff}, D} - \text{Barrier}_{\text{eff}, D}\Big)$$
+
+4. **Parry Reflection:**
+   If defender $D$ selected `PARRY` and attacker did not deploy `SPADE_VEIL`:
+   - If attacker selected `OVERCHARGE` OR attacker assault tier is `PAIR` or `HIGH_CARD`:
+     $$\text{ReflectedDmg}_{A} = \text{Round}(\text{RawDmg}_{A} \times 0.5)$$
+
+5. **Damage Application & Siphon Recovery:**
+   $$\text{TotalDmg}_{D} = \text{NetDmg}_{D} + \text{ReflectedDmg}_{D}$$
+   $$\text{GuardHP}_{D, \text{new}} = \max\Big(0, \, \text{GuardHP}_{D} - \text{TotalDmg}_{D}\Big)$$
+   - *Heart Siphon Seed:* If attacker burned Heart, $\text{NetDmg}_{D} > 0$, and attacker survived incoming damage ($\text{GuardHP}_{A} > 0$), attacker recovers $\lfloor \text{NetDmg}_{D} \times 0.5 \rfloor$ Guard HP (capped at starting 20 HP). Siphon does not resurrect a combatant reduced to 0 HP by incoming damage. *(Refined via automated playtesting).*
+
+6. **Option A Round Knockout Check:**
+   - If $\text{HP}_1 = 0$ and $\text{HP}_2 > 0$: Player 2 wins the round (`isRoundOver: true`).
+   - If $\text{HP}_2 = 0$ and $\text{HP}_1 > 0$: Player 1 wins the round (`isRoundOver: true`).
+   - If $\text{HP}_1 = 0$ and $\text{HP}_2 = 0$ (simultaneous lethal):
+     - Highest assault hand `score` wins the round.
+     - If scores are identical, sudden death triggers ($\text{HP}_1 = 1, \text{HP}_2 = 1, \text{isRoundOver: false}$).
+   - If both players remain $> 0$ HP: Round continues (`isRoundOver: false`, `roundWinnerId: null`). Guard HP carries over into the next exchange!
+
+## 5. Invariants & Edge Cases
+1. Ranks must be numerically typed (avoid literal inference from `as const`).
+2. Siphon heal cannot raise Guard HP above 20 and cannot resurrect a combatant reduced to 0 HP.
+3. Overcharge sets Aegis mitigation to 0, but active barrier still absorbs damage unless shredded by Sunder.
+
+## 6. Forbidden Changes
+- Do NOT modify the hand tier damage numbers (18, 14, 10, 8, 5, 2) or mitigation values (8, 4, 2).
+
+## 7. Test Specifications
+- `evaluator.test.ts`:
+  - Validates all 6 assault hand tiers.
+  - Tests Ace-low wheel straight (`A-2-3`) and Ace-high straight (`Q-K-A`).
+  - Tests all 3 aegis tiers (Pair, Suited, High Card).
+  - Tests lexicographical tie-breakers for equal tiers.
+- `combat.test.ts`:
+  - Tests standard Brace vs Brace non-lethal exchange.
+  - Tests Overcharge lethal knockout.
+  - Tests Parry reflection against Overcharge read.
+  - Tests Club Sunder 50% defense shred.
+  - Tests Spade Veil suppression of Overcharge.
+  - Tests Heart Siphon Guard HP recovery.
+
+## 8. Exact Verification Command
+```bash
+npx vitest run packages/server/src/__tests__/evaluator.test.ts packages/server/src/__tests__/combat.test.ts
+```
+
+## 9. Codex Dispatch Prompt
+```markdown
+### Codex Task: Poker Evaluator & Combat Calculator (Spec-02)
+Implement/refactor `packages/shared/src/pokerEvaluator.ts` and `combatCalculator.ts` to match the target contracts and formulas in `docs/agent_specs/spec-02-poker-evaluator.md`.
+
+Target files:
 - `packages/shared/src/pokerEvaluator.ts`
 - `packages/shared/src/combatCalculator.ts`
 - `packages/server/src/__tests__/evaluator.test.ts`
 - `packages/server/src/__tests__/combat.test.ts`
 
-## 3. Invariants & Rules
-1. **Assault Line (3 Cards):**
-   - Straight Flush: 18 Base Dmg
-   - Three of a Kind: 14 Base Dmg
-   - Straight: 10 Base Dmg
-   - Flush: 8 Base Dmg
-   - Pair: 5 Base Dmg
-   - High Card: 2 Base Dmg
-   - Wraps: Ace counts high ($Q\text{-}K\text{-}A$) and low ($A\text{-}2\text{-}3$).
-2. **Aegis Line (2 Cards):**
-   - Pair: 8 Block
-   - Suited: 4 Block
-   - Offsuit High Card: 2 Block
-3. **Stances:**
-   - Brace: 1.0x offensive, standard mitigation.
-   - Overcharge: 2.0x offensive, Aegis = 0.
-   - Parry: 0.5x offensive, reflects 50% raw damage if Opponent Assault < Flush.
-
-## 4. Verification Command
-```bash
-npm test -- evaluator.test.ts combat.test.ts
+Requirements:
+1. Combinatorial evaluation of 3-card Assault hands and 2-card Aegis mitigation hands.
+2. Calculate Option A combat math: Stance multipliers, Parry reflection (against Overcharge or weak hands), and all 4 tactical burns.
+3. Run verification: `npx vitest run packages/server/src/__tests__/evaluator.test.ts packages/server/src/__tests__/combat.test.ts`.
 ```
+
+## 10. Definition of Done Checklist
+- [ ] Deterministic 3-card and 2-card poker evaluator implemented.
+- [ ] Ace-low wheel straight (A-2-3) and Ace-high straight (Q-K-A) handled.
+- [ ] Stance matrix (Brace, Overcharge, Parry) fully operational.
+- [ ] Tactical burns (Veil, Barrier, Siphon, Sunder) fully operational.
+- [ ] All evaluator and combat unit tests pass with code 0.

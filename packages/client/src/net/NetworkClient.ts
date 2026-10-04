@@ -13,9 +13,19 @@ export class NetworkClient {
   private reconnectTimer: number | null = null;
 
   constructor(serverUrl?: string) {
-    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const host = window.location.hostname || 'localhost';
-    this.serverUrl = serverUrl || `${protocol}//${host}:8080`;
+    if (serverUrl) {
+      this.serverUrl = serverUrl;
+    } else {
+      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      // If running on Vite dev server (port 5173), target default port 8080.
+      // In production, client is served from the same host:port as WebSocket server.
+      if (window.location.port === '5173') {
+        const host = window.location.hostname || 'localhost';
+        this.serverUrl = `${protocol}//${host}:8080`;
+      } else {
+        this.serverUrl = `${protocol}//${window.location.host}`;
+      }
+    }
   }
 
   public connect(roomCode: string = '', playerName: string = 'Operative'): Promise<void> {
@@ -24,11 +34,18 @@ export class NetworkClient {
         this.ws = new WebSocket(this.serverUrl);
 
         this.ws.onopen = () => {
-          this.send({
-            type: 'CMD_JOIN_ROOM',
-            roomCode,
-            playerName,
-          });
+          if (roomCode && roomCode.trim().length > 0) {
+            this.send({
+              type: 'CMD_JOIN_ROOM',
+              roomCode: roomCode.trim(),
+              playerName,
+            });
+          } else {
+            this.send({
+              type: 'CMD_CREATE_ROOM',
+              playerName,
+            });
+          }
           resolve();
         };
 
@@ -47,8 +64,7 @@ export class NetworkClient {
         };
 
         this.ws.onclose = () => {
-          console.log('WebSocket closed. Attempting reconnect in 3s...');
-          this.scheduleReconnect(roomCode, playerName);
+          console.log('WebSocket closed.');
         };
       } catch (err) {
         reject(err);
@@ -82,13 +98,5 @@ export class NetworkClient {
     for (const handler of this.messageHandlers) {
       handler(msg);
     }
-  }
-
-  private scheduleReconnect(roomCode: string, playerName: string): void {
-    if (this.reconnectTimer !== null) return;
-    this.reconnectTimer = window.setTimeout(() => {
-      this.reconnectTimer = null;
-      this.connect(roomCode, playerName).catch(() => {});
-    }, 3000);
   }
 }

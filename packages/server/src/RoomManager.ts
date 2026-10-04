@@ -2,8 +2,7 @@
 // CYBERANTE: Room Manager & Matchmaking Registry
 // ============================================================================
 
-import { Room } from './Room';
-import { WebSocket } from 'ws';
+import { Room } from './Room.js';
 
 export class RoomManager {
   private rooms: Map<string, Room> = new Map();
@@ -28,23 +27,30 @@ export class RoomManager {
 
     const roomId = `room_${Date.now()}_${code}`;
     const room = new Room(roomId, code);
+    room.onEmpty = () => {
+      this.rooms.delete(code);
+    };
     this.rooms.set(code, room);
     return room;
   }
 
   public getRoom(roomCode: string): Room | undefined {
-    return this.rooms.get(roomCode.toUpperCase());
+    return this.rooms.get(roomCode.trim().toUpperCase());
   }
 
-  public joinOrCreateRoom(roomCode: string | null): Room {
-    if (roomCode) {
+  public joinOrCreateRoom(roomCode: string | null): Room | null {
+    if (roomCode && roomCode.trim().length > 0) {
       const existing = this.getRoom(roomCode);
-      if (existing) return existing;
+      return existing || null;
     }
     return this.createRoom();
   }
 
   public removeRoom(roomCode: string): void {
-    this.rooms.delete(roomCode.toUpperCase());
+    this.rooms.delete(roomCode.trim().toUpperCase());
+  }
+
+  public get activeRoomCount(): number {
+    return this.rooms.size;
   }
 }

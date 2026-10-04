@@ -1,5 +1,5 @@
 // ============================================================================
-// CYBERANTE: Geometry Wars Dynamic Reactive Grid
+// CYBERANTE: Dynamic Reactive Vector Grid
 // ============================================================================
 
 import * as THREE from 'three';

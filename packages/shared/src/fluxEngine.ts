@@ -2,8 +2,8 @@
 // CYBERANTE: Flux Transmutation & Burn-to-Cast Engine
 // ============================================================================
 
-import { Card, Rank, Suit, BurnType } from './types';
-import { GAME_CONSTANTS, SUIT_RING } from './constants';
+import { Card, Rank, Suit, BurnType } from './types.js';
+import { GAME_CONSTANTS, SUIT_RING } from './constants.js';
 
 export interface FluxState {
   remainingFlux: number;

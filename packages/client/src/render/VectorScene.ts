@@ -83,7 +83,7 @@ export class VectorScene {
     // Query real-time procedural audio FFT
     const energy = masterAudio.getEnergyLevels();
 
-    // Update geometry wars grid and particle physics
+    // Update reactive vector grid and particle physics
     this.grid.update(elapsedTime, energy.bass, this.mousePos);
     this.particles.update(delta);
 

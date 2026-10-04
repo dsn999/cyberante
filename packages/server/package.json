@@ -2,12 +2,14 @@
   "name": "@cyberante/server",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
   "main": "dist/index.js",
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
     "start": "node dist/index.js",
-    "test": "vitest run"
+    "test": "vitest run",
+    "sim": "vitest run src/__tests__/balanceSimulator.test.ts"
   },
   "dependencies": {
     "@cyberante/shared": "*",

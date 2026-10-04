@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { Room } from '../Room';
+import { Room } from '../Room.js';
 import { WebSocket } from 'ws';
 
 describe('Room Lifecycle & Matchmaking', () => {

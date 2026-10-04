@@ -2,19 +2,22 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>CYBERANTE: Procedural Vector Poker-Combat Matrix</title>
-    <meta name="description" content="High-speed tactical card battler combining poker hand crafting with fighting game stances, neon Geometry Wars vector graphics, and procedural audio synthesis." />
+    <meta name="description" content="High-speed tactical card battler combining poker hand crafting with fighting game stances, reactive neon vector graphics, and procedural audio synthesis." />
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
     <style>
+      :root {
+        --font-display: 'Orbitron', 'Rajdhani', Impact, sans-serif;
+        --font-mono: 'Share Tech Mono', 'Courier New', Courier, monospace;
+        --font-body: 'Rajdhani', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      }
       * {
         box-sizing: border-box;
         margin: 0;
         padding: 0;
-        user-select: none;
-        -webkit-user-select: none;
       }
       body, html {
         width: 100%;
@@ -22,7 +25,7 @@
         overflow: hidden;
         background-color: #030712;
         color: #f3f4f6;
-        font-family: 'Rajdhani', sans-serif;
+        font-family: var(--font-body);
       }
       #canvas-container {
         position: absolute;
@@ -43,6 +46,11 @@
       }
       .interactive {
         pointer-events: auto;
+      }
+      .reduced-motion * {
+        animation: none !important;
+        transition: none !important;
+        text-shadow: none !important;
       }
     </style>
   </head>

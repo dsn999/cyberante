@@ -1,5 +1,5 @@
 // ============================================================================
-// CYBERANTE: Vector Particle Explosion System (Geometry Wars Sparks)
+// CYBERANTE: Vector Particle Explosion System (Reactive Phosphor Sparks)
 // ============================================================================
 
 import * as THREE from 'three';

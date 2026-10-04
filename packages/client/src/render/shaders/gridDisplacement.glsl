@@ -1,4 +1,4 @@
-// Geometry Wars Grid Vertex Displacement Shader
+// Reactive Vector Grid Vertex Displacement Shader
 uniform float uTime;
 uniform float uBassEnergy;
 uniform vec2 uShockwaveCenter;

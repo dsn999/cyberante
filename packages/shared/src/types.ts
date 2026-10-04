@@ -31,7 +31,7 @@ export type HandTier2 =
 export interface HandEvaluation3 {
   tier: HandTier3;
   baseDamage: number;
-  score: number; // Lexicographic tie-breaker value
+  score: number; // Lexicographical tie-breaker value
   description: string;
   cards: [Card, Card, Card];
 }
@@ -39,7 +39,7 @@ export interface HandEvaluation3 {
 export interface HandEvaluation2 {
   tier: HandTier2;
   mitigation: number;
-  score: number; // Lexicographic tie-breaker value
+  score: number; // Lexicographical tie-breaker value
   description: string;
   cards: [Card, Card];
 }
@@ -60,6 +60,7 @@ export interface PlayerPublicState {
   fluxRemaining: number;
   roundWins: number;
   hasBurnedCard: boolean;
+  activeBurn: BurnType | null;
   hasCommitted: boolean;
   activeBarrier: number;
   connected: boolean;
@@ -82,17 +83,23 @@ export type GamePhase =
   | 'MATCH_OVER';
 
 export interface RoundResolution {
+  exchangeNumber: number;
+  roundNumber: number;
+  isRoundOver: boolean;
+
   p1Assault: [Card, Card, Card];
   p1Aegis: [Card, Card];
   p1Stance: Stance;
   p1Eval3: HandEvaluation3;
   p1Eval2: HandEvaluation2;
+  p1Burn: BurnType | null;
 
   p2Assault: [Card, Card, Card];
   p2Aegis: [Card, Card];
   p2Stance: Stance;
   p2Eval3: HandEvaluation3;
   p2Eval2: HandEvaluation2;
+  p2Burn: BurnType | null;
 
   p1RawDamage: number;
   p2RawDamage: number;
@@ -100,6 +107,8 @@ export interface RoundResolution {
   p2NetDamageReceived: number;
   p1ReflectedDamage: number;
   p2ReflectedDamage: number;
+  p1SiphonHeal: number;
+  p2SiphonHeal: number;
   p1HpRemaining: number;
   p2HpRemaining: number;
 
@@ -111,26 +120,31 @@ export interface RoundResolution {
 // Client-to-Server Messages
 // ----------------------------------------------------------------------------
 export type ClientMessage =
+  | { type: 'CMD_CREATE_ROOM'; playerName: string }
   | { type: 'CMD_JOIN_ROOM'; roomCode: string; playerName: string }
   | { type: 'CMD_NUDGE_RANK'; cardId: string; direction: 'UP' | 'DOWN' }
   | { type: 'CMD_BLEED_SUIT'; cardId: string; targetSuit: Suit }
   | { type: 'CMD_BURN_CAST'; cardId: string }
+  | { type: 'CMD_READY' }
   | {
       type: 'CMD_COMMIT_HAND';
       assaultCardIds: [string, string, string];
       aegisCardIds: [string, string];
       stance: Stance;
-    };
+    }
+  | { type: 'CMD_REMATCH' };
 
 // ----------------------------------------------------------------------------
 // Server-to-Client Messages
 // ----------------------------------------------------------------------------
 export type ServerMessage =
-  | { type: 'STATE_INIT'; playerId: string; matchId: string; opponentName: string }
+  | { type: 'STATE_INIT'; playerId: string; matchId: string; roomCode: string; opponentName: string }
   | {
       type: 'STATE_TICK';
       phase: GamePhase;
       timeRemainingMs: number;
+      roundNumber: number;
+      exchangeNumber: number;
       players: Record<string, PlayerPublicState>;
       selfCards: Card[];
     }

@@ -60,7 +60,7 @@ export class AudioEngine {
       return { bass: 0, mid: 0, high: 0 };
     }
 
-    this.analyser.getByteFrequencyData(this.fftData);
+    (this.analyser as any).getByteFrequencyData(this.fftData);
 
     // Bin 0-3: Sub/Bass, Bin 4-12: Mid, Bin 13-31: High
     const bass = (this.fftData[1] + this.fftData[2]) / (2 * 255);

@@ -2,8 +2,8 @@
 // CYBERANTE: Deterministic Poker Hand Evaluator (3-Card Assault & 2-Card Aegis)
 // ============================================================================
 
-import { Card, HandEvaluation3, HandEvaluation2, HandTier3, HandTier2, Rank } from './types';
-import { GAME_CONSTANTS } from './constants';
+import { Card, HandEvaluation3, HandEvaluation2, HandTier3, HandTier2, Rank } from './types.js';
+import { GAME_CONSTANTS } from './constants.js';
 
 /**
  * Evaluates a 3-Card Assault Hand according to 3-Card Poker ranking rules:
@@ -30,7 +30,7 @@ export function evaluateAssaultHand(cards: [Card, Card, Card]): HandEvaluation3 
   const isPair = (r0 === r1) || (r1 === r2) || (r0 === r2);
 
   let tier: HandTier3 = 'HIGH_CARD';
-  let baseDamage = GAME_CONSTANTS.DAMAGE_HIGH_CARD;
+  let baseDamage: number = GAME_CONSTANTS.DAMAGE_HIGH_CARD;
   let score = 0;
   let description = '';
 
@@ -90,7 +90,7 @@ export function evaluateAegisHand(cards: [Card, Card]): HandEvaluation2 {
   const isSuited = sorted[0].suit === sorted[1].suit;
 
   let tier: HandTier2 = 'HIGH_CARD';
-  let mitigation = GAME_CONSTANTS.MITIGATION_HIGH_CARD;
+  let mitigation: number = GAME_CONSTANTS.MITIGATION_HIGH_CARD;
   let score = 0;
   let description = '';
 

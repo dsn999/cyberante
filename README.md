@@ -17,7 +17,7 @@
 `CYBERANTE` is a high-speed, head-to-head tactical card-battler that fuses the combinatorial hand-building of five-card poker with the dynamic reads, stances, and counter-play of fighting games. Two players (or one player versus an offline classical game AI) engage in rapid, simultaneous rounds structured under a Best-of-3 (Bo3) match format.
 
 ### Key Highlights
-- **Geometry Wars Vector Aesthetic:** Pure procedural neon vector rendering via Three.js with dynamic warping gravity grid, glowing geometric particle explosions, CRT scanlines, and damage-responsive chromatic aberration.
+- **Reactive Neon Vector Aesthetic:** Pure procedural neon vector rendering via Three.js with dynamic warping wireframe grid, glowing geometric particle explosions, CRT scanlines, and damage-responsive chromatic aberration.
 - **Procedural Web Audio Synthesizer:** Zero external audio assets (`.mp3` or `.wav`). Generative polyphonic synthwave arpeggiators and reactive SFX synthesized entirely on-the-fly in code.
 - **Solo Mode vs. Classical AI:** Deterministic heuristic utility-based bot running locally in-browser with 3 distinct personalities (*Cipher-0*, *Vektor-Aggro*, *Aegis-Wall*).
 - **Interactive Tutorial:** 4-lesson interactive onboarding walkthrough accessible right from the main menu.

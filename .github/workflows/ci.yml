@@ -17,17 +17,14 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: 'npm'
 
       - name: Install dependencies
         run: npm ci
 
-      - name: Build Shared Contracts
-        run: npm --workspace=packages/shared run build
+      - name: Build All Workspaces
+        run: npm run build
 
       - name: Run Test Suites
         run: npm test
-
-      - name: Build Client Bundle
-        run: npm --workspace=packages/client run build
