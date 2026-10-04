@@ -2,7 +2,7 @@
 // CYBERANTE: Flux Transmutation & Burn-to-Cast Engine
 // ============================================================================
 
-import { Card, Rank, Suit, BurnType } from './types.js';
+import type { Card, Rank, Suit, BurnType } from './types.js';
 import { GAME_CONSTANTS, SUIT_RING } from './constants.js';
 
 export interface FluxState {
@@ -27,6 +27,7 @@ export function canBurnCard(state: FluxState): boolean {
  * Wraps around Ace: 2 DOWN becomes 14 (Ace), 14 UP becomes 2.
  */
 export function nudgeRank(card: Card, direction: 'UP' | 'DOWN'): Card {
+  if (direction !== 'UP' && direction !== 'DOWN') throw new Error('Invalid nudge direction');
   let nextRank: Rank;
 
   if (direction === 'UP') {

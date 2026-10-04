@@ -2,7 +2,7 @@
 // CYBERANTE: Pure Deterministic Match Engine (Option A Multi-Exchange)
 // ============================================================================
 
-import {
+import type {
   Card,
   GamePhase,
   PlayerPrivateState,
@@ -11,9 +11,8 @@ import {
   Stance,
   Suit,
   Rank,
-  BurnType,
 } from './types.js';
-import { GAME_CONSTANTS, SUIT_RING } from './constants.js';
+import { GAME_CONSTANTS } from './constants.js';
 import { evaluateAssaultHand, evaluateAegisHand } from './pokerEvaluator.js';
 import { resolveCombatRound } from './combatCalculator.js';
 import { nudgeRank, bleedSuit, evaluateBurn } from './fluxEngine.js';
@@ -23,16 +22,6 @@ export interface PRNG {
   nextInt(min: number, max: number): number;
 }
 
-export class DefaultPRNG implements PRNG {
-  public random(): number {
-    return Math.random();
-  }
-
-  public nextInt(min: number, max: number): number {
-    return Math.floor(Math.random() * (max - min)) + min;
-  }
-}
-
 /**
  * Seedable 32-bit PRNG (Mulberry32) for deterministic simulations and replays.
  */
@@ -40,6 +29,7 @@ export class SeededPRNG implements PRNG {
   private state: number;
 
   constructor(seed: number = 1337) {
+    if (!Number.isSafeInteger(seed)) throw new Error('Seed must be a safe integer');
     this.state = seed >>> 0;
   }
 
@@ -51,9 +41,15 @@ export class SeededPRNG implements PRNG {
   }
 
   public nextInt(min: number, max: number): number {
+    if (!Number.isSafeInteger(min) || !Number.isSafeInteger(max) || max <= min || !Number.isSafeInteger(max - min)) {
+      throw new Error('PRNG bounds must define a nonempty safe integer range');
+    }
     return Math.floor(this.random() * (max - min)) + min;
   }
 }
+
+/** Deterministic fallback. Live callers inject server CSPRNG or a securely seeded PRNG. */
+export class DefaultPRNG extends SeededPRNG {}
 
 const ALL_SUITS: Suit[] = ['SPADES', 'HEARTS', 'DIAMONDS', 'CLUBS'];
 const ALL_RANKS: Rank[] = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14];
@@ -70,6 +66,7 @@ export class MatchEngine {
   private deck: Card[] = [];
   private prng: PRNG;
   private idCounter: number = 1;
+  private exchangeResolved = false;
 
   constructor(
     p1Id: string = 'player_1',
@@ -78,6 +75,7 @@ export class MatchEngine {
     p2Name: string = 'Operative Beta',
     prng: PRNG = new DefaultPRNG()
   ) {
+    if (p1Id === p2Id) throw new Error('Player IDs must be distinct');
     this.prng = prng;
     this.p1 = this.createInitialPlayerState(p1Id, p1Name);
     this.p2 = this.createInitialPlayerState(p2Id, p2Name);
@@ -89,33 +87,39 @@ export class MatchEngine {
     this.matchWinnerId = null;
     this.lastResolution = null;
 
-    this.p1.roundWins = 0;
-    this.p2.roundWins = 0;
-    this.p1.guardHp = GAME_CONSTANTS.STARTING_GUARD_HP;
-    this.p2.guardHp = GAME_CONSTANTS.STARTING_GUARD_HP;
-
-    this.startExchange();
+    this.p1 = this.createInitialPlayerState(this.p1.playerId, this.p1.name);
+    this.p2 = this.createInitialPlayerState(this.p2.playerId, this.p2.name);
+    this.resetDeck();
+    this.dealExchange();
   }
 
   public startExchange(): void {
-    // If the previous exchange ended a round, reset HP to 20, reset exchange counter, and advance round
-    if (this.lastResolution?.isRoundOver && !this.matchWinnerId) {
+    if (this.matchWinnerId || this.phase !== 'ROUND_RESOLVE' || !this.exchangeResolved || !this.lastResolution) {
+      throw new Error('Next exchange requires a resolved exchange and an unfinished match');
+    }
+    if (this.lastResolution.isRoundOver) {
       this.currentRound += 1;
       this.currentExchange = 1;
       this.p1.guardHp = GAME_CONSTANTS.STARTING_GUARD_HP;
       this.p2.guardHp = GAME_CONSTANTS.STARTING_GUARD_HP;
-    } else if (this.lastResolution && !this.lastResolution.isRoundOver) {
+    } else {
       this.currentExchange += 1;
-      // If entering exchange 11 (Sudden Death), both players set to 1 HP
       if (this.currentExchange > GAME_CONSTANTS.MAX_EXCHANGES_PER_ROUND) {
-        if (this.p1.guardHp > 0 && this.p2.guardHp > 0) {
-          this.p1.guardHp = 1;
-          this.p2.guardHp = 1;
-        }
+        this.p1.guardHp = 1;
+        this.p2.guardHp = 1;
       }
     }
+    this.dealExchange();
+  }
 
-    this.resetDeck();
+  public get remainingDeckCount(): number {
+    return this.deck.length;
+  }
+
+  private dealExchange(): void {
+    // Ten dealt cards plus one replacement per player. Old hands are retired before dealing.
+    if (this.deck.length < 12) this.resetDeck();
+    this.exchangeResolved = false;
     this.p1.cards = this.dealCards(5);
     this.p2.cards = this.dealCards(5);
 
@@ -141,13 +145,14 @@ export class MatchEngine {
     this.p2.aegisCardIds = null;
     this.p2.chosenStance = null;
 
-    this.phase = 'SHAPING';
+    this.phase = 'DEAL';
   }
 
   public nudgeRank(playerId: string, cardId: string, direction: 'UP' | 'DOWN'): boolean {
-    if (this.phase !== 'SHAPING') return false;
+    if (this.phase !== 'SHAPING' || this.exchangeResolved || this.matchWinnerId) return false;
+    if (direction !== 'UP' && direction !== 'DOWN') return false;
     const player = this.getPlayer(playerId);
-    if (!player || player.fluxRemaining < GAME_CONSTANTS.FLUX_COST_NUDGE) return false;
+    if (!player || player.hasCommitted || player.fluxRemaining < GAME_CONSTANTS.FLUX_COST_NUDGE) return false;
 
     const cardIdx = player.cards.findIndex(c => c.id === cardId);
     if (cardIdx === -1) return false;
@@ -158,9 +163,9 @@ export class MatchEngine {
   }
 
   public bleedSuit(playerId: string, cardId: string, targetSuit: Suit): boolean {
-    if (this.phase !== 'SHAPING') return false;
+    if (this.phase !== 'SHAPING' || this.exchangeResolved || this.matchWinnerId) return false;
     const player = this.getPlayer(playerId);
-    if (!player || player.fluxRemaining < GAME_CONSTANTS.FLUX_COST_BLEED) return false;
+    if (!player || player.hasCommitted || player.fluxRemaining < GAME_CONSTANTS.FLUX_COST_BLEED) return false;
 
     const cardIdx = player.cards.findIndex(c => c.id === cardId);
     if (cardIdx === -1) return false;
@@ -175,9 +180,9 @@ export class MatchEngine {
   }
 
   public burnCard(playerId: string, cardId: string): boolean {
-    if (this.phase !== 'SHAPING') return false;
+    if (this.phase !== 'SHAPING' || this.exchangeResolved || this.matchWinnerId) return false;
     const player = this.getPlayer(playerId);
-    if (!player || player.hasBurnedCard) return false;
+    if (!player || player.hasCommitted || player.hasBurnedCard || this.deck.length === 0) return false;
 
     const cardIdx = player.cards.findIndex(c => c.id === cardId);
     if (cardIdx === -1) return false;
@@ -185,13 +190,14 @@ export class MatchEngine {
     const burnedCard = player.cards[cardIdx];
     const { burnType, barrierAmount } = evaluateBurn(burnedCard);
 
+    const replacement = this.drawOne();
     player.activeBurn = burnType;
     if (barrierAmount) {
       player.activeBarrier += barrierAmount;
     }
 
     // Draw replacement card from deck
-    player.cards[cardIdx] = this.drawOne();
+    player.cards[cardIdx] = replacement;
     player.hasBurnedCard = true;
     return true;
   }
@@ -202,7 +208,7 @@ export class MatchEngine {
     aegisCardIds: [string, string],
     stance: Stance
   ): boolean {
-    if (this.phase !== 'COMMITMENT' && this.phase !== 'SHAPING') return false;
+    if (this.phase !== 'COMMITMENT' || this.exchangeResolved || this.matchWinnerId) return false;
     const player = this.getPlayer(playerId);
     if (!player) return false;
     if (player.hasCommitted) return false; // Prevent overwriting
@@ -219,13 +225,14 @@ export class MatchEngine {
     const uniqueIds = new Set(allIds);
     if (uniqueIds.size !== 5) return false;
 
+    if (player.cards.length !== 5 || allIds.some(id => typeof id !== 'string')) return false;
     const handIds = new Set(player.cards.map(c => c.id));
     for (const id of allIds) {
       if (!handIds.has(id)) return false;
     }
 
-    player.assaultCardIds = assaultCardIds;
-    player.aegisCardIds = aegisCardIds;
+    player.assaultCardIds = [...assaultCardIds];
+    player.aegisCardIds = [...aegisCardIds];
     player.chosenStance = stance;
     player.hasCommitted = true;
 
@@ -238,6 +245,9 @@ export class MatchEngine {
   }
 
   public autoLockUncommitted(): void {
+    if (this.phase !== 'COMMITMENT' || this.exchangeResolved || this.matchWinnerId) {
+      throw new Error('Auto-lock is only permitted during COMMITMENT');
+    }
     if (!this.p1.hasCommitted) {
       this.autoLockPlayer(this.p1);
     }
@@ -247,12 +257,10 @@ export class MatchEngine {
   }
 
   public resolveClash(): RoundResolution {
-    // Prevent duplicate resolutions for the same exchange
-    if (this.phase === 'CLASH_REVEAL' || this.phase === 'ROUND_RESOLVE' || this.phase === 'MATCH_OVER') {
-      if (this.lastResolution) return this.lastResolution;
+    if (this.exchangeResolved && this.lastResolution) return this.lastResolution;
+    if (this.phase !== 'COMMITMENT' || !this.areBothCommitted() || this.matchWinnerId) {
+      throw new Error('Clash requires both players committed during COMMITMENT');
     }
-    this.phase = 'CLASH_REVEAL';
-
     const p1Assault = this.getCardsByIds(this.p1, this.p1.assaultCardIds!) as [Card, Card, Card];
     const p1Aegis = this.getCardsByIds(this.p1, this.p1.aegisCardIds!) as [Card, Card];
 
@@ -297,11 +305,9 @@ export class MatchEngine {
       if (this.p1.roundWins >= GAME_CONSTANTS.ROUNDS_TO_WIN) {
         this.matchWinnerId = this.p1.playerId;
         resolution.matchWinnerId = this.p1.playerId;
-        this.phase = 'MATCH_OVER';
       } else if (this.p2.roundWins >= GAME_CONSTANTS.ROUNDS_TO_WIN) {
         this.matchWinnerId = this.p2.playerId;
         resolution.matchWinnerId = this.p2.playerId;
-        this.phase = 'MATCH_OVER';
       }
       // Note: We intentionally delay currentRound increment and Guard HP reset to 20
       // until startExchange() is called for the subsequent round. This preserves
@@ -309,6 +315,8 @@ export class MatchEngine {
     }
 
     this.lastResolution = resolution;
+    this.exchangeResolved = true;
+    this.phase = 'CLASH_REVEAL';
     return resolution;
   }
 
@@ -351,6 +359,7 @@ export class MatchEngine {
     // Generate all 10 possible splits and pick optimal partition per Spec-04:
     // Highest Assault score, breaking ties by Aegis score, fallback to first partition.
     const cards = player.cards;
+    if (cards.length !== 5) throw new Error('Auto-lock requires exactly five cards');
     let bestAssaultScore = -Infinity;
     let bestAegisScore = -Infinity;
     let bestAssault: [string, string, string] = [cards[0].id, cards[1].id, cards[2].id];
@@ -385,7 +394,11 @@ export class MatchEngine {
   }
 
   private getCardsByIds(player: PlayerPrivateState, ids: string[]): Card[] {
-    return ids.map(id => player.cards.find(c => c.id === id)!);
+    return ids.map(id => {
+      const card = player.cards.find(c => c.id === id);
+      if (!card) throw new Error('Committed card is no longer in the hand');
+      return card;
+    });
   }
 
   private resetDeck(): void {
@@ -393,7 +406,7 @@ export class MatchEngine {
     for (const suit of ALL_SUITS) {
       for (const rank of ALL_RANKS) {
         this.deck.push({
-          id: `c_${this.idCounter++}_${suit.slice(0, 1)}${rank}`,
+          id: `card_${this.idCounter++}_${suit}_${rank}`,
           suit,
           rank,
         });
@@ -409,15 +422,16 @@ export class MatchEngine {
   }
 
   private dealCards(count: number): Card[] {
+    if (!Number.isSafeInteger(count) || count < 0 || count > this.deck.length) {
+      throw new Error('Invalid deal count or insufficient cards');
+    }
     return this.deck.splice(0, count);
   }
 
   private drawOne(): Card {
-    return this.deck.shift() || {
-      id: `c_${this.idCounter++}_SPADES_14`,
-      suit: 'SPADES',
-      rank: 14,
-    };
+    const card = this.deck.shift();
+    if (!card) throw new Error('Cannot draw from an empty deck');
+    return card;
   }
 
   private createInitialPlayerState(playerId: string, name: string): PlayerPrivateState {

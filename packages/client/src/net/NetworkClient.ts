@@ -89,6 +89,7 @@ export class NetworkClient {
       this.reconnectTimer = null;
     }
     if (this.ws) {
+      this.send({ type: 'CMD_LEAVE_ROOM' });
       this.ws.close();
       this.ws = null;
     }

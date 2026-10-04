@@ -146,6 +146,7 @@ export type ClientMessage =
   | { type: 'CMD_BLEED_SUIT'; cardId: string; targetSuit: Suit }
   | { type: 'CMD_BURN_CAST'; cardId: string }
   | { type: 'CMD_READY' }
+  | { type: 'CMD_LEAVE_ROOM' }
   | {
       type: 'CMD_COMMIT_HAND';
       assaultCardIds: [string, string, string];
@@ -160,6 +161,7 @@ export type ServerMessage =
       type: 'STATE_TICK';
       phase: GamePhase;
       timeRemainingMs: number;
+      matchWinnerId: string | null;
       roundNumber: number;
       exchangeNumber: number;
       players: Record<string, PlayerPublicState>;

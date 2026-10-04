@@ -197,7 +197,8 @@ describe('Spec-02 exchange cap and sudden death', () => {
 
   it('lets MatchEngine preserve tied outcomes and begin repeated sudden death', () => {
     const engine = new MatchEngine('left', 'A', 'right', 'B', new SeededPRNG(42));
-    engine.startMatch(); engine.currentExchange = 10;
+    engine.startMatch(); engine.currentExchange = 10; engine.phase = 'COMMITMENT';
+    engine.phase = 'COMMITMENT';
     for (const id of ['left', 'right']) {
       const player = engine.getPlayer(id)!;
       const c = combatant(id);
@@ -205,9 +206,11 @@ describe('Spec-02 exchange cap and sudden death', () => {
       engine.commitHand(id, c.assaultCards.map(card => card.id) as [string, string, string], c.aegisCards.map(card => card.id) as [string, string], 'BRACE');
     }
     expect(engine.resolveClash().isRoundOver).toBe(false);
+    engine.phase = 'ROUND_RESOLVE';
     engine.startExchange();
     expect(engine.currentExchange).toBe(11);
     expect(engine.getPlayer('left')!.guardHp).toBe(1);
+    engine.phase = 'COMMITMENT';
     for (const id of ['left', 'right']) {
       const player = engine.getPlayer(id)!;
       const c = combatant(id);
@@ -217,6 +220,7 @@ describe('Spec-02 exchange cap and sudden death', () => {
     expect(engine.resolveClash()).toMatchObject({ isRoundOver: false, roundWinnerId: null });
     expect(engine.getPlayer('left')!.roundWins).toBe(0);
     expect(engine.getPlayer('right')!.roundWins).toBe(0);
+    engine.phase = 'ROUND_RESOLVE';
     engine.startExchange();
     expect(engine.currentExchange).toBe(12);
     expect(engine.getPlayer('right')!.guardHp).toBe(1);

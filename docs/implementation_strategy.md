@@ -2,7 +2,7 @@
 
 Audit date: 2026-10-03. Second review: committed baseline `fe9fc48`. Scope: the master design, all ten subsidiary specs,
 workspace configuration, shared/server/client source, existing tests, and CI.
-This strategy records audit findings and dispatch progress. Specs 01 and 02 are implemented and verified; later dispatches remain outstanding.
+This strategy records audit findings and dispatch progress. Specs 01–04 are implemented and verified; later dispatches remain outstanding.
 
 ## Architectural authority
 
@@ -123,35 +123,72 @@ specified deterministic replay test.
   remain 97/103 for Cipher mirror and 69/31 for Aggro/Wall. Client JS is 133.15 kB
   gzipped; the pre-existing Vite chunk warning remains.
 - Implementation checklists in Specs 01/02 are checked against this evidence.
-  Intended edits remain uncommitted alongside the preceding documentation work;
-  no temporary files were added.
+  Specs 01/02 and preceding documentation were committed to main in `cbd1b48`.
 
 The second-review tables above describe the baseline before these dispatches;
 this section supersedes their remaining Spec-01/02 contract/cap findings.
 
+## Spec-03 dispatch completion (2026-10-03)
+
+- User accepted retaining the deck across exchanges and rounds, rebuilding
+  before a deal when fewer than 12 cards remain (ten dealt plus two burns).
+  Rebuilds and rematches issue fresh IDs; empty draws never fabricate a card.
+- Multiplayer injects Node crypto randomness. Solo uses a browser-crypto seed;
+  shared defaults and simulations are deterministic, without `Math.random()`.
+- Engine guards shaping and commitment phases, ownership, immutable commitment
+  arrays, one burn per exchange, idempotent clash and single exchange advance.
+  Tests cover deck reserve boundaries, replay, HP carry/reset, Bo3 and rematch.
+- Solo and simulation callers finish shaping before commitment and re-evaluate
+  after replacement draws. Full solo timing remains Spec-10 work.
+- Verification: exact deck/Flux command (25 tests), engine suite (26 tests), and
+  `npm run build && npm test && npm run sim` passed: 121 repository tests and
+  300 seeded matches. Mirror wins 104/96, 2.45 rounds/match, 1.72 exchanges/round;
+  Aggro/Wall wins 67/33, 2.03 exchanges/round. No combat constants or test
+  thresholds changed. Mirror pacing passes the current gate but falls below
+  the stated 1.8 target; retain this discrepancy for Spec-05.
+- Client JS is 133.83 kB gzipped; the existing Vite chunk-size warning remains.
+  Spec-03 checklist is checked; this work is included with the Spec-04 commit.
+
+This section supersedes the historical deck/Flux/engine findings above.
+
+## Spec-04 dispatch completion (2026-10-03)
+
+- Room and RoomManager match the target signatures; fixed player seats, one
+  joiner handshake, cryptographic room/session entropy, runtime command-field
+  validation and byte limits replace implicit JSON trust and random IDs.
+- Tests exercise every timed phase and early transition, optimal timeout split,
+  HP carry and round-reset display, Bo3, mutual rematch and private-state masking.
+- User accepted both-disconnected grace and immediate deliberate exit. Each
+  dropped seat retains its own 30s resume deadline; phase clocks continue.
+  Resume requires the token, a disconnected seat and an unexpired deadline;
+  socket identity guards stale closes. Expiry/leave invalidates the seat,
+  cancels phase clocks on forfeit and exposes the winner in STATE_TICK.
+  Rooms disappear once all participants depart or exhaust grace.
+- Single-port static serving validates paths and MIME types. Tests use real
+  HTTP and WebSocket clients, plus the compiled production server, to verify
+  host/join/actions/reveal, reconnect, payload rejection, assets and clean
+  SIGINT/SIGTERM shutdown. Client automatic resume and full browser acceptance
+  remain Spec-10 work.
+- Verification: exact Spec-04 command (23 tests), schema suite (11 tests),
+  transport/process suite (12 tests), and full build/test/sim gate: 166 tests
+  and 300 seeded matches pass. Mirror/Aggro-Wall results remain 104/96 and
+  67/33. Mirror pacing 1.72 remains a Spec-05 follow-up.
+- Separated Three.js into a 460.94 kB chunk and application code into 64.74 kB;
+  combined JS gzip 133.77 kB. Build now completes without the chunk warning.
+- Spec-04 checklist is checked. Specs 03/04 are committed together to main;
+  no temporary files or processes remain.
+
+This section supersedes the historical server/recovery findings and bundle
+warning above. The remaining table entries belong to their numbered dispatches.
+
 ## Dispatch readiness
 
-**Specs 01 and 02 are complete. Specs 03/04 still need two boundary decisions.** Known implementation gaps are dispatch work, rather than
-reasons to postpone starting. The following contract decisions remain before
-signing off the affected dispatches:
+**Specs 01–04 are complete. Spec-05 is next.** Both boundary decisions are
+resolved and documented. Implement the AI API and specified heuristics, verify
+post-shaping partitions and seeded replays, measure performance, and review the
+mirror pacing discrepancy against the stated target without weakening gates.
 
-1. **Deck lifecycle/depletion (03):** Spec-03 specifies rebuilding below 10
-   before a deal but does not say whether to rebuild every exchange or preserve
-   the remaining deck. With retention, exactly 10 or 11 remaining cards allow
-   the deal but cannot supply both burns. Specify reserve/rebuild behavior
-   without duplicating live cards or fabricating replacements.
-2. **Both players disconnected (04/10):** Spec-04 promises 30s resume but also
-   says delete the room when both leave. Specify whether simultaneous connection
-   loss retains the room through grace or ends it immediately. Also distinguish
-   unexpected disconnect from deliberate exit. These imply different resume
-   and cleanup acceptance cases.
-
-Before those decisions, dispatch 03 can implement input/phase and randomness
-invariants, and dispatch 04 can implement exact APIs, schema validation and
-single-player disconnect behavior. Do not mark either spec fully complete while
-its decision-dependent behavior remains unresolved.
-
-Implementation dispatches must explicitly cover strict COMMITMENT-only lock-in,
+Completed dispatches cover strict COMMITMENT-only lock-in,
 full payload validation, cryptographic token generation, disconnected-seat-only
 resume within deadline, cancellation of phase timers on forfeit, and protection
 against an old socket's close event disconnecting its replacement.
@@ -165,7 +202,7 @@ every definition-of-done item. Leave checkboxes unchecked until evidenced.
 
 | Dispatch | Scope and dependency | Exit evidence |
 | --- | --- | --- |
-| Preparation | Record the combat, deck lifecycle, sudden-death, and resume-contract decisions; capture this baseline. | Baseline reverified and core rules aligned; the two decisions above remain for affected dispatches. |
+| Preparation | Record the combat, deck lifecycle, sudden-death, and resume-contract decisions; capture this baseline. | Core rules, deck lifecycle and disconnect boundary decisions aligned and tested. |
 | 01 | Shared contracts/constants/exports; establish Spec-05 bot types for later consumers. | Shared build and coordinated consumer compilation; no runtime dependencies. |
 | 02 | Evaluator/combat alignment and mathematical edge tests. Depends on rule decision and 01. | Exact tier/score/multiplier/burn/KO fixtures and unchanged damage/block constants. |
 | 03 | Deck/Flux plus MatchEngine lifecycle. Inject server CSPRNG and explicitly seeded solo/replay randomness; keep clocks/sockets outside shared logic. | Deterministic replay, valid immutable shaping, exact partitions, one clash per exchange, HP carry/reset/Bo3, cap/depletion boundaries. |
@@ -216,11 +253,14 @@ working directory if the documented invocation needs correction.
 
 ## Recommended next dispatch
 
-Proceed to Spec-03 deck/Flux/engine work. Resolve the remaining deck and
-disconnect boundary decisions before completing Specs 03/04. The first substantial runtime repair is MatchEngine lifecycle and input
-integrity, followed by the bot shaping/commit flow. This makes subsequent room
-and controller work depend on a trusted engine and preserves one ruleset across
-solo, multiplayer, tutorial, and simulation.
+Proceed to **Spec-05: Classical Bot AI & Balance Simulator**. Align the public
+API and heuristics, cover seed-42 replay across ten hands, ensure every partition
+is valid after burn/shaping, measure evaluation/simulation performance, and
+review the current 1.72 mirror exchanges/round against the stated 1.8 target.
+Preserve combat constants and avoid weakening acceptance thresholds.
+
+Then execute Spec-10A for the first complete playable solo/multiplayer slice.
+Continue with 08, 06, 07, 09 and 10B.
 
 Contest cover capture and submission copy follow the completed playable build.
 The contest claims/deadline in the master document were read as project context,

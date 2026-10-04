@@ -17,6 +17,7 @@ import {
   Stance,
   Suit,
   MatchEngine,
+  SeededPRNG,
   RoundResolution,
 } from '@cyberante/shared';
 
@@ -94,8 +95,11 @@ class CyberanteGame {
   private startSoloMatch(): void {
     this.isSoloMode = true;
     this.selfPlayerId = 'player';
-    this.localEngine = new MatchEngine('player', 'Operative', 'bot', 'CIPHER-0');
+    const seed = crypto.getRandomValues(new Uint32Array(1))[0];
+    this.botAI = new ClassicalBotAI('CIPHER_ZERO', new SeededPRNG(seed ^ 0x9e3779b9));
+    this.localEngine = new MatchEngine('player', 'Operative', 'bot', 'CIPHER-0', new SeededPRNG(seed));
     this.localEngine.startMatch();
+    this.localEngine.phase = 'SHAPING';
 
     this.mainMenu.hide();
     this.gameBoard.show();
@@ -226,46 +230,30 @@ class CyberanteGame {
 
   private handleCommit(assault: [string, string, string], aegis: [string, string], stance: Stance): void {
     if (this.isSoloMode && this.localEngine) {
-      // 1. Commit player hand
-      this.localEngine.commitHand('player', assault, aegis, stance);
-
-      // 2. Evaluate bot hand & tactical decisions
+      if (this.localEngine.phase !== 'SHAPING' && this.localEngine.phase !== 'COMMITMENT') return;
       const botState = this.localEngine.getPlayer('bot')!;
       const playerState = this.localEngine.getPlayer('player')!;
 
-      const botDecision = this.botAI.evaluateHand(
-        botState.cards,
-        botState.guardHp,
-        playerState.guardHp,
-        botState.fluxRemaining,
-        !botState.hasBurnedCard
-      );
-
-      // Apply bot burn
-      if (botDecision.burnCardId) {
-        this.localEngine.burnCard('bot', botDecision.burnCardId);
-      }
-
-      // Apply bot nudges
-      for (const act of botDecision.fluxActions) {
-        if (act.type === 'NUDGE' && act.direction) {
-          this.localEngine.nudgeRank('bot', act.cardId, act.direction);
+      // Bot shaping finishes before either hand is committed.
+      if (this.localEngine.phase === 'SHAPING') {
+        const decision = this.botAI.evaluateHand(botState.cards, botState.guardHp,
+          playerState.guardHp, botState.fluxRemaining, !botState.hasBurnedCard);
+        if (decision.burnCardId) this.localEngine.burnCard('bot', decision.burnCardId);
+        for (const act of decision.fluxActions) {
+          // A proposed nudge on a burned card is obsolete after its replacement draw.
+          if (!botState.cards.some(card => card.id === act.cardId)) continue;
+          if (act.type === 'NUDGE' && act.direction) this.localEngine.nudgeRank('bot', act.cardId, act.direction);
+          if (act.type === 'BLEED' && act.targetSuit) this.localEngine.bleedSuit('bot', act.cardId, act.targetSuit);
         }
+        this.localEngine.phase = 'COMMITMENT';
       }
-
-      // Re-evaluate partitions with current post-burn/nudge cards
-      const finalBotDecision = (botDecision.burnCardId || botDecision.fluxActions.length > 0)
-        ? this.botAI.evaluateHand(botState.cards, botState.guardHp, playerState.guardHp, 0, false)
-        : botDecision;
-
-      // Commit bot hand
-      const botCommitOk = this.localEngine.commitHand(
-        'bot',
-        finalBotDecision.assaultCardIds,
-        finalBotDecision.aegisCardIds,
-        finalBotDecision.stance
-      );
-      if (!botCommitOk) {
+      if (!this.localEngine.commitHand('player', assault, aegis, stance)) {
+        this.gameBoard.showBanner('Invalid hand commitment');
+        this.updateSoloBoard();
+        return;
+      }
+      const finalDecision = this.botAI.evaluateHand(botState.cards, botState.guardHp, playerState.guardHp, 0, false);
+      if (!this.localEngine.commitHand('bot', finalDecision.assaultCardIds, finalDecision.aegisCardIds, finalDecision.stance)) {
         this.localEngine.autoLockUncommitted();
       }
 
@@ -277,8 +265,12 @@ class CyberanteGame {
       // Automatically advance to next exchange after 3.5s
       setTimeout(() => {
         if (this.localEngine && !this.localEngine.matchWinnerId) {
+          this.localEngine.phase = 'ROUND_RESOLVE';
           this.localEngine.startExchange();
+          this.localEngine.phase = 'SHAPING';
           this.updateSoloBoard();
+        } else if (this.localEngine) {
+          this.localEngine.phase = 'MATCH_OVER';
         }
       }, 3500);
     } else {

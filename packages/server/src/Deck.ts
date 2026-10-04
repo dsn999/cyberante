@@ -1,15 +1,27 @@
 // ============================================================================
-// CYBERANTE: Deterministic CSPRNG Deck Engine
+// CYBERANTE: CSPRNG Deck Engine
 // ============================================================================
 
-import { Card, Suit, Rank } from '@cyberante/shared';
-import { randomInt } from 'crypto';
+import type { Card, Suit, Rank, PRNG } from '@cyberante/shared';
+import { randomInt } from 'node:crypto';
+
+/** Server entropy adapter; shared gameplay code stays platform independent. */
+export class CryptoPRNG implements PRNG {
+  public random(): number {
+    return randomInt(0, 4294967296) / 4294967296;
+  }
+
+  public nextInt(min: number, max: number): number {
+    return randomInt(min, max);
+  }
+}
 
 const SUITS: Suit[] = ['SPADES', 'HEARTS', 'DIAMONDS', 'CLUBS'];
 const RANKS: Rank[] = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14];
 
 export class Deck {
   private cards: Card[] = [];
+  private idCounter = 1;
 
   constructor() {
     this.reset();
@@ -20,12 +32,11 @@ export class Deck {
    */
   public reset(): void {
     this.cards = [];
-    let idCounter = 1;
 
     for (const suit of SUITS) {
       for (const rank of RANKS) {
         this.cards.push({
-          id: `card_${idCounter++}_${suit}_${rank}`,
+          id: `card_${this.idCounter++}_${suit}_${rank}`,
           suit,
           rank,
         });
@@ -36,7 +47,7 @@ export class Deck {
   }
 
   /**
-   * Deterministic Fisher-Yates shuffle utilizing CSPRNG.
+   * Fisher-Yates shuffle utilizing CSPRNG.
    */
   public shuffle(): void {
     for (let i = this.cards.length - 1; i > 0; i--) {
@@ -51,6 +62,9 @@ export class Deck {
    * Deals N cards from the top of the deck.
    */
   public deal(count: number): Card[] {
+    if (!Number.isSafeInteger(count) || count < 0) {
+      throw new Error('Deal count must be a nonnegative safe integer');
+    }
     if (this.cards.length < count) {
       throw new Error(`Insufficient cards remaining in deck. Requested: ${count}, Available: ${this.cards.length}`);
     }

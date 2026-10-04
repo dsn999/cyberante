@@ -82,6 +82,7 @@ function runMatchSeries(
         lastRoundSeen = engine.currentRound;
       }
       exchangesInMatch++;
+      engine.phase = 'SHAPING';
 
       const p1Private = engine.getPlayer('p1')!;
       const p2Private = engine.getPlayer('p2')!;
@@ -126,12 +127,12 @@ function runMatchSeries(
 
       // Apply Flux Actions (Nudge)
       for (const act of d1.fluxActions) {
-        if (act.type === 'NUDGE' && act.direction) {
+        if (act.type === 'NUDGE' && act.direction && p1Private.cards.some(c => c.id === act.cardId)) {
           engine.nudgeRank('p1', act.cardId, act.direction);
         }
       }
       for (const act of d2.fluxActions) {
-        if (act.type === 'NUDGE' && act.direction) {
+        if (act.type === 'NUDGE' && act.direction && p2Private.cards.some(c => c.id === act.cardId)) {
           engine.nudgeRank('p2', act.cardId, act.direction);
         }
       }
@@ -152,8 +153,9 @@ function runMatchSeries(
         false
       );
 
-      engine.commitHand('p1', finalD1.assaultCardIds, finalD1.aegisCardIds, finalD1.stance);
-      engine.commitHand('p2', finalD2.assaultCardIds, finalD2.aegisCardIds, finalD2.stance);
+      engine.phase = 'COMMITMENT';
+      expect(engine.commitHand('p1', finalD1.assaultCardIds, finalD1.aegisCardIds, finalD1.stance)).toBe(true);
+      expect(engine.commitHand('p2', finalD2.assaultCardIds, finalD2.aegisCardIds, finalD2.stance)).toBe(true);
 
       report.stanceCounts[finalD1.stance]++;
       report.stanceCounts[finalD2.stance]++;
@@ -174,6 +176,7 @@ function runMatchSeries(
       }
 
       // Advance exchange
+      engine.phase = 'ROUND_RESOLVE';
       engine.startExchange();
     }
 

@@ -10,6 +10,9 @@
   - `packages/server/src/RoomManager.ts`
   - `packages/server/src/index.ts`
   - `packages/server/src/__tests__/roomLifecycle.test.ts`
+  - `packages/server/src/messageValidation.ts`
+  - `packages/server/src/__tests__/messageValidation.test.ts`
+  - `packages/server/src/__tests__/serverTransport.test.ts`
 - **Dependencies:**
   - `ws` (^8.17.1) for WebSocket server management.
   - Node.js built-ins (`http`, `fs`, `path`, `url`).
@@ -40,6 +43,15 @@ export class Room {
 }
 ```
 
+`removePlayer` means deliberate departure. Unexpected transport closes use
+`disconnectPlayer(playerId: string, ws: WebSocket): void`. Room additionally
+exposes `reconnectPlayer(playerId: string, sessionToken: string, ws: WebSocket): boolean`
+and `ownsSocket(playerId: string, ws: WebSocket): boolean` to enforce socket ownership.
+`destroy` is idempotent, cancels all phase/grace handles and closes connected
+room sockets with code 1001; it cannot close departed sockets reused elsewhere.
+`isFull` counts reserved seats, including disconnected/departed seats in an
+existing match; a third participant never replaces a match participant.
+
 ### 3.2 RoomManager Class (`packages/server/src/RoomManager.ts`)
 ```typescript
 import { Room } from './Room.js';
@@ -53,11 +65,15 @@ export class RoomManager {
 }
 ```
 
+RoomManager also exposes `destroy(): void` for server shutdown.
+
 ### 3.3 HTTP & WebSocket Server (`packages/server/src/index.ts`)
 - Listens on `process.env.PORT || 8080`.
 - Upgrades incoming HTTP requests to WebSocket connection on `/ws` or root.
 - Handles HTTP GET requests to serve static files from `packages/client/dist/` (with correct MIME types: `text/html`, `application/javascript`, `text/css`, `image/svg+xml`, `image/x-icon`, `application/json`).
-- Responds with `index.html` on root (`/`) and SPA fallback paths.
+- Responds with `index.html` on root (`/`) and SPA fallback paths. Missing files with extensions return 404; invalid URL encodings return 400 and paths/symlinks escaping the client directory return 403.
+- `createGameServer({ clientDist? })` constructs the real HTTP/WS server without listening, returning `server`, `wss`, `roomManager`, and idempotent async `close`. Running the entry point directly listens on the configured port; SIGINT/SIGTERM close sockets, rooms and timers.
+- Shared protocol adds `CMD_LEAVE_ROOM` and `STATE_TICK.matchWinnerId: string | null` so deliberate exit and forfeit results are observable. The client transport sends leave before a deliberate close; automatic client recovery remains Spec-10 work.
 
 ## 4. Detailed Behavior & Room Lifecycle Flow
 
@@ -74,7 +90,7 @@ export class RoomManager {
    - Server validates room existence and capacity.
    - Player 2 is assigned `playerId: 'player_2'`.
    - Server responds with `{ type: 'STATE_INIT', playerId: 'player_2', matchId, roomCode, opponentName: p1.name }`.
-   - Server sends update to Player 1 updating `opponentName: p2.name`.
+   - Server sends one updated `STATE_INIT` to Player 1 with `opponentName: p2.name`. Player 2 receives exactly one init; match start does not repeat its handshake.
    - Room is now full (`isFull === true`). Match begins immediately!
 
 ### 4.2 Phase Loop & Countdown Timers (Option A)
@@ -103,7 +119,11 @@ The room coordinates the underlying `MatchEngine` through the 5 phases of an exc
   - Server verifies matching `roomCode`, `playerId`, and `sessionToken`.
   - If valid and within 30s: the new socket replaces the dropped socket, `connected` is set to `true`, the grace timer is cancelled, and server immediately sends `STATE_INIT` + current `STATE_TICK`.
 - **Forfeit:** If the 30s timer expires without reconnection, match forfeits to the remaining player (`matchWinnerId` set, `phase` set to `MATCH_OVER`).
-- When both players leave, room timers are cancelled and `roomManager.removeRoom(roomCode)` is invoked to prevent memory leaks.
+- **Accepted boundary decision:** Unexpected connection loss retains both reserved seats through each participant's own 30s deadline, including a waiting host. Phase timers continue with timeout auto-lock; they do not pause or restart on reconnect.
+- Reconnect requires a disconnected, non-departed seat before its deadline. Connected-seat takeover, wrong credentials, expired sessions and old socket close events cannot evict a live replacement. Resume sends the current countdown/private hand; if already in reveal/resolve or a completed combat match, also send the current exchange outcome. A forfeit does not replay an older exchange.
+- On grace expiry, invalidate that seat and forfeit to the other reserved participant. Cancel phase timers so they cannot overwrite `MATCH_OVER`. If the other player is also disconnected but still within their deadline, retain their opportunity to resume and see the forfeit result. Delete the room once every participant has departed or exhausted grace.
+- **Deliberate exit:** `CMD_LEAVE_ROOM` / `removePlayer` invalidates resume immediately and forfeits without waiting. When both deliberately leave, cancel all timers and invoke the registry cleanup callback exactly once.
+- Rematch requires both connected participants to send `CMD_REMATCH` after `MATCH_OVER`; reset HP, scores and per-exchange state when both agree.
 
 ## 5. Invariants & Edge Cases
 1. **Third-Player Rejection:** If a third client attempts to join a full room, server responds immediately with `{ type: 'ERROR_REJECTED', reason: 'Room is full' }` and closes connection.
@@ -118,7 +138,9 @@ The room coordinates the underlying `MatchEngine` through the 5 phases of an exc
 4. **Out-of-Phase Action:** Submitting transmutations outside `SHAPING` phase returns `ERROR_REJECTED: Actions only permitted during SHAPING phase`.
 5. **Input Validation & DoS Protection:**
    - Incoming WebSocket payloads must not exceed 4KB (4096 bytes).
-   - Payloads must be valid JSON objects with recognized `type` field.
+   - Payloads must be valid JSON objects with a recognized `type` and valid command fields. Names are nonblank strings up to 32 characters; IDs up to 128; room codes normalize to the unambiguous four-character alphabet; resume tokens are 64 hex characters. Validate lane lengths/elements, directions, suits and stances before delegation.
+   - A socket binds to one room/seat. Reject repeated create/join/reconnect commands while bound, and actions before joining. Only a deliberate leave releases the binding for another room.
+   - Reject binary messages. Count UTF-8 bytes, rather than characters. A bounded 64KB receiver envelope permits `ERROR_REJECTED` for ordinary payloads over 4KB; frames exceeding the envelope are closed with transport code 1009. Compression is disabled.
    - Malformed or oversize payloads are rejected with `ERROR_REJECTED`.
 
 ## 6. Forbidden Boundaries & Anti-Patterns
@@ -138,6 +160,13 @@ The room coordinates the underlying `MatchEngine` through the 5 phases of an exc
   - Submit invalid hand partition (e.g. 4 assault cards) $\to$ assert rejected.
   - Submit valid hand partition $\to$ assert committed flag is true.
 - **Disconnect Cleanup:** Remove both players $\to$ assert room invokes `onEmpty` callback and removes from `RoomManager`.
+
+Additional coverage includes all phase durations and early cancellation, optimal
+fallback, one clash, HP carry/KO display/new-round reset/Bo3/rematch, private-state
+masking, token/deadline/socket ownership, both-disconnected grace, lobby expiry,
+forfeit cancellation and idempotent destruction. Real transport tests cover two
+clients, malformed/binary/oversized commands, HTTP assets/SPA/MIME/traversal,
+accepted upgrade routes, reconnect, deliberate exit and shutdown.
 
 ## 8. Exact Verification Command
 ```bash
@@ -165,10 +194,25 @@ Requirements:
 ```
 
 ## 10. Definition of Done Checklist
-- [ ] Room lifecycle state machine driving `MatchEngine`.
-- [ ] RoomManager creating and cleaning up 4-character room codes.
-- [ ] Phase timer transitions with early-advance on mutual ready/commit.
-- [ ] Auto-lock fallback on Commitment timeout.
-- [ ] Information masking preventing card leaks to opponents before Clash.
-- [ ] Single-port HTTP static serving of client bundle alongside WebSockets.
-- [ ] All room lifecycle unit tests passing under `vitest`.
+- [x] Room lifecycle state machine driving `MatchEngine`.
+- [x] RoomManager creating and cleaning up 4-character room codes.
+- [x] Phase timer transitions with early-advance on mutual ready/commit.
+- [x] Auto-lock fallback on Commitment timeout.
+- [x] Information masking preventing card leaks to opponents before Clash.
+- [x] Single-port HTTP static serving of client bundle alongside WebSockets.
+- [x] All room lifecycle unit tests passing under `vitest`.
+
+### Dispatch evidence (2026-10-03)
+- Exact Spec-04 command: 23 room lifecycle tests passed, with fake-clock phase,
+  recovery and complete timer cleanup assertions.
+- Additional suites: 11 runtime schema tests and 12 real transport/HTTP/process
+  tests. The compiled entry point serves the built client on one ephemeral
+  port and exits with code 0 on both SIGINT and SIGTERM with an active match.
+- Full gate: `npm run build && npm test && npm run sim` exits 0 with 166 tests
+  and 300 seeded simulated matches. Local network tests require port-listener
+  permission in the Codex sandbox; they are not skipped.
+- Three.js is now a separate 460.94 kB chunk, application code 64.74 kB; combined
+  JS gzip size 133.77 kB. Build completes without the previous chunk warning.
+- Browser auto-resume/UI handling remains Spec-10 acceptance work; server
+  protocol and transport recovery are verified here. Mirror pacing remains
+  1.72 exchanges/round, a documented Spec-05 balance follow-up.

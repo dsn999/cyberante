@@ -35,7 +35,7 @@ The project is engineered specifically to capture the maximum score (5/5) across
 *   **Exchange Pacing:** Each round contains sequential exchanges with Guard HP carried between them until a knockout or the Spec-02 exchange cap resolves the round. A full timed exchange lasts 34 seconds; mutual ready/commit may advance phases early.
 
 ### 2.2 Deck & Hand Architecture
-*   **Card Pool:** Single standard 52-card deck, shuffled deterministically via server-side CSPRNG seeds (or client-side CSPRNG seed in local solo mode).
+*   **Card Pool:** Single standard 52-card deck, shuffled with server-side CSPRNG for multiplayer or a browser-CSPRNG-seeded deterministic PRNG for solo. Retain unused cards across exchanges and rounds; rebuild before a ten-card deal when fewer than 12 remain, reserving two burn replacements. A new match always rebuilds, with fresh card IDs.
 *   **Starting Hand:** Both players are dealt 5 private cards per exchange.
 *   **Tactical Currency (Flux):** Both players receive $3 \text{ Flux}$ points per exchange to fuel card transmutations. Unspent Flux does not roll over.
 
@@ -320,6 +320,7 @@ Players can choose or randomly face three classical AI personalities:
 ### 7.1 Anti-Cheat & Authority Guarantees
 *   **Card Masking:** Server holds all private card state. During Shaping and Commitment phases, clients receive full data for their own 5 cards, while opponent cards are sent as masked hashes (`{ id: "hidden", suit: "UNKNOWN", rank: 0 }`).
 *   **Simultaneous Lock-In:** Clients submit their 3-card/2-card split and chosen stance blinds. If a client disconnects or times out before the 10-second Commitment window closes, the server deterministically auto-locks the optimal ten-partition split (highest Assault score, then Aegis score, then first partition) and defaults to *Brace* stance.
+*   **Disconnect Lifecycle:** Unexpected socket loss reserves the seat through its own 30-second grace deadline, even if both players disconnect; normal phase timers continue. Resume requires a crypto token, a disconnected seat and an unexpired deadline. Deliberate `CMD_LEAVE_ROOM` forfeits immediately. Grace expiry cancels phase timers and reports the winner in `STATE_TICK`; delete the room once every participant has departed or exhausted grace.
 
 ### 7.2 Network Data Contracts
 
@@ -356,6 +357,8 @@ export interface PlayerPublicState {
   fluxRemaining: number;
   roundWins: number;
   hasBurnedCard: boolean;
+  activeBurn: BurnType | null;
+  connected: boolean;
   hasCommitted: boolean;
   activeBarrier: number;
 }
@@ -369,45 +372,42 @@ export type GamePhase =
   | 'ROUND_RESOLVE'
   | 'MATCH_OVER';
 
-// Client-to-Server Messages
+// Network contracts. RoundResolution is the complete shared combat result.
 export type ClientMessage =
+  | { type: 'CMD_CREATE_ROOM'; playerName: string }
   | { type: 'CMD_JOIN_ROOM'; roomCode: string; playerName: string }
+  | { type: 'CMD_RECONNECT'; roomCode: string; playerId: string; sessionToken: string }
   | { type: 'CMD_NUDGE_RANK'; cardId: string; direction: 'UP' | 'DOWN' }
   | { type: 'CMD_BLEED_SUIT'; cardId: string; targetSuit: Suit }
   | { type: 'CMD_BURN_CAST'; cardId: string }
-  | { 
-      type: 'CMD_COMMIT_HAND'; 
-      assaultCardIds: [string, string, string]; 
-      aegisCardIds: [string, string]; 
-      stance: Stance 
-    };
+  | { type: 'CMD_READY' }
+  | { type: 'CMD_LEAVE_ROOM' }
+  | {
+      type: 'CMD_COMMIT_HAND';
+      assaultCardIds: [string, string, string];
+      aegisCardIds: [string, string];
+      stance: Stance;
+    }
+  | { type: 'CMD_REMATCH' };
 
+// ----------------------------------------------------------------------------
 // Server-to-Client Messages
+// ----------------------------------------------------------------------------
 export type ServerMessage =
-  | { type: 'STATE_INIT'; playerId: string; matchId: string; opponentName: string }
-  | { 
-      type: 'STATE_TICK'; 
-      phase: GamePhase; 
-      timeRemainingMs: number; 
+  | { type: 'STATE_INIT'; playerId: string; matchId: string; roomCode: string; opponentName: string; sessionToken?: string }
+  | {
+      type: 'STATE_TICK';
+      phase: GamePhase;
+      timeRemainingMs: number;
+      matchWinnerId: string | null;
+      roundNumber: number;
+      exchangeNumber: number;
       players: Record<string, PlayerPublicState>;
       selfCards: Card[];
     }
-  | { 
+  | {
       type: 'ROUND_OUTCOME';
-      p1Assault: Card[];
-      p1Aegis: Card[];
-      p1Stance: Stance;
-      p2Assault: Card[];
-      p2Aegis: Card[];
-      p2Stance: Stance;
-      p1DamageDealt: number;
-      p2DamageDealt: number;
-      p1ReflectedDamage: number;
-      p2ReflectedDamage: number;
-      p1NetGuardHp: number;
-      p2NetGuardHp: number;
-      roundWinnerId: string | null;
-      matchWinnerId: string | null;
+      resolution: RoundResolution;
     }
   | { type: 'ERROR_REJECTED'; reason: string };
 ```

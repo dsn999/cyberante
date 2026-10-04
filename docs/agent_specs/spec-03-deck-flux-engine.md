@@ -10,6 +10,7 @@
   - `packages/shared/src/fluxEngine.ts`
   - `packages/shared/src/MatchEngine.ts`
   - `packages/server/src/__tests__/deckFlux.test.ts`
+  - `packages/server/src/__tests__/matchEngine.test.ts`
 - **Dependencies:**
   - Node.js built-in `crypto` (`randomInt`) on server for CSPRNG shuffling.
   - `@cyberante/shared` data contracts (`Card`, `Suit`, `Rank`, `BurnType`, `GAME_CONSTANTS`, `SUIT_RING`).
@@ -35,6 +36,17 @@ export class SeededPRNG implements PRNG {
   public nextInt(min: number, max: number): number;
 }
 ```
+
+`DefaultPRNG` is a deterministic seed-1337 fallback. Shared code must never call
+unseeded `Math.random()`. Multiplayer injects the server's `CryptoPRNG` adapter
+(`node:crypto.randomInt`); solo injects `SeededPRNG` initialized from browser
+`crypto.getRandomValues`. Simulations and replays use explicit recorded seeds.
+`nextInt` uses an inclusive minimum and exclusive maximum. Seeded inputs and
+bounds must be safe integers with a nonempty range.
+
+The server exports `CryptoPRNG implements PRNG` alongside `Deck`. Minimal caller
+adaptations in Room, solo, and the simulator are part of this dispatch; complete
+transport behavior and the timed solo scheduler remain Specs 04 and 10.
 
 ### 3.2 Server Deck Class (`packages/server/src/Deck.ts`)
 ```typescript
@@ -75,7 +87,7 @@ export function evaluateBurn(card: Card): { burnType: BurnType; barrierAmount?: 
    - Selects uniform integer index $j \in [0, i]$ via CSPRNG `randomInt(0, i + 1)` (or PRNG `nextInt(0, i + 1)`).
    - Swaps elements $cards[i]$ and $cards[j]$.
 3. **Dealing & Drawing:**
-   - `deal(count)`: Slices and removes the first `count` cards from the top. Throws if `count > remainingCount`.
+   - `deal(count)`: Slices and removes the first `count` cards from the top. Throws without changing the deck if the count is negative, fractional, not a safe integer, or greater than `remainingCount`. Zero returns an empty array.
    - `drawOne()`: Shifts the top card off the deck. Throws if empty.
 
 ### 4.2 Pip Nudge (Cost: 1 Flux)
@@ -121,13 +133,24 @@ export function evaluateBurn(card: Card): { burnType: BurnType; barrierAmount?: 
 - Transmutations are permitted exclusively during the `SHAPING` phase.
 
 ## 5. Invariants & Edge Cases
-1. **Deck Depletion Safeguard:** If remaining cards in deck drops below 10 prior to dealing an exchange, the deck must automatically rebuild all 52 cards and reshuffle.
+1. **Deck Lifecycle/Depletion (user decision):** Retain the unused deck across exchanges and rounds. Before each ten-card deal, rebuild and reshuffle if fewer than **12** cards remain: ten for the hands plus two reserved burn replacements. Exactly 12 is sufficient. Retire old hands before the next deal; rebuilds issue fresh IDs. Starting a new match always rebuilds. Never rebuild mid-exchange or fabricate a replacement.
 2. **Immutability:** `nudgeRank` and `bleedSuit` must never mutate the input card object in place.
 3. **No Negative Balances:** Flux must never drop below 0 under any combination of commands.
 4. **Idempotence & Validation:** Burn cannot be called if `hasBurnedThisRound` is already true.
 
+### 5.1 MatchEngine lifecycle and integrity
+- `startMatch()` resets HP to 20, wins/counters/burns/commitments, and enters `DEAL`.
+- The caller owns clocks and sets `SHAPING` and then `COMMITMENT`; shared logic contains no timers, sockets, or platform crypto imports.
+- Nudge, Bleed, and Burn require `SHAPING`, an owned current card, and an uncommitted player. Reject invalid actions without spending Flux or drawing cards.
+- `commitHand` requires `COMMITMENT`, exactly 3 Assault plus 2 Aegis distinct current owned IDs, and a valid stance. Copy submitted arrays and reject overwrites.
+- `autoLockUncommitted` requires `COMMITMENT` and selects the maximum Assault score, then Aegis score, with BRACE; preserve existing commitments.
+- `resolveClash` requires both valid commitments and enters `CLASH_REVEAL`. Repeated calls return the same outcome without applying damage or points again.
+- `startExchange` requires a resolved exchange in `ROUND_RESOLVE` and no match winner. Carry HP within a round; reset to 20 only when starting the next round. Reset Flux/burn/barrier/commit state every exchange and enter `DEAL`. Reject repeated starts.
+- First to two round wins ends the match; preserve the final KO display until the caller enters `MATCH_OVER`. Exchange cap and repeated sudden death follow Spec-02.
+- `remainingDeckCount` is a public getter for deterministic depletion verification.
+
 ## 6. Forbidden Boundaries & Anti-Patterns
-- Do NOT use unseeded `Math.random()` in tests or balance simulations; use `SeededPRNG`.
+- Do NOT use unseeded `Math.random()` anywhere in shared gameplay; inject `SeededPRNG` or server CSPRNG.
 - Do NOT allow cross-ring suit bleeds.
 - Do NOT alter card hand size away from 5 cards during Shaping.
 - Do NOT install external random number npm packages.
@@ -155,6 +178,10 @@ export function evaluateBurn(card: Card): { burnType: BurnType; barrierAmount?: 
   - State with 0 Flux: `canNudgeRank` is false.
   - State with `hasBurnedThisRound: true`: `canBurnCard` is false.
 
+Engine tests additionally cover deterministic multi-exchange replay, server CSPRNG
+injection, the 12/11/10/0 deck boundaries, phase/input rejection, committed-hand
+integrity, auto-lock, idempotent clash, HP carry/reset, two-win victory and rematch.
+
 ## 8. Exact Verification Command
 ```bash
 npx vitest run packages/server/src/__tests__/deckFlux.test.ts
@@ -178,9 +205,16 @@ Requirements:
 ```
 
 ## 10. Definition of Done Checklist
-- [ ] 52-card standard deck generation with CSPRNG Fisher-Yates shuffle.
-- [ ] Pip Nudge with Ace-wrap (14 UP -> 2, 2 DOWN -> 14).
-- [ ] Chromatic Suit Bleed adhering strictly to cyclic `SUIT_RING`.
-- [ ] Burn-to-Cast evaluation for all 4 suits with Diamond barrier scaling.
-- [ ] Flux validation functions (`canNudgeRank`, `canBleedSuit`, `canBurnCard`).
-- [ ] Complete unit test suite passing under `vitest`.
+- [x] 52-card standard deck generation with CSPRNG Fisher-Yates shuffle.
+- [x] Pip Nudge with Ace-wrap (14 UP -> 2, 2 DOWN -> 14).
+- [x] Chromatic Suit Bleed adhering strictly to cyclic `SUIT_RING`.
+- [x] Burn-to-Cast evaluation for all 4 suits with Diamond barrier scaling.
+- [x] Flux validation functions (`canNudgeRank`, `canBleedSuit`, `canBurnCard`).
+- [x] Complete unit test suite passing under `vitest`.
+
+### Dispatch evidence (2026-10-03)
+The exact deck/Flux command passed (25 tests); the engine suite passed (26 tests).
+`npm run build && npm test && npm run sim` exited 0: 121 repository tests and
+300 simulated matches. The existing Vite chunk-size warning remains. Mirror
+pacing is 1.72 exchanges/round, below the stated 1.8 target; Spec-05 owns the AI
+and pacing review. This dispatch preserves all combat constants and thresholds.
