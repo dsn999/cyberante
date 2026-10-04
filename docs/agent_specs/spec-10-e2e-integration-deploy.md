@@ -142,8 +142,8 @@ Requirements:
 ## 10. Definition of Done Checklist
 - [x] End-to-end playable Solo Mode with local `MatchEngine` and `ClassicalBotAI`.
 - [x] End-to-end playable Multiplayer Mode with WebSockets and room codes.
-- [ ] Seamless audio unlocking and phase-adaptive music/SFX coupling.
-- [ ] Three.js reactive vector grid and particle explosions synchronized to combat events.
+- [x] Seamless audio unlocking and phase-adaptive music/SFX coupling.
+- [x] Three.js reactive vector grid and particle explosions synchronized to combat events.
 - [x] Single-port production static client serving and WebSocket matchmaking.
 - [x] Full monorepo verification passing: `npm run build && npm test && npm run sim`.
 
@@ -159,5 +159,35 @@ Requirements:
 Executable evidence: `packages/client/src/__tests__/`, `e2e/integration.spec.ts`,
 and the existing server transport/lifecycle suites. Run `npm run test:e2e` after
 installing Chromium with `npx playwright install --with-deps chromium`.
-Spec-10B finishes the audio/renderer polish and final mobile/performance acceptance
-after Specs 08, 06, 07 and 09; the remaining full-spec checkboxes stay open.
+Spec-10B finishes final integration and mobile/performance acceptance after
+Specs 08, 06, 07 and 09. Its remaining acceptance items are recorded below.
+
+### Spec-10B acceptance evidence (2026-10-04)
+
+- [x] Audio gesture unlock, phase-adaptive music/FFT, stance/clash/impact cues,
+  deduplicated match fanfare, mute and unsupported-audio behavior.
+- [x] Reactive renderer, procedural victory confetti, independent CRT/motion
+  settings, stable buffers and WebGL context-loss recovery.
+- [x] Compiled server serves production assets and an active WebSocket room from
+  outside the repository; both termination signals close unfinished HTTP
+  requests, sockets and room timers with exit code 0.
+- [x] Production entry points and all emitted chunks audited in CI: no media,
+  raw TypeScript or source maps; 151,674 gzip JavaScript bytes, below 250,000.
+- [x] Build, 346 unit/integration tests, and 300 seeded simulation matches pass.
+- [x] All 30 production browser cases pass with one SwiftShader worker, including
+  offline Bo3, online recovery/rematch, audio/renderer behavior, tutorial and
+  keyboard/touch controls at emulated desktop/mobile sizes.
+- [x] Browser diagnostic page captures the real splash/arena/clash and exports
+  device/settings/frame metadata, labels software rendering and cancels cleanly
+  when hidden. CLI rejects native GPU-forcing options before browser launch.
+- [x] Node build/start, PORT, health, HTTPS/WebSocket proxy and in-memory room
+  operation documented in `docs/deployment.md`.
+- [ ] Physical integrated-GPU computer demonstrates the unchanged 60 FPS target.
+- [ ] Physical phone/tablet demonstrates the unchanged 60 FPS target.
+
+Physical performance acceptance was explicitly retained in Spec-10B by the user.
+A forced native GPU experiment through WSL preceded a laptop freeze and hard
+shutdown. That CLI path was removed; subsequent automated checks use SwiftShader
+software rendering with one worker. Software FPS does not prove physical-device
+acceptance. Spec-10B remains incomplete while the two hardware items are open;
+no further native GPU experiments through WSL are part of this workflow.

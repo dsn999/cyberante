@@ -157,6 +157,12 @@ export class VectorScene {
     this.triggerShockwave(0, 0, strength * 2);
     this.damage = this.reduced ? 0 : strength / 4;
   }
+  public triggerVictoryConfetti(): void {
+    this.burstOrigin.set(-5, 3, 0); this.particles?.burst(this.burstOrigin, 75, 0x00f3ff, 1.2);
+    this.burstOrigin.set(-1.5, 3, 0); this.particles?.burst(this.burstOrigin, 75, 0xffb700, 1.2);
+    this.burstOrigin.set(1.5, 3, 0); this.particles?.burst(this.burstOrigin, 75, 0x00ff88, 1.2);
+    this.burstOrigin.set(5, 3, 0); this.particles?.burst(this.burstOrigin, 75, 0xff0055, 1.2);
+  }
   public setAudioEnergy(bass: number, mid: number, high: number): void {
     this.manualAudio = true;
     this.bass = THREE.MathUtils.clamp(bass, 0, 1); this.mid = THREE.MathUtils.clamp(mid, 0, 1); this.high = THREE.MathUtils.clamp(high, 0, 1);

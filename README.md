@@ -72,6 +72,11 @@ The production server serves the client and `/ws` on `PORT` (default 8080).
 Vite proxies `/ws` to the development server. Share rooms with `?room=ABCD`;
 each browser tab retains its seat token for automatic recovery within 30 seconds.
 
+See [production operation](docs/deployment.md) for build/start settings, HTTPS
+proxy requirements, health checks, shutdown behavior and verification commands.
+Browser tests use software rendering; physical integrated/mobile GPU FPS
+acceptance remains open.
+
 ---
 
 ## License

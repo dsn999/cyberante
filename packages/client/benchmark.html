@@ -1,0 +1,14 @@
+<!doctype html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>CYBERANTE hardware acceptance</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#030712;color:#edf7ff;font:16px/1.5 system-ui,sans-serif}iframe{position:fixed;inset:0;width:100%;height:100%;border:0}main{position:relative;z-index:1;max-width:720px;max-height:calc(100dvh - 32px);overflow:auto;margin:16px auto;padding:24px;background:#0b1329fa;border:1px solid #00f3ff;border-radius:12px}h1{font-size:22px;color:#00f3ff}label{display:block;margin:12px 0}input,select,button{font:inherit;min-height:44px;padding:8px 12px;border-radius:6px;border:1px solid #768bad}input,select{width:100%;background:#111e33;color:white}button{cursor:pointer;background:#00f3ff;color:#030712}button:disabled{background:#4b5563;color:white}textarea{width:100%;height:280px;background:#030712;color:#d5faff;font:12px/1.5 monospace}a{color:#00f3ff}[hidden]{display:none!important}#progress{position:fixed;z-index:2;top:8px;left:8px;margin:0;padding:4px 8px;background:#030712ee;border:1px solid #00f3ff;font-size:12px;pointer-events:none}#status{color:#ffb700}small{display:block}@media(max-width:767px){main{margin:12px;padding:16px}}:focus-visible{outline:3px solid white;outline-offset:3px}
+</style></head><body>
+<iframe id="game" src="./" title="CYBERANTE benchmark scene" allow="autoplay; fullscreen"></iframe>
+<p id="progress" hidden aria-live="polite"></p>
+<main id="controls"><h1>Hardware performance acceptance</h1><p>Run the production game on this device with full motion and CRT. Keep this tab visible and close other intensive apps. The test measures the splash, a prepared hand and an actual training clash.</p>
+<label>Device model<input id="device" placeholder="Computer or phone model" required></label>
+<label>Hardware class<select id="hardware"><option value="integrated">Integrated GPU computer</option><option value="mobile">Phone / tablet</option><option value="dedicated">Dedicated GPU computer</option></select></label>
+<button id="run" disabled>RUN BENCHMARK</button><p id="status" role="status">Loading game…</p>
+<section id="results" hidden><h2>Measured results</h2><p id="summary"></p><small>Target: 60 FPS. Raw frame times and GPU identity are retained for review. A software renderer cannot establish physical-device acceptance.</small><textarea id="report" readonly aria-label="Benchmark JSON"></textarea><button id="copy">COPY RESULTS</button> <button id="download">DOWNLOAD JSON</button></section>
+<p><a href="./">Return to game</a></p></main>
+<script type="module" src="/src/benchmark.ts"></script></body></html>

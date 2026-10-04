@@ -126,6 +126,9 @@ export function createGameServer(options: { clientDist?: string } = {}) {
         if (!server.listening) { resolve(); return; }
         server.close(err => err ? reject(err) : resolve());
         server.closeIdleConnections();
+        // Incomplete HTTP headers are neither idle keep-alives nor WebSockets.
+        // Close those sockets too so platform termination cannot leave live handles.
+        server.closeAllConnections();
       });
     });
     return closePromise;

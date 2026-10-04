@@ -219,8 +219,10 @@ describe('Spec-04 compiled production entry point', () => {
   it.each(['SIGTERM', 'SIGINT'] as const)('serves the built client and exits cleanly on %s with an active room', async signal => {
     const { spawn } = await import('node:child_process');
     const { fileURLToPath } = await import('node:url');
+    const { tmpdir } = await import('node:os');
     const entry = fileURLToPath(new URL('../../dist/index.js', import.meta.url));
-    const child = spawn(process.execPath, [entry], { env: { ...process.env, PORT: '0' }, stdio: ['ignore', 'pipe', 'pipe'] });
+    const child = spawn(process.execPath, [entry], { cwd: tmpdir(), env: { ...process.env, PORT: '0' }, stdio: ['ignore', 'pipe', 'pipe'] });
+    let unfinished: import('node:net').Socket | undefined;
     let stderr = ''; child.stderr.on('data', data => { stderr += data.toString(); });
     try {
       const childPort = await new Promise<number>((resolve, reject) => {
@@ -246,6 +248,11 @@ describe('Spec-04 compiled production entry point', () => {
       const b = new Peer(new WebSocket(`ws://127.0.0.1:${childPort}/ws`)); peers.push(b); await once(b.ws, 'open');
       b.send({ type: 'CMD_JOIN_ROOM', roomCode: host.roomCode, playerName: 'B' }); await b.wait(isInit);
       await b.wait(m => m.type === 'STATE_TICK' && m.phase === 'DEAL');
+      const { connect } = await import('node:net');
+      unfinished = connect(childPort, '127.0.0.1');
+      unfinished.on('error', () => {});
+      await once(unfinished, 'connect');
+      unfinished.write('GET / HTTP/1.1\r\nHost: localhost\r\n');
       const exit = once(child, 'exit'); child.kill(signal);
       const [code, exitSignal] = await Promise.race([exit, new Promise<never>((_resolve, reject) => {
         const timer = setTimeout(() => reject(new Error('Shutdown left live handles')), 3000);
@@ -253,6 +260,7 @@ describe('Spec-04 compiled production entry point', () => {
       })]);
       expect(code).toBe(0); expect(exitSignal).toBeNull(); expect(stderr).toBe('');
     } finally {
+      unfinished?.destroy();
       if (child.exitCode === null && child.signalCode === null) { child.kill('SIGKILL'); await once(child, 'exit'); }
     }
   });

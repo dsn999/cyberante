@@ -372,7 +372,7 @@ class CyberanteGame {
   private announceMatch(winnerId: string | null | undefined): void {
     if (!winnerId || winnerId === this.announcedWinner) return;
     this.announcedWinner = winnerId;
-    if (winnerId === this.selfPlayerId) masterAudio.sfx.playVictory();
+    if (winnerId === this.selfPlayerId) { masterAudio.sfx.playVictory(); this.scene.triggerVictoryConfetti(); }
     else masterAudio.sfx.playDefeat();
   }
 

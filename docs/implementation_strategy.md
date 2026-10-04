@@ -214,9 +214,9 @@ This section supersedes historical Spec-05 findings and pacing follow-ups above.
 
 ## Dispatch readiness
 
-**Specs 01–09 and the Spec-10A playable milestone are complete. Spec-10B is next.**
-Proceed to final integration and deployment acceptance, including the physical
-GPU performance evidence explicitly staged there by the user.
+**Specs 01–09 and the Spec-10A playable milestone are complete. Spec-10B is in progress.**
+Its software integration and deployment checks are being verified; physical GPU
+performance evidence explicitly staged there by the user remains open.
 
 Completed dispatches cover strict COMMITMENT-only lock-in,
 full payload validation, cryptographic token generation, disconnected-seat-only
@@ -283,7 +283,7 @@ working directory if the documented invocation needs correction.
 
 ## Recommended next dispatch
 
-Proceed to **Spec-10B: Final Integration & Universal Deployment Acceptance**. The procedural audio, renderer, psychedelic title,
+Continue **Spec-10B: Final Integration & Universal Deployment Acceptance**. The procedural audio, renderer, psychedelic title,
 tactical UI and interactive curriculum now form the intended playable experience.
 Spec-10B covers final CI, production operation, build footprint, mode transitions,
 disconnect/shutdown behavior and physical device performance evidence.
@@ -496,3 +496,36 @@ is checked; the next dispatch is Spec-07.
 Contest cover capture and submission copy follow the completed playable build.
 The contest claims/deadline in the master document were read as project context,
 not independently verified during this repository audit.
+
+### Spec-10B implementation evidence (2026-10-04)
+
+- Fixed production shutdown with unfinished HTTP headers. Both compiled-process
+  signal checks now start outside the repository, serve the real built client,
+  establish an active WebSocket room and exit with code 0 on SIGINT/SIGTERM.
+- Match victory emits procedural multicolor confetti from the existing particle
+  pool. The winner announcement remains deduplicated, and reduced motion lowers
+  the particle count. No combat constants or balance rules changed.
+- Added an emitted-build audit to CI and `npm run verify:build`. It checks all
+  production HTML entry points and JavaScript chunks, rejects media/raw
+  TypeScript/source maps, and enforces the strict 250,000 gzip byte ceiling.
+  The current build measures 151,674 bytes including the diagnostic entry.
+- Added an optional `/benchmark.html` page measuring the real splash, prepared
+  hand and training clash, with device metadata, JSON export, visibility/context
+  cancellation and a bounded watchdog. Software rendering is labeled explicitly
+  and does not satisfy physical-device acceptance.
+- Added [production operation](deployment.md) instructions for Node builds,
+  start/PORT settings, same-host HTTPS/WebSocket proxies, readiness and in-memory
+  room lifecycle. No external host has been deployed during this dispatch.
+- The required sequential build/test/simulation gate passes: 229 server/shared
+  tests, 117 client tests, and 300 complete seeded simulation matches.
+- All 30 production browser cases pass under SwiftShader with one worker,
+  covering offline/online match lifecycles, recovery, audio, WebGL restoration,
+  tutorial, responsive layouts, 44px controls and the new diagnostic page.
+  The 960×600 software measurement was 44.67 FPS; it is diagnostic evidence.
+- A forced native GPU experiment through WSL preceded a laptop freeze requiring
+  a hard shutdown. That CLI capability has been removed. The CLI now always
+  selects software rendering and tests reject native/WSL forcing options before
+  browser launch. No driver settings are changed by the workflow.
+- Physical 60 FPS acceptance on an integrated GPU computer and a phone/tablet
+  remains unverified. Spec-10B is not complete; software-rendered evidence cannot
+  close that requirement. Further native GPU experiments through WSL are excluded.

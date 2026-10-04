@@ -18,7 +18,9 @@
     "start": "npm --workspace=packages/server run start",
     "test": "npm --workspace=packages/server test && npm --workspace=packages/client test",
     "sim": "npm --workspace=packages/server run sim",
-    "test:e2e": "npm run build && playwright test"
+    "test:e2e": "npm run build && playwright test",
+    "verify:build": "node scripts/verifyBuild.mjs",
+    "benchmark": "node scripts/rendererBenchmark.mjs"
   },
   "keywords": [
     "poker",

@@ -17,8 +17,9 @@ export default defineConfig({
   },
   build: {
     outDir: 'dist',
-    sourcemap: true,
+    sourcemap: false,
     rollupOptions: {
+      input: { game: path.resolve(__dirname, 'index.html'), benchmark: path.resolve(__dirname, 'benchmark.html') },
       output: {
         manualChunks: { three: ['three'] },
       },

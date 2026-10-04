@@ -109,6 +109,11 @@ describe('Spec-07 scene, compositor and resource lifecycle', () => {
     const center = scene.screenToWorld(600, 300).clone(); expect(center.x).toBeCloseTo(0); expect(center.y).toBeCloseTo(0); expect(center.z).toBeCloseTo(0);
     const right = scene.screenToWorld(1200, 300); expect(right.x).toBeGreaterThan(30);
   });
+  it('celebrates a match victory with pooled suit-colored confetti respecting reduced motion', () => {
+    scene.triggerVictoryConfetti(); expect(scene.getDiagnostics().particles).toBe(300);
+    scene.toggleReducedMotion(); scene.triggerVictoryConfetti(); expect(scene.getDiagnostics().particles).toBe(72);
+    expect(state.renderers).toHaveLength(1);
+  });
   it('stops RAF on context loss/visibility, resumes only once and preserves UI settings', () => {
     const event = new Event('webglcontextlost', { cancelable: true }); renderer().domElement.dispatchEvent(event);
     expect(event.defaultPrevented).toBe(true); expect(frames.size).toBe(0); expect(scene.getDiagnostics().lost).toBe(true);
