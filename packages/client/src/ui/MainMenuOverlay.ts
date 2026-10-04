@@ -1,6 +1,5 @@
 import { masterAudio } from '../audio/AudioEngine';
 import type { BotPersonality } from '@cyberante/shared';
-import { sfx } from '../audio/SoundEffects';
 
 export interface MainMenuCallbacks {
   onStartSolo: (profile: BotPersonality) => void;
@@ -50,7 +49,7 @@ export class MainMenuOverlay {
     this.syncMute();
   }
   private element<T extends HTMLElement = HTMLElement>(id: string): T { return this.container.querySelector<T>(`#${id}`)!; }
-  private unlock(): void { masterAudio.init(); masterAudio.resume(); sfx.playClick(); }
+  private unlock(): void { masterAudio.init(); void masterAudio.resume(); masterAudio.sfx.playClick(); }
   private multiplayer(host: boolean): void {
     const nameInput = this.element<HTMLInputElement>('player-name-input');
     const name = nameInput.value.trim().slice(0, 16); nameInput.value = name;

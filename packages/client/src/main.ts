@@ -10,9 +10,7 @@ import { RulesModal } from './ui/RulesModal';
 import { TutorialManager } from './tutorial/TutorialManager';
 import { SoloMatchSession } from './game/SoloMatchSession';
 import { NetworkClient } from './net/NetworkClient';
-import { musicPlayer } from './audio/ProceduralMusic';
 import { masterAudio } from './audio/AudioEngine';
-import { sfx } from './audio/SoundEffects';
 import {
   Stance,
   Suit,
@@ -41,6 +39,8 @@ class CyberanteGame {
   private selfPlayerId: string = 'player';
   private previousHand = '';
   private previousPhase = '';
+  private announcedWinner: string | undefined;
+  private clashKey = '';
 
   constructor() {
     const uiRoot = document.getElementById('ui-overlay') || document.getElementById('ui-root') || document.body;
@@ -92,7 +92,7 @@ class CyberanteGame {
     });
     uiRoot.addEventListener('pointerdown', () => {
       this.unlockAudio();
-      if (this.mode === 'solo' || this.mode === 'online') musicPlayer.start();
+      if (this.mode === 'solo' || this.mode === 'online') masterAudio.music.start();
     });
     if (this.networkClient.hasSession) this.resumeMultiplayerMatch();
   }
@@ -109,7 +109,7 @@ class CyberanteGame {
 
   private unlockAudio(): void {
     masterAudio.init();
-    masterAudio.resume();
+    void masterAudio.resume();
   }
 
   private startTutorial(): void {
@@ -131,7 +131,7 @@ class CyberanteGame {
     this.mainMenu.hide();
     this.gameBoard.show();
     this.gameBoard.setConnected(true);
-    musicPlayer.start();
+    masterAudio.music.start();
     const seed = crypto.getRandomValues(new Uint32Array(1))[0];
     this.soloSession = new SoloMatchSession(profile, seed, message => this.handleMessage(message));
     this.soloSession.start();
@@ -152,11 +152,15 @@ class CyberanteGame {
     this.gameBoard.resetView();
     this.previousHand = '';
     this.previousPhase = '';
+    this.announcedWinner = undefined;
+    this.clashKey = '';
     this.deadline = 0;
     this.gameBoard.hide();
     this.tutorial.hide();
     this.rulesModal.hide();
-    musicPlayer.stop();
+    masterAudio.music.stop();
+    masterAudio.music.setPhase('LOBBY_WAIT');
+    masterAudio.sfx.stop();
     this.mainMenu.show();
   }
 
@@ -188,7 +192,7 @@ class CyberanteGame {
     this.mainMenu.hide();
     this.gameBoard.show();
     this.gameBoard.setConnected(false);
-    musicPlayer.start();
+    masterAudio.music.start();
 
     this.startCountdown();
     this.joinTimer = setTimeout(() => {
@@ -231,6 +235,10 @@ class CyberanteGame {
       this.selfPlayerId = msg.playerId;
       this.gameBoard.showBanner(`MATCH READY • ROOM ${msg.roomCode}`);
     } else if (msg.type === 'STATE_TICK') {
+      if (msg.phase === 'DEAL') {
+        this.announcedWinner = undefined;
+        if (this.previousPhase === 'MATCH_OVER') this.clashKey = '';
+      }
       const self = msg.players[this.selfPlayerId];
       const opponent = Object.values(msg.players).find(p => p.playerId !== this.selfPlayerId);
       if (self) {
@@ -250,9 +258,10 @@ class CyberanteGame {
         this.gameBoard.setRematchAvailable(this.mode === 'solo' || Boolean(opponent?.connected));
         if (msg.phase === 'MATCH_OVER') {
           this.gameBoard.showBanner(msg.matchWinnerId === this.selfPlayerId ? 'MATCH VICTORY!' : 'MATCH DEFEAT!', 0);
+          this.announceMatch(msg.matchWinnerId);
         }
       }
-      musicPlayer.setPhase(msg.phase);
+      masterAudio.music.setPhase(msg.phase);
     } else if (msg.type === 'ROUND_OUTCOME') {
       this.handleClashOutcome(msg.resolution);
     } else if (msg.type === 'ERROR_REJECTED') {
@@ -270,7 +279,15 @@ class CyberanteGame {
     this.gameBoard.showResolution(resolution, this.selfPlayerId);
     this.scene.triggerShockwave(0, 0, 2.0);
     this.scene.triggerSparks(0, 0, 0x00f3ff);
-    sfx.playClashDamage(Math.max(resolution.p1NetDamageReceived, resolution.p2NetDamageReceived));
+    const clashKey = `${resolution.roundNumber}:${resolution.exchangeNumber}`;
+    if (this.clashKey !== clashKey) {
+      this.clashKey = clashKey;
+      masterAudio.sfx.playClashLaser();
+      if (Math.max(resolution.p1NetDamageReceived, resolution.p2NetDamageReceived) > 0) {
+        masterAudio.sfx.playDamageImpact(resolution.p1HpRemaining <= 0 || resolution.p2HpRemaining <= 0);
+      }
+    }
+    this.announceMatch(resolution.matchWinnerId);
 
     const isP1 = resolution.p1PlayerId
       ? this.selfPlayerId === resolution.p1PlayerId
@@ -286,6 +303,13 @@ class CyberanteGame {
     }
 
     this.gameBoard.showBanner(banner, 4000);
+  }
+
+  private announceMatch(winnerId: string | null | undefined): void {
+    if (!winnerId || winnerId === this.announcedWinner) return;
+    this.announcedWinner = winnerId;
+    if (winnerId === this.selfPlayerId) masterAudio.sfx.playVictory();
+    else masterAudio.sfx.playDefeat();
   }
 
   // --------------------------------------------------------------------------

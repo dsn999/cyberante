@@ -2,7 +2,7 @@
 
 Audit date: 2026-10-03. Second review: committed baseline `fe9fc48`. Scope: the master design, all ten subsidiary specs,
 workspace configuration, shared/server/client source, existing tests, and CI.
-This strategy records audit findings and dispatch progress. Specs 01–05, 08 and
+This strategy records audit findings and dispatch progress. Specs 01–06, 08 and
 the Spec-10A playable milestone are implemented and verified; later dispatches
 remain outstanding.
 
@@ -214,8 +214,8 @@ This section supersedes historical Spec-05 findings and pacing follow-ups above.
 
 ## Dispatch readiness
 
-**Specs 01–05, 08 and the Spec-10A playable milestone are complete. Spec-06 is next.**
-Continue the planned UI, audio, renderer and tutorial dispatches, then final
+**Specs 01–06, 08 and the Spec-10A playable milestone are complete. Spec-07 is next.**
+Continue the planned renderer and tutorial dispatches, then final
 Spec-10B acceptance.
 
 Completed dispatches cover strict COMMITMENT-only lock-in,
@@ -283,14 +283,46 @@ working directory if the documented invocation needs correction.
 
 ## Recommended next dispatch
 
-Proceed to **Spec-06: Procedural Audio**. Spec-08 completes the tactical UI APIs,
-responsive layout, guarded controls, two-neighbor Bleed, keyboard lane selection,
-countdown cue, named Host/Join, rules access and UI accessibility settings.
-Spec-10A supplies the complete playable solo/online flows and recovery. Finish
-audio scheduling, gain/FFT contracts, SFX palette and node cleanup next; then
-renderer, tutorial and final deployment/mobile/performance acceptance.
+Proceed to **Spec-07: Reactive Neon Vector Renderer**. Spec-06 supplies the
+shared audio graph, phase music, complete SFX, normalized FFT and voice cleanup;
+Spec-08 supplies the tactical UI and accessibility controls. Implement the
+subdivided grid, vector glyphs, shader/compositor, particle pools and renderer
+lifecycle next, including independent CRT and reduced-motion behavior.
 
-Continue with 06, 07, 09 and 10B.
+Continue with 07, 09 and 10B.
+
+### Spec-06 implementation evidence (2026-10-04)
+
+- One gesture-created AudioContext routes music/SFX buses through a 0.3 master
+  gain and a 256-point analyser. Public music/SFX instances stay stable before
+  activation. Unsupported APIs, construction failures and rejected resume calls
+  preserve gameplay; mute works before initialization and cancels queued voices.
+- The eight specified D-minor pentatonic notes use a 25ms scheduler and 100ms
+  lookahead against AudioContext.currentTime. All specified phase tempos,
+  cutoff/Q transitions, lobby/deal drones, clash bass drop and resolve chord
+  are implemented. Late wakes rebase without a backlog; repeated ticks/start
+  calls retain one scheduler. Tempo overrides accept finite 40–240 BPM values.
+- Complete procedural effects include detuned Bleed, cached white-noise Burn,
+  Parry ring modulation, clash FM, distorted impact and result fanfares.
+  Card selection and authoritative clashes/results are wired through the engine;
+  repeated outcomes/ticks do not replay a match fanfare. Impact strength uses
+  actual knockout HP. Mode exit cancels all music and SFX, including future notes.
+- Voice ownership caps music at 16 and SFX at 32 sources; natural completion,
+  eviction, mute and stop disconnect transient sources, filters, gains and
+  modulators. Only the five persistent connected graph nodes remain on exit.
+  FFT averages exactly bins 1–10, 11–40 and 41–100; idle/suspended/muted output
+  is zero. No unchecked `any`, third-party audio package or media asset is used.
+- Verification: 33 focused audio tests, 267 total unit/integration tests,
+  warning-free build/test/sim and all 16 Chromium acceptance cases. Native
+  browser instrumentation confirms FFT activity, a single context across three
+  matches, graph cleanup, unsupported-audio gameplay and one result fanfare.
+  Native gain assertions wait for scheduled audio automation to take effect.
+- Production JavaScript totals 138,711 bytes gzipped (Python gzip level 9);
+  no image/model/audio files are emitted. Audio listening across devices and
+  final mobile/performance acceptance remain part of Spec-10B.
+
+This evidence supersedes historical audio findings above. The Spec-06 checklist
+is checked; the next dispatch is Spec-07.
 
 ### Spec-08 implementation evidence (2026-10-04)
 

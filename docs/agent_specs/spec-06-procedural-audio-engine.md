@@ -166,8 +166,19 @@ Requirements:
 ```
 
 ## 10. Definition of Done Checklist
-- [ ] Master audio graph with `AudioContext`, `GainNode`, and `AnalyserNode`.
-- [ ] Generative synthwave music arpeggiator adapting to game phases.
-- [ ] Complete interactive SFX suite for all gameplay actions.
-- [ ] Audio-reactive FFT buckets exposed for vector renderer.
-- [ ] Zero external audio assets required; builds cleanly under Vite.
+- [x] Master audio graph with `AudioContext`, `GainNode`, and `AnalyserNode`.
+- [x] Generative synthwave music arpeggiator adapting to game phases.
+- [x] Complete interactive SFX suite for all gameplay actions.
+- [x] Audio-reactive FFT buckets exposed for vector renderer.
+- [x] Zero external audio assets required; builds cleanly under Vite.
+
+### Verification evidence (2026-10-04)
+
+- Exact client build command and the repository build/test/sim gates pass.
+- 33 audio unit tests cover graph/API activation, phase scheduling, FFT bins,
+  every SFX palette entry, muted/suspended/unsupported behavior and voice cleanup.
+- Native Chromium acceptance verifies FFT activity, single-context reuse,
+  mute and mode cleanup, unsupported-audio play and authoritative result cues.
+- Production output contains no external media files. Detailed dispatch evidence
+  and remaining integration acceptance are recorded in
+  [the implementation strategy](../implementation_strategy.md#spec-06-implementation-evidence-2026-10-04).

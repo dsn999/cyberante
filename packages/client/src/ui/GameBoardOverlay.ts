@@ -2,7 +2,6 @@ import {
   type Card, type GamePhase, type Stance, type Suit, type Rank, type RoundResolution,
   SUIT_GLYPHS, SUIT_COLORS, SUIT_RING, GAME_CONSTANTS, evaluateAssaultHand, evaluateAegisHand,
 } from '@cyberante/shared';
-import { sfx } from '../audio/SoundEffects';
 import { masterAudio } from '../audio/AudioEngine';
 import { HandSelection } from './HandSelection';
 
@@ -95,7 +94,7 @@ export class GameBoardOverlay {
   private canShape(): boolean { return this.canSelect() && this.phase === 'SHAPING'; }
 
   private bindEvents(): void {
-    this.element('btn-toggle-rules').addEventListener('click', () => { sfx.playClick(); this.callbacks.onToggleRules(); });
+    this.element('btn-toggle-rules').addEventListener('click', () => { masterAudio.sfx.playClick(); this.callbacks.onToggleRules(); });
     this.element('btn-toggle-crt').addEventListener('click', () => {
       document.body.classList.toggle('clean-display');
       this.syncPreferences();
@@ -129,13 +128,13 @@ export class GameBoardOverlay {
       this.element(`stance-${stance.toLowerCase()}`).addEventListener('click', () => {
         if (!this.canSelect()) return;
         this.selectedStance = stance;
-        sfx.playStanceSelect(stance);
+        masterAudio.sfx.playStanceSelect(stance);
         this.updateControls();
       });
     }
     this.element('btn-lock-in').addEventListener('click', () => {
       if (!this.canSelect() || this.phase !== 'COMMITMENT' || !this.selection.valid) return;
-      sfx.playClick();
+      masterAudio.sfx.playClick();
       this.callbacks.onCommitHand([...this.selection.assaultIds] as [string, string, string], [...this.selection.aegisIds] as [string, string], this.selectedStance);
     });
     this.element('hand-cards').addEventListener('click', event => {
@@ -145,16 +144,16 @@ export class GameBoardOverlay {
       if (!card) return;
       if (button.dataset.action === 'slot') {
         if (!this.canSelect()) return;
-        this.selection.toggle(card.id); sfx.playClick(); this.renderSelection();
+        this.selection.toggle(card.id); masterAudio.sfx.playCardSelect(); this.renderSelection();
       } else if (this.canShape()) {
         const action = button.dataset.action;
-        if (action === 'up' && this.flux >= 1) { sfx.playPipNudge('UP'); this.callbacks.onNudgeRank(card.id, 'UP'); }
-        if (action === 'down' && this.flux >= 1) { sfx.playPipNudge('DOWN'); this.callbacks.onNudgeRank(card.id, 'DOWN'); }
+        if (action === 'up' && this.flux >= 1) { masterAudio.sfx.playPipNudge('UP'); this.callbacks.onNudgeRank(card.id, 'UP'); }
+        if (action === 'down' && this.flux >= 1) { masterAudio.sfx.playPipNudge('DOWN'); this.callbacks.onNudgeRank(card.id, 'DOWN'); }
         if (action === 'bleed' && this.flux >= 2) {
           const suit = button.dataset.suit as Suit;
-          if (SUIT_RING[card.suit].includes(suit)) { sfx.playSuitBleed(); this.callbacks.onBleedSuit(card.id, suit); }
+          if (SUIT_RING[card.suit].includes(suit)) { masterAudio.sfx.playSuitBleed(); this.callbacks.onBleedSuit(card.id, suit); }
         }
-        if (action === 'burn' && !this.burned) { sfx.playBurn(); this.callbacks.onBurnCard(card.id); }
+        if (action === 'burn' && !this.burned) { masterAudio.sfx.playBurn(); this.callbacks.onBurnCard(card.id); }
       }
     });
     for (const id of ['assault-slots', 'aegis-slots']) this.element(id).addEventListener('click', event => {
