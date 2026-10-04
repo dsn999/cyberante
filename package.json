@@ -1,0 +1,31 @@
+{
+  "name": "cyberante",
+  "version": "0.1.0",
+  "description": "CYBERANTE - Procedural Vector Poker-Combat Matrix (Handshake x OpenAI Challenge)",
+  "private": true,
+  "workspaces": [
+    "packages/shared",
+    "packages/server",
+    "packages/client"
+  ],
+  "scripts": {
+    "dev:server": "npm --workspace=packages/server run dev",
+    "dev:client": "npm --workspace=packages/client run dev",
+    "build": "npm --workspace=packages/shared run build && npm --workspace=packages/server run build && npm --workspace=packages/client run build",
+    "test": "npm --workspace=packages/server test",
+    "lint": "eslint packages/*/src/**/*.ts"
+  },
+  "keywords": [
+    "poker",
+    "fighting-game",
+    "geometry-wars",
+    "procedural",
+    "webgl",
+    "webaudio",
+    "threejs",
+    "websockets",
+    "openai-codex"
+  ],
+  "author": "Blaze Giroux",
+  "license": "MIT"
+}
