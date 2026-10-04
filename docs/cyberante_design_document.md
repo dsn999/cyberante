@@ -98,7 +98,7 @@ Players declare a blind combat stance alongside card placement:
 | :--- | :--- | :--- | :--- |
 | **Brace** | $1.0\times$ | Standard Aegis Mitigation | Baseline stance. Reliable absorption. |
 | **Overcharge** | $2.0\times$ | Aegis reduced to $0$ | All-in aggression. Extreme burst damage, zero defense. |
-| **Parry** | $0.5\times$ | Normal Mitigation | If Opponent Assault $<$ Flush, reflect $50\%$ of raw incoming damage back to the attacker. |
+| **Parry** | $0.5\times$ | Normal Mitigation | If Opponent Overcharges OR Opponent Assault $<$ Flush (Pair / High Card), reflect $50\%$ of raw incoming damage back to the attacker. |
 
 ### 2.5 Combat Resolution Mathematics
 

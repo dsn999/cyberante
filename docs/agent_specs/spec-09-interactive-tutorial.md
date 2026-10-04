@@ -71,7 +71,7 @@ The tutorial walks first-time players through the game's core concepts with a mo
    - **Instruction:** *"Once per exchange, you can BURN a card to activate its suit power. Burning a DIAMOND gives you a hard damage-absorbing Barrier! You immediately draw a replacement card from the deck."*
    - **Action Gate:** User must click `[ BURN ]` on the Diamond card.
 4. **Lesson 4: Stance Clash & Counter-Play:**
-   - **Instruction:** *"Choose your combat stance: BRACE ($1.0\times$ balanced), OVERCHARGE ($2.0\times$ double damage, pierces Aegis), or PARRY ($0.5\times$ damage, but reflects $50\%$ incoming damage if your opponent overcharges or attacks with a weak hand!). Select OVERCHARGE and lock in!"*
+   - **Instruction:** *"Choose your combat stance: BRACE ($1.0\times$ balanced), OVERCHARGE ($2.0\times$ double damage, but forfeits your own Aegis defense), or PARRY ($0.5\times$ damage, but reflects $50\%$ incoming damage if your opponent overcharges or attacks with a weak hand!). Select OVERCHARGE and lock in!"*
    - **Action Gate:** User selects stance, clicks `[ LOCK IN ]`, and watches a simulated clash against a training drone, triggering vector particle sparks and sound effects.
 
 ### 4.2 Tutorial Overlay UI Architecture
@@ -87,7 +87,7 @@ Accessible anytime during lobby, shaping, or solo matches by clicking `[ ? RULES
   - Pair ($8\text{ Mitigation}$), Suited ($4\text{ Mitigation}$), High Card ($2\text{ Mitigation}$).
 - **Section 3: Combat Stance Matrix:**
   - *Brace:* Standard $1.0\times$.
-  - *Overcharge:* $2.0\times$ damage; zeroes defender Aegis.
+  - *Overcharge:* $2.0\times$ damage; combatant forfeits own Aegis mitigation ($0\text{ Block}$, zero defense).
   - *Parry:* $0.5\times$ damage; reflects $50\%$ incoming damage if opponent overcharges or holds a weak hand (Pair / High Card). *(Refined via automated playtesting).*
 - **Section 4: Burn-to-Cast Suit Powers:**
   - *Spades (Veil):* Neutralizes opponent Overcharge and Parry reflect.

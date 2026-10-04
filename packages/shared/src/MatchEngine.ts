@@ -98,6 +98,23 @@ export class MatchEngine {
   }
 
   public startExchange(): void {
+    // If the previous exchange ended a round, reset HP to 20, reset exchange counter, and advance round
+    if (this.lastResolution?.isRoundOver && !this.matchWinnerId) {
+      this.currentRound += 1;
+      this.currentExchange = 1;
+      this.p1.guardHp = GAME_CONSTANTS.STARTING_GUARD_HP;
+      this.p2.guardHp = GAME_CONSTANTS.STARTING_GUARD_HP;
+    } else if (this.lastResolution && !this.lastResolution.isRoundOver) {
+      this.currentExchange += 1;
+      // If entering exchange 11 (Sudden Death), both players set to 1 HP
+      if (this.currentExchange > GAME_CONSTANTS.MAX_EXCHANGES_PER_ROUND) {
+        if (this.p1.guardHp > 0 && this.p2.guardHp > 0) {
+          this.p1.guardHp = 1;
+          this.p2.guardHp = 1;
+        }
+      }
+    }
+
     this.resetDeck();
     this.p1.cards = this.dealCards(5);
     this.p2.cards = this.dealCards(5);
@@ -188,6 +205,14 @@ export class MatchEngine {
     if (this.phase !== 'COMMITMENT' && this.phase !== 'SHAPING') return false;
     const player = this.getPlayer(playerId);
     if (!player) return false;
+    if (player.hasCommitted) return false; // Prevent overwriting
+
+    // Validate array lengths
+    if (!Array.isArray(assaultCardIds) || assaultCardIds.length !== 3) return false;
+    if (!Array.isArray(aegisCardIds) || aegisCardIds.length !== 2) return false;
+
+    // Validate stance
+    if (stance !== 'BRACE' && stance !== 'OVERCHARGE' && stance !== 'PARRY') return false;
 
     // Validate that IDs are distinct and belong to player's current hand
     const allIds = [...assaultCardIds, ...aegisCardIds];
@@ -222,6 +247,10 @@ export class MatchEngine {
   }
 
   public resolveClash(): RoundResolution {
+    // Prevent duplicate resolutions for the same exchange
+    if (this.phase === 'CLASH_REVEAL' || this.phase === 'ROUND_RESOLVE' || this.phase === 'MATCH_OVER') {
+      if (this.lastResolution) return this.lastResolution;
+    }
     this.phase = 'CLASH_REVEAL';
 
     const p1Assault = this.getCardsByIds(this.p1, this.p1.assaultCardIds!) as [Card, Card, Card];
@@ -257,6 +286,33 @@ export class MatchEngine {
     this.p1.guardHp = resolution.p1HpRemaining;
     this.p2.guardHp = resolution.p2HpRemaining;
 
+    // Check exchange cap & Sudden Death logic:
+    // If exchange reaches MAX_EXCHANGES_PER_ROUND (10) without a knockout:
+    if (!resolution.isRoundOver && this.currentExchange >= GAME_CONSTANTS.MAX_EXCHANGES_PER_ROUND) {
+      if (this.p1.guardHp > this.p2.guardHp) {
+        resolution.isRoundOver = true;
+        resolution.roundWinnerId = this.p1.playerId;
+      } else if (this.p2.guardHp > this.p1.guardHp) {
+        resolution.isRoundOver = true;
+        resolution.roundWinnerId = this.p2.playerId;
+      } else if (this.currentExchange > GAME_CONSTANTS.MAX_EXCHANGES_PER_ROUND) {
+        // Sudden Death (Exchange 11+): tiebreak by Assault score, then Aegis score
+        if (resolution.p1Eval3.score > resolution.p2Eval3.score) {
+          resolution.isRoundOver = true;
+          resolution.roundWinnerId = this.p1.playerId;
+        } else if (resolution.p2Eval3.score > resolution.p1Eval3.score) {
+          resolution.isRoundOver = true;
+          resolution.roundWinnerId = this.p2.playerId;
+        } else if (resolution.p1Eval2.score > resolution.p2Eval2.score) {
+          resolution.isRoundOver = true;
+          resolution.roundWinnerId = this.p1.playerId;
+        } else {
+          resolution.isRoundOver = true;
+          resolution.roundWinnerId = this.p2.playerId;
+        }
+      }
+    }
+
     // Check if round KO occurred
     if (resolution.isRoundOver) {
       if (resolution.roundWinnerId === this.p1.playerId) {
@@ -273,16 +329,10 @@ export class MatchEngine {
         this.matchWinnerId = this.p2.playerId;
         resolution.matchWinnerId = this.p2.playerId;
         this.phase = 'MATCH_OVER';
-      } else {
-        // Next round: reset Guard HP to 20 for both players
-        this.currentRound += 1;
-        this.currentExchange = 1;
-        this.p1.guardHp = GAME_CONSTANTS.STARTING_GUARD_HP;
-        this.p2.guardHp = GAME_CONSTANTS.STARTING_GUARD_HP;
       }
-    } else {
-      // Round continues to next exchange in same round!
-      this.currentExchange += 1;
+      // Note: We intentionally delay currentRound increment and Guard HP reset to 20
+      // until startExchange() is called for the subsequent round. This preserves
+      // the KO display state during CLASH_REVEAL and ROUND_RESOLVE.
     }
 
     this.lastResolution = resolution;
@@ -325,9 +375,11 @@ export class MatchEngine {
   }
 
   private autoLockPlayer(player: PlayerPrivateState): void {
-    // Generate all 10 possible splits and pick the highest scoring combination
+    // Generate all 10 possible splits and pick optimal partition per Spec-04:
+    // Highest Assault score, breaking ties by Aegis score, fallback to first partition.
     const cards = player.cards;
-    let bestScore = -Infinity;
+    let bestAssaultScore = -Infinity;
+    let bestAegisScore = -Infinity;
     let bestAssault: [string, string, string] = [cards[0].id, cards[1].id, cards[2].id];
     let bestAegis: [string, string] = [cards[3].id, cards[4].id];
 
@@ -339,10 +391,13 @@ export class MatchEngine {
 
           const aEval = evaluateAssaultHand(assaultCards);
           const dEval = evaluateAegisHand(aegisCards);
-          const totalScore = aEval.baseDamage * 1.5 + dEval.mitigation;
 
-          if (totalScore > bestScore) {
-            bestScore = totalScore;
+          if (
+            aEval.score > bestAssaultScore ||
+            (aEval.score === bestAssaultScore && dEval.score > bestAegisScore)
+          ) {
+            bestAssaultScore = aEval.score;
+            bestAegisScore = dEval.score;
             bestAssault = [cards[i].id, cards[j].id, cards[k].id];
             bestAegis = [aegisCards[0].id, aegisCards[1].id];
           }

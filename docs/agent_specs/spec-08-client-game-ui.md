@@ -134,9 +134,9 @@ Each card in hand features intuitive micro-controls:
 
 ### 4.4 Stance Selection & Commitment Lock-In
 - **Stance Matrix Buttons:** Three mutually exclusive toggle buttons:
-  - `BRACE (1.0x)`: Standard baseline stance.
-  - `OVERCHARGE (2.0x)`: Double damage, bypasses defender Aegis mitigation.
-  - `PARRY (0.5x REFLECT)`: Half damage, reflects 50% incoming damage if opponent Overcharges.
+  - `BRACE (1.0x)`: Standard baseline stance. Reliable absorption.
+  - `OVERCHARGE (2.0x)`: Double damage dealt, forfeits own Aegis mitigation (0 Block, zero defense).
+  - `PARRY (0.5x REFLECT)`: Half damage dealt, reflects 50% incoming damage if opponent Overcharges or attacks with a weak hand (Pair or High Card).
 - **Commit Button:** Becomes active only when exactly 3 Assault cards and 2 Aegis cards are assigned. Pulsates during the final 3 seconds of the `COMMITMENT` phase countdown.
 
 ### 4.5 Accessibility & High-Contrast Design

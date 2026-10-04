@@ -36,7 +36,7 @@ class CyberanteGame {
   private selfPlayerId: string = 'player';
 
   constructor() {
-    const uiRoot = document.getElementById('ui-root') || document.body;
+    const uiRoot = document.getElementById('ui-overlay') || document.getElementById('ui-root') || document.body;
 
     // Initialize 3D Vector Scene
     this.scene = new VectorScene('canvas-container');
@@ -178,7 +178,9 @@ class CyberanteGame {
     this.scene.triggerShockwave(0, 0, 2.0);
     this.scene.triggerSparks(0, 0, 0x00f3ff);
 
-    const isP1 = this.selfPlayerId === 'player' || resolution.p1HpRemaining !== undefined;
+    const isP1 = resolution.p1PlayerId
+      ? this.selfPlayerId === resolution.p1PlayerId
+      : (this.selfPlayerId === 'player' || this.selfPlayerId === 'p1');
     const myDamageDealt = isP1 ? resolution.p1RawDamage : resolution.p2RawDamage;
     const myDamageTaken = isP1 ? resolution.p1NetDamageReceived : resolution.p2NetDamageReceived;
 
@@ -251,8 +253,21 @@ class CyberanteGame {
         }
       }
 
+      // Re-evaluate partitions with current post-burn/nudge cards
+      const finalBotDecision = (botDecision.burnCardId || botDecision.fluxActions.length > 0)
+        ? this.botAI.evaluateHand(botState.cards, botState.guardHp, playerState.guardHp, 0, false)
+        : botDecision;
+
       // Commit bot hand
-      this.localEngine.commitHand('bot', botDecision.assaultCardIds, botDecision.aegisCardIds, botDecision.stance);
+      const botCommitOk = this.localEngine.commitHand(
+        'bot',
+        finalBotDecision.assaultCardIds,
+        finalBotDecision.aegisCardIds,
+        finalBotDecision.stance
+      );
+      if (!botCommitOk) {
+        this.localEngine.autoLockUncommitted();
+      }
 
       // 3. Resolve Clash!
       const outcome = this.localEngine.resolveClash();

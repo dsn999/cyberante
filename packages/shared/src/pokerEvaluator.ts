@@ -38,7 +38,7 @@ export function evaluateAssaultHand(cards: [Card, Card, Card]): HandEvaluation3 
     tier = 'STRAIGHT_FLUSH';
     baseDamage = GAME_CONSTANTS.DAMAGE_STRAIGHT_FLUSH;
     score = 60000 + (isAceLowStraight ? 3 : r0);
-    description = `Straight Flush (${r0}-high)`;
+    description = `Straight Flush (${isAceLowStraight ? 'A-2-3' : `${r0}-high`})`;
   } else if (isThreeOfAKind) {
     tier = 'THREE_OF_A_KIND';
     baseDamage = GAME_CONSTANTS.DAMAGE_THREE_OF_A_KIND;

@@ -146,6 +146,8 @@ export function resolveCombatRound(
     exchangeNumber,
     roundNumber,
     isRoundOver,
+    p1PlayerId: c1.playerId,
+    p2PlayerId: c2.playerId,
 
     p1Assault: c1.assaultCards,
     p1Aegis: c1.aegisCards,

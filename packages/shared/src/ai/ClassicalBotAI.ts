@@ -28,6 +28,10 @@ export class ClassicalBotAI {
     this.config = BOT_PROFILES[profileName];
   }
 
+  public getProfile(): BotConfig {
+    return this.config;
+  }
+
   /**
    * Generates optimal tactical decision for the given 5-card hand.
    */
@@ -110,6 +114,13 @@ export class ClassicalBotAI {
       }
     }
 
+    const assaultCards: [Card, Card, Card] = [bestSplit.assault[0], bestSplit.assault[1], bestSplit.assault[2]];
+    const aegisCards: [Card, Card] = [bestSplit.aegis[0], bestSplit.aegis[1]];
+    const nudges = fluxActions
+      .filter(a => a.type === 'NUDGE' && a.direction)
+      .map(a => ({ cardId: a.cardId, direction: a.direction! }));
+    const candidateBurn = burnCardId ? hand.find(c => c.id === burnCardId) || null : null;
+
     return {
       fluxActions,
       burnCardId,
@@ -123,6 +134,12 @@ export class ClassicalBotAI {
         bestSplit.aegis[1].id,
       ],
       stance,
+      // Spec-05 compatibility aliases
+      assaultCards,
+      aegisCards,
+      chosenStance: stance,
+      cardToBurn: candidateBurn,
+      nudges,
     };
   }
 

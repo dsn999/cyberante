@@ -84,20 +84,26 @@ The room coordinates the underlying `MatchEngine` through the 5 phases of an exc
 |---|---|---|
 | `DEAL` | 2,000ms | MatchEngine deals 5 cards to each player. Server broadcasts `STATE_TICK`. Opponent cards remain masked. On timer expiry $\to$ advances to `SHAPING`. |
 | `SHAPING` | 15,000ms | Server accepts `CMD_NUDGE_RANK`, `CMD_BLEED_SUIT`, `CMD_BURN_CAST`, and `CMD_READY`. If both players signal ready before timer expires $\to$ cancels timer and advances to `COMMITMENT` immediately. |
-| `COMMITMENT` | 10,000ms | Server accepts `CMD_COMMIT_HAND`. If both players commit $\to$ cancels timer and advances to `CLASH_REVEAL` immediately. **Timeout Fallback:** If timer expires, server auto-commits optimal split with `BRACE`. |
+| `COMMITMENT` | 10,000ms | Server accepts `CMD_COMMIT_HAND`. If both players commit $\to$ cancels timer and advances to `CLASH_REVEAL` immediately. **Timeout Fallback:** If timer expires, server auto-commits optimal ten-partition split with `BRACE` (highest Assault score, breaking ties by Aegis score, fallback to first partition). |
 | `CLASH_REVEAL` | 4,000ms | MatchEngine resolves combat damage, stances, reflections, and burns. Server broadcasts `ROUND_OUTCOME` with complete `RoundResolution` and full card reveals for both players. |
-| `ROUND_RESOLVE` | 3,000ms | Damage is tallied. Checks `isRoundOver`: <br>• If round continues $\to$ advances to next exchange (`DEAL`) with carry-over HP. <br>• If round won $\to$ increments winner round points and checks if match won (`roundWins >= 2`). If match won $\to$ transitions to `MATCH_OVER`. Otherwise resets HP to 20 and starts next round (`DEAL`). |
+| `ROUND_RESOLVE` | 3,000ms | Damage is tallied. Checks `isRoundOver`: <br>• If round continues $\to$ advances to next exchange (`DEAL`) with carry-over HP. <br>• If round won $\to$ increments winner round points and checks if match won (`roundWins >= 2`). If match won $\to$ transitions to `MATCH_OVER`. Otherwise resets HP to 20 and starts next round (`DEAL`). <br>*Lifecycle Invariant:* Round number increment and Guard HP reset to 20 MUST occur at the start of the new round (in `startExchange`), preserving the 0 HP knockout state during `CLASH_REVEAL` and `ROUND_RESOLVE`. |
 
 ### 4.3 Anti-Cheat & Information Masking
 - During `DEAL`, `SHAPING`, and `COMMITMENT`, `STATE_TICK` broadcasts strictly sanitize opponent data.
 - The `selfCards` field in `STATE_TICK` contains the requesting player's actual hand.
 - The opponent's `cards` array is never sent over the wire until `CLASH_REVEAL`, preventing client-side inspection cheats.
 
-### 4.4 Disconnect & Cleanup
-- When a client socket closes:
-  - If match is active, player's `connected` flag is set to `false`.
-  - If disconnected player does not reconnect within 30 seconds, match forfeits to the remaining player.
-  - When both players leave, room timers are cancelled and `roomManager.removeRoom(roomCode)` is invoked to prevent memory leaks.
+### 4.4 Disconnect & Resume Contract (30s Grace Period)
+- **Session Token:** On initial connection (`CMD_CREATE_ROOM` or `CMD_JOIN_ROOM`), the server generates a cryptographically random `sessionToken` returned in `STATE_INIT`.
+- **Disconnect:** When a client socket closes:
+  - The participant's `connected` flag in `PlayerPublicState` is marked `false`.
+  - A 30-second disconnect grace timer starts.
+- **Reconnect:**
+  - Client sends `{ type: 'CMD_RECONNECT', roomCode, playerId, sessionToken }`.
+  - Server verifies matching `roomCode`, `playerId`, and `sessionToken`.
+  - If valid and within 30s: the new socket replaces the dropped socket, `connected` is set to `true`, the grace timer is cancelled, and server immediately sends `STATE_INIT` + current `STATE_TICK`.
+- **Forfeit:** If the 30s timer expires without reconnection, match forfeits to the remaining player (`matchWinnerId` set, `phase` set to `MATCH_OVER`).
+- When both players leave, room timers are cancelled and `roomManager.removeRoom(roomCode)` is invoked to prevent memory leaks.
 
 ## 5. Invariants & Edge Cases
 1. **Third-Player Rejection:** If a third client attempts to join a full room, server responds immediately with `{ type: 'ERROR_REJECTED', reason: 'Room is full' }` and closes connection.
@@ -106,8 +112,14 @@ The room coordinates the underlying `MatchEngine` through the 5 phases of an exc
    - Exactly 3 Assault cards and 2 Aegis cards are provided.
    - All 5 card IDs are distinct.
    - All 5 card IDs currently reside in the player's 5-card hand.
+   - Stance is one of `'BRACE' | 'OVERCHARGE' | 'PARRY'`.
+   - Player has not already committed for this exchange (no overwriting).
    - Failure returns `ERROR_REJECTED: Invalid hand partition`.
 4. **Out-of-Phase Action:** Submitting transmutations outside `SHAPING` phase returns `ERROR_REJECTED: Actions only permitted during SHAPING phase`.
+5. **Input Validation & DoS Protection:**
+   - Incoming WebSocket payloads must not exceed 4KB (4096 bytes).
+   - Payloads must be valid JSON objects with recognized `type` field.
+   - Malformed or oversize payloads are rejected with `ERROR_REJECTED`.
 
 ## 6. Forbidden Boundaries & Anti-Patterns
 - Never trust client-submitted damage or evaluation values; state is 100% server-authoritative.

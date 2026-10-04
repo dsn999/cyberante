@@ -16,6 +16,8 @@ export interface RoomParticipant {
   playerId: string;
   name: string;
   connected: boolean;
+  sessionToken?: string;
+  disconnectTimer?: NodeJS.Timeout | null;
 }
 
 export class Room {
@@ -37,12 +39,19 @@ export class Room {
     return this.participants.size;
   }
 
-  public addPlayer(playerId: string, name: string, ws: WebSocket): boolean {
+  public addPlayer(playerId: string, name: string, ws: WebSocket, sessionToken?: string): boolean {
     if (this.participants.size >= 2) {
       return false;
     }
 
-    this.participants.set(playerId, { ws, playerId, name, connected: true });
+    this.participants.set(playerId, {
+      ws,
+      playerId,
+      name,
+      connected: true,
+      sessionToken,
+      disconnectTimer: null,
+    });
 
     if (this.participants.size === 2) {
       this.startMatch();
@@ -57,16 +66,72 @@ export class Room {
     const participant = this.participants.get(playerId);
     if (participant) {
       participant.connected = false;
+      const enginePlayer = this.engine?.getPlayer(playerId);
+      if (enginePlayer) {
+        enginePlayer.connected = false;
+      }
       this.sendStateTick();
+
+      // Start 30-second disconnect grace period if match is active
+      if (this.engine && !this.engine.matchWinnerId) {
+        if (participant.disconnectTimer) clearTimeout(participant.disconnectTimer);
+        participant.disconnectTimer = setTimeout(() => {
+          if (!participant.connected && this.engine && !this.engine.matchWinnerId) {
+            const otherParticipant = Array.from(this.participants.values()).find(p => p.playerId !== playerId);
+            if (otherParticipant) {
+              this.engine.matchWinnerId = otherParticipant.playerId;
+              this.engine.phase = 'MATCH_OVER';
+              this.sendStateTick();
+            }
+          }
+        }, 30000);
+      }
     }
 
     const allDisconnected = Array.from(this.participants.values()).every(p => !p.connected);
     if (allDisconnected) {
       this.clearTimer();
+      for (const p of this.participants.values()) {
+        if (p.disconnectTimer) clearTimeout(p.disconnectTimer);
+      }
       if (this.onEmpty) {
         this.onEmpty();
       }
     }
+  }
+
+  public reconnectPlayer(playerId: string, sessionToken: string, ws: WebSocket): boolean {
+    const participant = this.participants.get(playerId);
+    if (!participant || participant.sessionToken !== sessionToken) {
+      return false;
+    }
+
+    if (participant.disconnectTimer) {
+      clearTimeout(participant.disconnectTimer);
+      participant.disconnectTimer = null;
+    }
+
+    participant.ws = ws;
+    participant.connected = true;
+
+    const enginePlayer = this.engine?.getPlayer(playerId);
+    if (enginePlayer) {
+      enginePlayer.connected = true;
+    }
+
+    const opponent = Array.from(this.participants.values()).find(p => p.playerId !== playerId);
+
+    this.sendToPlayer(playerId, {
+      type: 'STATE_INIT',
+      playerId,
+      matchId: this.id,
+      roomCode: this.roomCode,
+      opponentName: opponent ? opponent.name : 'Opponent',
+      sessionToken,
+    });
+
+    this.sendStateTick();
+    return true;
   }
 
   public handleClientMessage(playerId: string, msg: ClientMessage): void {
@@ -156,6 +221,7 @@ export class Room {
       matchId: this.id,
       roomCode: this.roomCode,
       opponentName: p2.name,
+      sessionToken: p1.sessionToken,
     });
 
     this.sendToPlayer(p2.playerId, {
@@ -164,6 +230,7 @@ export class Room {
       matchId: this.id,
       roomCode: this.roomCode,
       opponentName: p1.name,
+      sessionToken: p2.sessionToken,
     });
 
     this.startExchangeFlow();
@@ -271,5 +338,16 @@ export class Room {
         participant.ws.send(payload);
       }
     }
+  }
+
+  public destroy(): void {
+    this.clearTimer();
+    for (const p of this.participants.values()) {
+      if (p.disconnectTimer) {
+        clearTimeout(p.disconnectTimer);
+        p.disconnectTimer = null;
+      }
+    }
+    this.participants.clear();
   }
 }

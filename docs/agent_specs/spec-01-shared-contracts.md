@@ -103,6 +103,9 @@ export interface RoundResolution {
   roundNumber: number;
   isRoundOver: boolean;
 
+  p1PlayerId: string;
+  p2PlayerId: string;
+
   p1Assault: [Card, Card, Card];
   p1Aegis: [Card, Card];
   p1Stance: Stance;
@@ -138,6 +141,7 @@ export interface RoundResolution {
 export type ClientMessage =
   | { type: 'CMD_CREATE_ROOM'; playerName: string }
   | { type: 'CMD_JOIN_ROOM'; roomCode: string; playerName: string }
+  | { type: 'CMD_RECONNECT'; roomCode: string; playerId: string; sessionToken: string }
   | { type: 'CMD_NUDGE_RANK'; cardId: string; direction: 'UP' | 'DOWN' }
   | { type: 'CMD_BLEED_SUIT'; cardId: string; targetSuit: Suit }
   | { type: 'CMD_BURN_CAST'; cardId: string }
@@ -151,7 +155,7 @@ export type ClientMessage =
   | { type: 'CMD_REMATCH' };
 
 export type ServerMessage =
-  | { type: 'STATE_INIT'; playerId: string; matchId: string; roomCode: string; opponentName: string }
+  | { type: 'STATE_INIT'; playerId: string; matchId: string; roomCode: string; opponentName: string; sessionToken?: string }
   | {
       type: 'STATE_TICK';
       phase: GamePhase;
@@ -168,6 +172,36 @@ export type ServerMessage =
   | { type: 'ERROR_REJECTED'; reason: string };
 ```
 
+### 3.4 Classical Bot & Solo Mode Types
+```typescript
+export type BotPersonality = 'CIPHER_ZERO' | 'VEKTOR_AGGRO' | 'AEGIS_WALL';
+
+export interface BotNudgeAction {
+  cardId: string;
+  direction: 'UP' | 'DOWN';
+}
+
+export interface BotDecision {
+  fluxActions: Array<{
+    type: 'NUDGE' | 'BLEED';
+    cardId: string;
+    direction?: 'UP' | 'DOWN';
+    targetSuit?: Suit;
+  }>;
+  burnCardId?: string;
+  assaultCardIds: [string, string, string];
+  aegisCardIds: [string, string];
+  stance: Stance;
+
+  // Spec-05 compatibility aliases
+  nudges?: BotNudgeAction[];
+  cardToBurn?: Card | null;
+  assaultCards?: [Card, Card, Card];
+  aegisCards?: [Card, Card];
+  chosenStance?: Stance;
+}
+```
+
 ## 4. Game Constants Specification
 In `packages/shared/src/constants.ts`:
 | Constant | Value | Purpose |
@@ -176,7 +210,7 @@ In `packages/shared/src/constants.ts`:
 | `STARTING_FLUX` | `3` | Flux currency per exchange for transmutations |
 | `BEST_OF_ROUNDS` | `3` | Match format (Bo3) |
 | `ROUNDS_TO_WIN` | `2` | Round wins required to secure match victory |
-| `MAX_EXCHANGES_PER_ROUND` | `10` | Safety limit before sudden-death resolution |
+| `MAX_EXCHANGES_PER_ROUND` | `10` | Safety limit before sudden-death resolution: If Exchange 10 completes with both HP > 0, higher HP wins. If tied, Exchange 11 Sudden Death (1 HP each, higher net damage wins, tiebroken by assault score then aegis score). |
 | `DEAL_TIME_MS` | `2000` | Dealing animation phase duration |
 | `SHAPING_TIME_MS` | `15000` | Tactical card transmutation phase |
 | `COMMITMENT_TIME_MS` | `10000` | Blind hand splitting and stance lock-in phase |

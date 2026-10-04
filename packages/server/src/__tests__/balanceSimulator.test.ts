@@ -179,8 +179,10 @@ function runMatchSeries(
 
     if (engine.matchWinnerId === 'p1') {
       report.p1Wins++;
-    } else {
+    } else if (engine.matchWinnerId === 'p2') {
       report.p2Wins++;
+    } else {
+      throw new Error(`Match ${m} timed out without a winner`);
     }
 
     report.totalRounds += Math.max(1, roundsInMatch);

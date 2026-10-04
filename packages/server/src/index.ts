@@ -76,16 +76,33 @@ wss.on('connection', (ws: WebSocket) => {
   let currentRoomCode: string | null = null;
   let currentPlayerId: string | null = null;
 
-  ws.on('message', (data: string) => {
+  ws.on('message', (data: string | Buffer) => {
     try {
-      const msg: ClientMessage = JSON.parse(data.toString());
+      if (typeof data !== 'string' && !Buffer.isBuffer(data)) {
+        ws.send(JSON.stringify({ type: 'ERROR_REJECTED', reason: 'Invalid payload type' }));
+        return;
+      }
+      if (data.length > 4096) {
+        ws.send(JSON.stringify({ type: 'ERROR_REJECTED', reason: 'Payload exceeds 4KB limit' }));
+        return;
+      }
 
-      if (msg.type === 'CMD_CREATE_ROOM') {
+      const raw = data.toString();
+      const msg = JSON.parse(raw);
+      if (!msg || typeof msg !== 'object' || typeof msg.type !== 'string') {
+        ws.send(JSON.stringify({ type: 'ERROR_REJECTED', reason: 'Malformed message object' }));
+        return;
+      }
+
+      const clientMsg = msg as ClientMessage;
+
+      if (clientMsg.type === 'CMD_CREATE_ROOM') {
         const room = roomManager.createRoom();
         currentRoomCode = room.roomCode;
         currentPlayerId = `player_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+        const sessionToken = `st_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
 
-        room.addPlayer(currentPlayerId, msg.playerName || 'Operative', ws);
+        room.addPlayer(currentPlayerId, clientMsg.playerName || 'Operative', ws, sessionToken);
 
         ws.send(
           JSON.stringify({
@@ -94,13 +111,14 @@ wss.on('connection', (ws: WebSocket) => {
             matchId: room.id,
             roomCode: room.roomCode,
             opponentName: 'Waiting for Operative...',
+            sessionToken,
           })
         );
         return;
       }
 
-      if (msg.type === 'CMD_JOIN_ROOM') {
-        const targetCode = msg.roomCode ? msg.roomCode.trim() : null;
+      if (clientMsg.type === 'CMD_JOIN_ROOM') {
+        const targetCode = clientMsg.roomCode ? clientMsg.roomCode.trim() : null;
         const room = roomManager.joinOrCreateRoom(targetCode);
 
         if (!room) {
@@ -110,29 +128,43 @@ wss.on('connection', (ws: WebSocket) => {
 
         currentRoomCode = room.roomCode;
         currentPlayerId = `player_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+        const sessionToken = `st_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
 
-        const joined = room.addPlayer(currentPlayerId, msg.playerName || 'Operative', ws);
+        const joined = room.addPlayer(currentPlayerId, clientMsg.playerName || 'Operative', ws, sessionToken);
         if (!joined) {
           ws.send(JSON.stringify({ type: 'ERROR_REJECTED', reason: 'Room is full (max 2 players)' }));
           return;
         }
+        // Note: room.startMatch() has already sent STATE_INIT to both players upon filling the room!
+        return;
+      }
 
-        ws.send(
-          JSON.stringify({
-            type: 'STATE_INIT',
-            playerId: currentPlayerId,
-            matchId: room.id,
-            roomCode: room.roomCode,
-            opponentName: 'Opponent',
-          })
-        );
+      if (clientMsg.type === 'CMD_RECONNECT') {
+        const targetCode = clientMsg.roomCode ? clientMsg.roomCode.trim() : null;
+        const room = targetCode ? roomManager.getRoom(targetCode) : null;
+        if (!room) {
+          ws.send(JSON.stringify({ type: 'ERROR_REJECTED', reason: `Room "${targetCode}" not found` }));
+          return;
+        }
+        const ok = room.reconnectPlayer(clientMsg.playerId, clientMsg.sessionToken, ws);
+        if (!ok) {
+          ws.send(
+            JSON.stringify({
+              type: 'ERROR_REJECTED',
+              reason: 'Failed to reconnect: invalid credentials or session expired',
+            })
+          );
+          return;
+        }
+        currentRoomCode = room.roomCode;
+        currentPlayerId = clientMsg.playerId;
         return;
       }
 
       if (currentRoomCode && currentPlayerId) {
         const room = roomManager.getRoom(currentRoomCode);
         if (room) {
-          room.handleClientMessage(currentPlayerId, msg);
+          room.handleClientMessage(currentPlayerId, clientMsg);
         }
       }
     } catch (err) {

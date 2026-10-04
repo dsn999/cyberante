@@ -230,7 +230,7 @@ npm run start
   - `HIGH_CARD`: 2 Block
 - **Stance Multipliers:**
   - `BRACE`: $1.0\times$ damage.
-  - `OVERCHARGE`: $2.0\times$ damage (defender Aegis mitigation reduced to 0).
+  - `OVERCHARGE`: $2.0\times$ damage; combatant forfeits own Aegis mitigation ($0\text{ Block}$).
   - `PARRY`: $0.5\times$ damage; reflects $50\%$ incoming raw damage if opponent Overcharges OR if opponent's assault hand is weak (`PAIR` or `HIGH_CARD`). *(Refined via automated playtesting).*
 - **Tactical Burns:**
   - `SPADE_VEIL`: Suppresses opponent Overcharge and Parry reflect.
