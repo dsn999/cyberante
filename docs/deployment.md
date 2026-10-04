@@ -73,6 +73,11 @@ maps, raw TypeScript and missing or unbundled production script entries.
 Physical 60 FPS acceptance on an integrated GPU and a phone/tablet remains open.
 Software-rendered browser results establish functional behavior, not that target.
 
+The [alternative acceptance protocol](performance_acceptance.md) uses exported
+native-browser frame traces from normal play on physical integrated/mobile
+devices. An external tester can collect the evidence without using the affected
+laptop or the synchronous benchmark measurement path.
+
 `/benchmark.html` provides an optional browser diagnostic with device metadata,
 splash/arena/clash frame measurements and a downloadable JSON report. It starts
 only after a user presses its button. The CLI (`npm run benchmark`) always uses
