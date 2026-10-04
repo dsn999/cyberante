@@ -32,14 +32,14 @@ The project is engineered specifically to capture the maximum score (5/5) across
 ### 2.1 Match Structure
 *   **Match Format:** Best-of-3 (Bo3) Rounds. The first combatant to secure 2 Round Points wins the match.
 *   **Round Guard:** Each player begins each round with $20 \text{ Guard HP}$. Guard resets between rounds.
-*   **Round Pacing:** Discrete phases enforcing a strict $30\text{--}40\text{ second}$ pacing per round to maintain high adrenaline and decisive play.
+*   **Exchange Pacing:** Each round contains sequential exchanges with Guard HP carried between them until a knockout or the Spec-02 exchange cap resolves the round. A full timed exchange lasts 34 seconds; mutual ready/commit may advance phases early.
 
 ### 2.2 Deck & Hand Architecture
 *   **Card Pool:** Single standard 52-card deck, shuffled deterministically via server-side CSPRNG seeds (or client-side CSPRNG seed in local solo mode).
-*   **Starting Hand:** Both players are dealt 5 private cards per round.
-*   **Tactical Currency (Flux):** Both players receive $3 \text{ Flux}$ points per round to fuel card transmutations. Unspent Flux does not roll over.
+*   **Starting Hand:** Both players are dealt 5 private cards per exchange.
+*   **Tactical Currency (Flux):** Both players receive $3 \text{ Flux}$ points per exchange to fuel card transmutations. Unspent Flux does not roll over.
 
-### 2.3 Round Phase Progression
+### 2.3 Exchange Phase Progression
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -77,7 +77,7 @@ Players manipulate hand entropy by expending their 3 Flux points:
     $$\text{Spades} \longleftrightarrow \text{Clubs} \longleftrightarrow \text{Diamonds} \longleftrightarrow \text{Hearts}$$
 
 #### B. Burn-to-Cast (Tactical Discard)
-A player may discard a single card from their hand to activate an immediate tactical power, instantly drawing one replacement card from the deck (maximum 1 burn per round):
+A player may discard a single card from their hand to activate an immediate tactical power, instantly drawing one replacement card from the deck (maximum 1 burn per exchange):
 *   **Burn Spade:** *Static Veil* — Obfuscates 1 of your Assault cards during the clash and disables the opponent's active stance multiplier.
 *   **Burn Diamond:** *Hard Barrier* — Adds a flat absorption barrier equal to the card's numerical pip value to the Aegis Line:
     $$\text{Barrier} = \text{Pip}(\text{Card}) \quad (\text{Face cards} = 10, \, A = 11)$$
@@ -201,10 +201,10 @@ To satisfy the zero-install, zero-download constraint while creating an electrif
 ### 4.1 Generative Synthwave Music Engine
 *   **Architecture:** Two polyphonic oscillator nodes (Sawtooth + Square) running through a 24dB resonant low-pass filter (`BiquadFilterNode`) and feedback delay.
 *   **Adaptive Musical Phases:**
-    *   *Waiting / Deal Phase:* Low-frequency ambient drone in D-minor ($75\text{ BPM}$) with a gentle filter sweep.
-    *   *Shaping Phase:* An 8-step driving synthesizer arpeggio begins ($120\text{ BPM}$), building player focus.
-    *   *Commitment Phase:* Filter opens wide, adding a pulsating syncopated sub-bass rhythm that accelerates in tempo during the final 3-second countdown.
-    *   *Clash Phase:* Sudden musical drop followed by an explosive synth chord resolution.
+    *   *Waiting / Deal Phase:* Low-frequency ambient drone in D-minor ($85\text{ BPM}$) with a gentle filter sweep.
+    *   *Shaping Phase:* An 8-step driving synthesizer arpeggio begins ($115\text{ BPM}$), building player focus.
+    *   *Commitment Phase:* Tense clockwork pulse at 135 BPM with filter cutoff opening to 1800 Hz, as specified in Spec-06.
+    *   *Clash Phase:* Full filter sweep and bass drop at 90 BPM; Round Resolve uses a harmonic pad at 100 BPM, as specified in Spec-06.
 *   **Audio-Visual Reactivity:** An `AnalyserNode` extracts real-time FFT frequency buckets (Bass, Mid, High), feeding them into the Three.js uniforms to drive the reactive vector grid warp and neon pulse in exact tempo with the music.
 
 ### 4.2 Interactive Sound Effects Palette
@@ -313,13 +313,13 @@ Players can choose or randomly face three classical AI personalities:
 │               Authoritative Game Server (Node/Bun)              │
 │   • Room Lifecycle Manager     • Deterministic CSPRNG Deck      │
 │   • 15s/10s Phase Timers       • Anti-Cheat Masking Engine      │
-│   • 500ms Disconnect Grace     • Automated Headless Test Suites │
+│   • 30s Disconnect Grace       • Automated Headless Test Suites │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
 ### 7.1 Anti-Cheat & Authority Guarantees
 *   **Card Masking:** Server holds all private card state. During Shaping and Commitment phases, clients receive full data for their own 5 cards, while opponent cards are sent as masked hashes (`{ id: "hidden", suit: "UNKNOWN", rank: 0 }`).
-*   **Simultaneous Lock-In:** Clients submit their 3-card/2-card split and chosen stance blinds. If a client disconnects or times out before the 10-second Commitment window closes, the server deterministically auto-locks their highest possible High-Card hand and defaults to *Brace* stance.
+*   **Simultaneous Lock-In:** Clients submit their 3-card/2-card split and chosen stance blinds. If a client disconnects or times out before the 10-second Commitment window closes, the server deterministically auto-locks the optimal ten-partition split (highest Assault score, then Aegis score, then first partition) and defaults to *Brace* stance.
 
 ### 7.2 Network Data Contracts
 
@@ -575,7 +575,7 @@ A rigorous cross-examination of the Handshake AI Skills Studio × OpenAI Multipl
 | **"The Empty Lobby Problem"** | Contest judges often test entries alone without an active multiplayer partner. If matchmaking requires two humans, the judge gets stuck on a loading screen and fails the entry. | **Solo Mode vs. Local Classical AI**: A judge can immediately click "Play Solo" from the main screen to experience full, responsive Best-of-3 gameplay against a tailored bot. |
 | **Steep Learning Curve for Poker-Combat** | Unfamiliarity with split-lane commitment or Flux transmutations could cause judges to score low on "Polish & Thoughtfulness" (1/5: *Rough, confusing, limited usability*). | **Interactive Main Menu Tutorial & Rules Overlay**: A guided 4-step interactive tutorial introduces every mechanic in 60 seconds, plus an in-game HUD cheat sheet. |
 | **External Asset Latency / 404 Failures** | Slow Wi-Fi or hosted server latency during asset loading creates jank or failed demo presentations. | **100% Procedural Generation**: Zero audio files and zero image textures. All graphics (Three.js vectors) and audio (Web Audio API) are synthesized on-the-fly in code, loading instantly ($< 300\text{ ms}$). |
-| **Flaky Network / Disconnect Timeouts** | Latency spikes or browser tab switching during live multiplayer matches could freeze the game room. | **Authoritative Auto-Lock Timeouts**: If a player's connection drops during the 10-second commitment window, the server automatically computes their optimal High-Card hand and defaults to *Brace*, ensuring matches never hang. |
+| **Flaky Network / Disconnect Timeouts** | Latency spikes or browser tab switching during live multiplayer matches could freeze the game room. | **Authoritative Auto-Lock Timeouts**: If a player's connection drops during the 10-second commitment window, the server automatically computes the optimal ten-partition split (highest Assault score, then Aegis score, then first partition) and defaults to *Brace*, ensuring matches never hang. |
 | **OpenAI Attribution Clarity** | The contest explicitly mandates: *"built with OpenAI: Create a Multiplayer Game mission in Handshake."* Earlier draft referenced non-OpenAI tooling. | **OpenAI Codex Spec-Driven Pipeline**: All references updated to OpenAI Codex. Implementation artifacts, prompt specifications, and git history explicitly document OpenAI Codex's role as the agentic coder implementation expert. |
 
 ### 10.2 Official Submission Deliverables Checklist

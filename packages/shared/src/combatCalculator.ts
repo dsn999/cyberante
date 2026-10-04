@@ -2,7 +2,7 @@
 // CYBERANTE: Combat Resolution & Damage Calculator (Option A Multi-Exchange)
 // ============================================================================
 
-import { Card, Stance, HandEvaluation3, HandEvaluation2, RoundResolution, BurnType } from './types.js';
+import type { Card, Stance, HandEvaluation3, RoundResolution, BurnType } from './types.js';
 import { GAME_CONSTANTS } from './constants.js';
 import { evaluateAssaultHand, evaluateAegisHand } from './pokerEvaluator.js';
 
@@ -53,7 +53,7 @@ export function resolveCombatRound(
   const rawDmg1 = Math.round(eval3_1.baseDamage * mult1);
   const rawDmg2 = Math.round(eval3_2.baseDamage * mult2);
 
-  // Aegis mitigation (Overcharge reduces Aegis mitigation to 0)
+  // Overcharge forfeits the combatant's own Aegis, even when Veil suppresses its damage bonus.
   let mit1 = c1.stance === 'OVERCHARGE' ? 0 : eval2_1.mitigation;
   let mit2 = c2.stance === 'OVERCHARGE' ? 0 : eval2_2.mitigation;
 
@@ -115,12 +115,22 @@ export function resolveCombatRound(
     hp2 = Math.min(GAME_CONSTANTS.STARTING_GUARD_HP, hp2 + p2SiphonHeal);
   }
 
-  // Option A Round KO Check:
-  // If at least one combatant reaches 0 Guard HP, the round is over.
+  // Sudden death compares outgoing net assault damage before Siphon recovery.
+  // It takes precedence over the normal simultaneous-knockout tiebreak.
   let isRoundOver = false;
   let roundWinnerId: string | null = null;
 
-  if (hp1 === 0 && hp2 > 0) {
+  if (exchangeNumber > GAME_CONSTANTS.MAX_EXCHANGES_PER_ROUND) {
+    const advantage = netTo2 - netTo1 || eval3_1.score - eval3_2.score || eval2_1.score - eval2_2.score;
+    if (advantage !== 0) {
+      isRoundOver = true;
+      roundWinnerId = advantage > 0 ? c1.playerId : c2.playerId;
+    } else {
+      // An exact tie awards no point; repeat sudden death at 1 HP each.
+      hp1 = 1;
+      hp2 = 1;
+    }
+  } else if (hp1 === 0 && hp2 > 0) {
     isRoundOver = true;
     roundWinnerId = c2.playerId;
   } else if (hp2 === 0 && hp1 > 0) {
@@ -140,6 +150,9 @@ export function resolveCombatRound(
       isRoundOver = false;
       roundWinnerId = null;
     }
+  } else if (exchangeNumber === GAME_CONSTANTS.MAX_EXCHANGES_PER_ROUND && hp1 !== hp2) {
+    isRoundOver = true;
+    roundWinnerId = hp1 > hp2 ? c1.playerId : c2.playerId;
   }
 
   return {

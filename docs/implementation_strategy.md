@@ -1,8 +1,8 @@
 # CYBERANTE familiarization audit and implementation strategy
 
-Audit date: 2026-10-03. Scope: the master design, all ten subsidiary specs,
+Audit date: 2026-10-03. Second review: committed baseline `fe9fc48`. Scope: the master design, all ten subsidiary specs,
 workspace configuration, shared/server/client source, existing tests, and CI.
-This is a build strategy; implementation dispatches remain outstanding.
+This strategy records audit findings and dispatch progress. Specs 01 and 02 are implemented and verified; later dispatches remain outstanding.
 
 ## Architectural authority
 
@@ -31,8 +31,8 @@ Node 24.21.0 and npm 11.19.0:
 - Simulation covers 200 Cipher mirror matches and 100 Aggro/Wall matches.
   Mirror results: 97/103 wins, 2.46 rounds/match, 1.68 exchanges/round.
   Aggro/Wall results: 69/31 wins, 2.24 exchanges/round.
-- Vite reports 132.76 kB gzipped JavaScript, below Spec-10's 250 kB limit.
-  It emits a warning for a 522.49 kB minified chunk, so the build does not yet
+- Vite reports 133.17 kB gzipped JavaScript, below Spec-10's 250 kB limit.
+  It emits a warning for a 524.21 kB minified chunk, so the build does not yet
   meet the literal zero-diagnostics target. Investigate meaningful splitting
   after functionality is complete.
 - Client output contains HTML, JavaScript, and a source map; no image, model,
@@ -47,71 +47,114 @@ session was performed during this audit.
 
 | Spec | Reusable foundation | Work required |
 | --- | --- | --- |
-| 01 — Contracts | Card/player/evaluation/network types, constants, exports, package configuration largely match. | Align `BotDecision` with Spec-05 and migrate every consumer together; preserve explicit `.js` shared/server imports. |
-| 02 — Evaluation/combat | All tiers, score formulas, Ace straights, burns, reflection, and knockout logic are implemented. | Settle Overcharge interpretation; add edge coverage for simultaneous lethal/ties, weak-hand Parry, Veil against reflection, Siphon cap/no resurrection, barriers, rounding, and input immutability. Wheel straight-flush description incorrectly says Ace-high. |
-| 03 — Deck/Flux/engine | CSPRNG server `Deck`, seeded Mulberry32, immutable rank/suit changes, burn evaluation. | Multiplayer uses `MatchEngine`'s default `Math.random()` instead of `Deck` or an injected CSPRNG. Define deck reuse/depletion behavior, reject invalid deal counts, remove the fabricated fallback Ace, enforce phase/commit integrity, and implement the exchange safety limit. |
+| 01 — Contracts | Card/player/evaluation/network types, constants, exports, package configuration largely match. | Require the Spec-05 card/stance fields in `BotDecision` (currently optional in code) and retain consistent ID/action extensions; preserve explicit `.js` shared/server imports. |
+| 02 — Evaluation/combat | All tiers, score formulas, Ace straights, burns, reflection, and knockout logic are implemented. | Overcharge now consistently forfeits own Aegis; add edge coverage for simultaneous lethal/ties, weak-hand Parry, Veil against reflection, Siphon cap/no resurrection, barriers, rounding, and input immutability. Wheel straight-flush description incorrectly says Ace-high. |
+| 03 — Deck/Flux/engine | CSPRNG server `Deck`, seeded Mulberry32, immutable rank/suit changes, burn evaluation. | Multiplayer uses `MatchEngine`'s default `Math.random()` instead of `Deck` or an injected CSPRNG. Define deck reuse/depletion behavior, reject invalid deal counts, remove the fabricated fallback Ace, enforce phase/commit integrity, and correct exchange-cap and sudden-death behavior against the clarified contract. |
 | 04 — Server/rooms | Room registry, timed phase loop, early ready/commit transitions, public-state masking, single-port serving. | Refactor Room/RoomManager APIs to exact targets; fixed player slots, one handshake, runtime message validation, disconnect grace/forfeit/recovery, public connected-state synchronization, destroy/cleanup, and substantial lifecycle tests. |
-| 05 — AI/simulator | Three specified profiles, ten-partition search, seeded simulations. | Target decision API and `getProfile`, score tie term, nudge threshold, suit/HP/personality burn priorities, critical-defense rule, deterministic replay tests, and measured performance. Re-evaluate after replacement draws before commitment. |
+| 05 — AI/simulator | Three specified profiles, ten-partition search, seeded simulations. | `getProfile` and card/stance aliases now exist; require their types, implement score tie term, nudge threshold, suit/HP/personality burn priorities, critical-defense rule, deterministic replay tests, and measured performance. Re-evaluate after replacement draws before commitment. |
 | 06 — Audio | Shared context, oscillator/noise SFX, phase tempo changes, FFT output. | Exact APIs and constructors, master gain <= 0.3 (currently 0.7), FFT size 256 (currently 64), defined bucket averages, eight-step lookahead scheduling, missing SFX, safe unsupported-audio handling, node cleanup, remove `any`. |
 | 07 — Renderer | Three.js scene, grid, additive particles, audio bass sampling, shader source files. | Grid subdivisions across line interiors, specified displacement, wired shader/compositor, complete vector rank/suit glyphs, renderer APIs, CRT/reduced motion, context recovery, resize/disposal, pooled particle state, elapsed-time physics. |
 | 08 — UI | Split selection, ten-split helper, live badges, tactical controls, basic menu. | Required menu callbacks/profile/name inputs; actual countdown; phase/Flux/burn/commit disabled states; ready/rematch/exit controls; target reset API; both bleed neighbors; usable mobile layouts and >=44px controls. |
 | 09 — Tutorial/rules | Four instructional pages and floating rules overlay. | Interactive lesson hands and action gates, controller routing, skip/Escape/back APIs, simulated clash, complete rules and `isVisible`. Current tutorial advances by NEXT without performing any game action. |
 | 10 — Integration/deploy | Mode wiring, same-host production socket, local engine, static server, build/test CI. | Solo phase scheduler and bot delay, correct seat mapping, complete reveals/results/rematches, share links, connection recovery, mode cleanup, shutdown, sim CI step, and real end-to-end acceptance. |
 
-## Highest-priority findings
+## Second review: fixes and remaining work
 
-1. **Solo burns can break resolution.** `main.ts` evaluates a bot decision,
-   burns its selected card, and commits the original IDs. The replacement has
-   a different ID, so commitment fails, its return value is ignored, and clash
-   resolution proceeds without a valid bot partition. A seeded audit probe
-   reproduced the rejected commitment at seed 7. The simulator already
-   re-evaluates after burn/nudge, hiding this controller discrepancy.
-2. **Runtime validation is insufficient.** `MatchEngine.commitHand` checks
-   five unique owned IDs but does not enforce lane lengths or valid stance,
-   accepts SHAPING commitments, and permits overwriting a commitment. A probe
-   confirmed four Assault IDs plus one Aegis ID is accepted. The server casts
-   JSON directly to `ClientMessage`; TypeScript cannot validate network data.
-3. **Match lifecycle transitions happen too early.** `resolveClash` increments
-   counters and resets HP immediately after a nonfinal round knockout. This
-   makes clash/resolve state ticks show the next round's HP and numbering.
-   It also permits repeated resolution; the UI does not disable lock-in.
-   Enforce one resolution per exchange and delay next-round setup until the
-   resolution display completes. `MAX_EXCHANGES_PER_ROUND` is unused.
-4. **Solo pacing is incomplete.** Solo begins in SHAPING, passes a fixed 15s
-   display value, resolves when clicked, and starts a new exchange after 3.5s.
-   There is no full Deal/Shaping/Commitment/Clash/Resolve schedule, timeout
-   fallback, or bot thinking delay. Online ticks occur on actions/transitions;
-   the HUD does not interpolate a running countdown.
-5. **Online recovery and seat mapping are incomplete.** Disconnect marks only
-   Room participants, leaves engine public `connected` unchanged, and has no
-   grace-period forfeit or identity restoration. `NetworkClient` only logs
-   closure. The client uses `resolution.p1HpRemaining !== undefined` to identify
-   player 1, which is always true, so player 2 sees player 1's damage figures.
-   Server entry also sends a second, generic join initialization after Room
-   already sent the correct handshake.
-6. **Green tests cover limited behavior.** Room's sole test checks two joins
-   and third-player rejection, leaving its timer running. There are no engine
-   lifecycle or actual transport tests. The simulator counts an unfinished
-   watchdog match as a player 2 win; it must require an actual winner. Its
-   deterministic replay requirement has no test. Shader and card files exist
-   but are not connected to the rendering scene.
+The review re-ran `npm run build && npm test && npm run sim`: exit 0,
+27 tests pass and the same 300 seeded simulation results hold. The chunk-size
+warning remains. Tests still provide no browser/recovery/sudden-death coverage.
 
-## Decisions to record before affected dispatches
+Focused probes against the freshly built shared package confirmed that 4/1
+partitions and commitment overwrites are rejected, and the post-burn/nudge
+re-evaluated bot partition commits successfully. They also confirmed that a
+SHAPING commitment is accepted, its cards can still be nudged, and an exchange-11
+tie with equal damage, Assault score, and Aegis score awards the round to player 2.
+These probes do not replace permanent regression coverage in the dispatches.
 
-Resolve contradictions explicitly; passing today's tests must not silently
-choose the rules. Record the chosen text in the authoritative documents and
-derive tests/UI/rules/tutorial wording from the same decision.
-
-| Topic | Conflicting or incomplete contract | Recorded & Implemented Resolution |
+| Original finding | Current evidence | Revised status |
 | --- | --- | --- |
-| Overcharge | Master stance table and code remove Overcharging player's own Aegis. Some specs had defender-piercing text. | **RESOLVED:** Overcharge deals $2.0\times$ burst damage, but combatant forfeits own Aegis mitigation ($0\text{ Block}$, zero defense). Codified across all specs, AGENTS.md, design doc, and combat engine. |
-| Round/exchange vocabulary | Master describes hands/Flux per round; specs require multiple exchanges per round. | **RESOLVED:** Option A confirmed across all specs: 5 cards, 3 flux, 1 burn per exchange; HP persists until round knockout; Best-of-3 rounds (first to 2 round wins). |
-| Disconnect window | Master diagram says 500ms; Spec-04 says 30s. | **RESOLVED:** Spec-04's 30s grace window adopted. `sessionToken` resume contract implemented in `types.ts`, `Room.ts`, and `CMD_RECONNECT`. |
-| Timeout split | Master references highest High Card; Spec-04 requires optimal split with Brace. | **RESOLVED:** Spec-04 optimal ten-partition split with Brace; deterministic tiebreak (highest Assault score, then Aegis score, fallback to first) implemented in `autoLockPlayer`. |
-| Exchange cap | Spec-01 sets cap of 10 before sudden death without full terminal rules. | **RESOLVED:** If Exchange 10 completes with both HP > 0, higher HP wins. If tied, Exchange 11 Sudden Death (1 HP each, higher net damage wins, tiebroken by assault score then aegis score). Implemented in `MatchEngine`. |
-| AI API/search | Current ID/action decision differs from Spec-05's card/nudge decision. | **RESOLVED:** `BotDecision` unified to support both card IDs and card references. Bot re-evaluates partitions after burn draws with current 5 cards before committing in `main.ts`. |
-| Audio timing | Master and Spec-06 give different BPM values and scales. | **RESOLVED:** Spec-06 explicit synthesis targets adopted (128 BPM, pentatonic minor). Web Audio runs on audio context clock, decoupled from game turn timers. |
-| DOM root | Spec-08 names `#ui-overlay`; existing HTML/controller use `#ui-root`. | **RESOLVED:** Both `#ui-overlay` and `#ui-root` supported in `index.html` and `main.ts`. |
+| Overcharge ambiguity | AGENTS.md and Specs 02/08/09 consistently say the attacker forfeits own Aegis; combat code agrees. | Rule resolved. Active Barrier remains effective; “zero defense” only describes Aegis. |
+| Invalid lane lengths and overwritten commitments | `MatchEngine.commitHand` now validates 3/2 lengths, stance, unique owned IDs, and rejects overwrite. | These checks implemented. SHAPING commits remain allowed; committed hands can still be mutated during SHAPING. |
+| Solo stale IDs after burn | `main.ts` now re-evaluates after shaping and falls back to auto-lock if bot commit fails. | Original stale-partition defect addressed in source. Player commit result is still ignored; full phase scheduler and regression coverage remain. |
+| Early HP/round reset | `startExchange` now performs next-round reset; `resolveClash` retains KO HP and current round number. | Original display-state defect addressed in source. Repeated start calls can advance/reset again from the same last resolution; phase integrity still needs tests. |
+| Duplicate clash resolution | `resolveClash` returns its last result in reveal/resolve/match-over phases. | Partial guard implemented. It still dereferences missing partitions if invoked before valid commitment; phase is public/mutable. |
+| Wrong player-2 damage mapping | Resolution now carries `p1PlayerId`/`p2PlayerId`; main maps by ID. | Original perspective defect addressed in source; browser acceptance outstanding. |
+| Duplicate join handshake | Server no longer sends a generic init after Room starts a full match. | Original duplicate join initialization removed. Target fixed slots and Room API remain outstanding. |
+| Recovery absent | Types, server entry and Room now accept reconnect tokens, update public connected flags and start a forfeit timer. | Partial implementation. Client never stores/sends the token or retries. Server tokens use `Math.random`, and reconnect checks no deadline/disconnected state. Forfeit does not cancel phase timer, so later transitions can overwrite MATCH_OVER. |
+| Exchange limit unused | MatchEngine now handles exchange 10 and later ties. | Partial implementation. Current code compares post-Siphon HP rather than explicitly comparing net damage in sudden death, skips cap tiebreaks when combat already declares a winner, and awards exact final ties to player 2 without a specified rule. |
+| Bot contract divergence | Runtime returns both IDs/actions and Spec-05 card/stance aliases; `getProfile` exists. | Docs now use one Spec-01 definition with required card/stance fields. Code still declares them optional; fix in dispatch 01. Heuristic differences remain in dispatch 05. |
+| DOM root mismatch | HTML mounts `#ui-overlay`; controller accepts that root and legacy `#ui-root`. | Resolved in source. |
+| Audio targets | Spec-06 specifies 85/115/135/90/100 BPM; implementation uses timeout-driven 16 steps, gain 0.7, FFT size 64. | Documentation aligned to Spec-06. Earlier report's “128 BPM, implemented audio-clock scheduling” claim was incorrect. Implementation remains dispatch 06. |
+
+Other original gaps remain: default shared randomness is unseeded, server does
+not inject CSPRNG into MatchEngine, deck rebuilds every exchange, fallback draw
+fabricates an Ace, Room APIs differ from targets, full command-schema validation
+is absent, and the UI/audio/render/tutorial/integration acceptance work remains.
+Room tests still only cover capacity and leave the phase timer running. The
+simulator still counts watchdog exhaustion as a player-2 win and lacks the
+specified deterministic replay test.
+
+## Document reconciliation performed in this review
+
+- Updated both identical master-design copies to per-exchange hands/Flux/burns,
+  34s timed exchanges with early advance, 30s disconnect grace, optimal
+  Assault-score/Aegis-score timeout split, and Spec-06 phase tempos.
+- Aligned Specs 01 and 05 on a single BotDecision contract: required card/stance
+  fields plus existing ID/action fields, with consistency between representations.
+- Added the post-shaping re-evaluation and commit-result requirement to Spec-05.
+- Removed unsupported “implemented/resolved” and “preparation complete” claims
+  from this report. Documentation alignment is distinct from runtime acceptance.
+
+## Specs 01–02 dispatch completion (2026-10-03)
+
+- Spec-01: required BotDecision card/stance fields now match the contract; all
+  existing producers and consumers compile. Constants, exports, dependency-free
+  package configuration, ESM imports, and emitted declarations/maps were audited.
+- Spec-02: all evaluator formulas and wheel descriptions verified; added exact
+  score/permutation/immutability tests. Combat covers all nine stance matchups,
+  all burns, rounding, barriers, Siphon limits/no resurrection, lethal ties,
+  cap ordering and repeated sudden death. No damage/block constants changed.
+- The combat calculator now owns cap/sudden-death winner rules; removed the
+  duplicate engine implementation that awarded an exact final tie to player 2.
+- User chose repeated sudden death on an exact tie. Specs 01/02 document no
+  point awarded and 1 HP for both players; an engine regression test proves it.
+- Verification: shared build, exact Spec-02 test command (67 tests), full build,
+  76 repository tests and 300 seeded simulated matches passed. Balance results
+  remain 97/103 for Cipher mirror and 69/31 for Aggro/Wall. Client JS is 133.15 kB
+  gzipped; the pre-existing Vite chunk warning remains.
+- Implementation checklists in Specs 01/02 are checked against this evidence.
+  Intended edits remain uncommitted alongside the preceding documentation work;
+  no temporary files were added.
+
+The second-review tables above describe the baseline before these dispatches;
+this section supersedes their remaining Spec-01/02 contract/cap findings.
+
+## Dispatch readiness
+
+**Specs 01 and 02 are complete. Specs 03/04 still need two boundary decisions.** Known implementation gaps are dispatch work, rather than
+reasons to postpone starting. The following contract decisions remain before
+signing off the affected dispatches:
+
+1. **Deck lifecycle/depletion (03):** Spec-03 specifies rebuilding below 10
+   before a deal but does not say whether to rebuild every exchange or preserve
+   the remaining deck. With retention, exactly 10 or 11 remaining cards allow
+   the deal but cannot supply both burns. Specify reserve/rebuild behavior
+   without duplicating live cards or fabricating replacements.
+2. **Both players disconnected (04/10):** Spec-04 promises 30s resume but also
+   says delete the room when both leave. Specify whether simultaneous connection
+   loss retains the room through grace or ends it immediately. Also distinguish
+   unexpected disconnect from deliberate exit. These imply different resume
+   and cleanup acceptance cases.
+
+Before those decisions, dispatch 03 can implement input/phase and randomness
+invariants, and dispatch 04 can implement exact APIs, schema validation and
+single-player disconnect behavior. Do not mark either spec fully complete while
+its decision-dependent behavior remains unresolved.
+
+Implementation dispatches must explicitly cover strict COMMITMENT-only lock-in,
+full payload validation, cryptographic token generation, disconnected-seat-only
+resume within deadline, cancellation of phase timers on forfeit, and protection
+against an old socket's close event disconnecting its replacement.
 
 ## Dispatch order and concrete acceptance criteria
 
@@ -122,7 +165,7 @@ every definition-of-done item. Leave checkboxes unchecked until evidenced.
 
 | Dispatch | Scope and dependency | Exit evidence |
 | --- | --- | --- |
-| Preparation | Record the combat, deck lifecycle, sudden-death, and resume-contract decisions; capture this baseline. | **COMPLETE:** Documented across all specs, AGENTS.md, design doc; baseline verified passing (build, test, sim). |
+| Preparation | Record the combat, deck lifecycle, sudden-death, and resume-contract decisions; capture this baseline. | Baseline reverified and core rules aligned; the two decisions above remain for affected dispatches. |
 | 01 | Shared contracts/constants/exports; establish Spec-05 bot types for later consumers. | Shared build and coordinated consumer compilation; no runtime dependencies. |
 | 02 | Evaluator/combat alignment and mathematical edge tests. Depends on rule decision and 01. | Exact tier/score/multiplier/burn/KO fixtures and unchanged damage/block constants. |
 | 03 | Deck/Flux plus MatchEngine lifecycle. Inject server CSPRNG and explicitly seeded solo/replay randomness; keep clocks/sockets outside shared logic. | Deterministic replay, valid immutable shaping, exact partitions, one clash per exchange, HP carry/reset/Bo3, cap/depletion boundaries. |
@@ -173,8 +216,8 @@ working directory if the documented invocation needs correction.
 
 ## Recommended next dispatch
 
-Start with the documented rule decisions and Spec-01 contract alignment, then
-02/03. The first substantial runtime repair is MatchEngine lifecycle and input
+Proceed to Spec-03 deck/Flux/engine work. Resolve the remaining deck and
+disconnect boundary decisions before completing Specs 03/04. The first substantial runtime repair is MatchEngine lifecycle and input
 integrity, followed by the bot shaping/commit flow. This makes subsequent room
 and controller work depend on a trusted engine and preserves one ruleset across
 solo, multiplayer, tutorial, and simulation.

@@ -2,7 +2,7 @@
 // CYBERANTE: Game Constants & Balance Formulas
 // ============================================================================
 
-import { Suit } from './types.js';
+import type { Suit } from './types.js';
 
 export const GAME_CONSTANTS = {
   // Pacing & Match Structure (Option A: Bo3 Match, Multi-Exchange HP Depletion)

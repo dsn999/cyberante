@@ -95,10 +95,11 @@ Given attacker $A$ and defender $D$:
      - Highest assault hand `score` wins the round.
      - If scores are identical, sudden death triggers ($\text{HP}_1 = 1, \text{HP}_2 = 1, \text{isRoundOver: false}$).
    - **Exchange Cap (Safety Limit):**
-     - A round lasts a maximum of 10 exchanges (`MAX_EXCHANGES_PER_ROUND = 10`).
+     - A round allows up to 10 normal exchanges (`MAX_EXCHANGES_PER_ROUND = 10`), followed by sudden-death exchanges if necessary.
      - If Exchange 10 completes without a knockout ($\text{HP}_1 > 0$ and $\text{HP}_2 > 0$):
        - If $\text{HP}_1 \ne \text{HP}_2$, the player with higher remaining Guard HP wins the round (`isRoundOver: true`).
-       - If $\text{HP}_1 = \text{HP}_2$, Sudden Death begins on Exchange 11: both combatants' Guard HP is set to $1$. The player dealing higher net damage wins the round; ties broken by 3-card Assault `score`, then 2-card Aegis `score`.
+       - If $\text{HP}_1 = \text{HP}_2$, Sudden Death begins on Exchange 11: both combatants' Guard HP is set to $1$. On Exchange 11 and later, compare outgoing net Assault damage (`NetDmg`, excluding reflected damage and before Siphon recovery), then 3-card Assault `score`, then 2-card Aegis `score`. This ordering takes precedence over normal knockout handling. An exact tie awards no point: both players remain at 1 HP and play another sudden-death exchange (user decision, 2026-10-03).
+   - The pure `resolveCombatRound` calculator owns these winner rules; `MatchEngine` applies the result, updates round wins, and starts the next exchange. Tied Exchange 10 HP remains visible through reveal/resolve; `MatchEngine.startExchange` sets both players to 1 HP when starting Exchange 11.
    - If both players remain $> 0$ HP and exchange $< 10$: Round continues (`isRoundOver: false`, `roundWinnerId: null`). Guard HP carries over into the next exchange!
 
 ## 5. Invariants & Edge Cases
@@ -146,8 +147,16 @@ Requirements:
 ```
 
 ## 10. Definition of Done Checklist
-- [ ] Deterministic 3-card and 2-card poker evaluator implemented.
-- [ ] Ace-low wheel straight (A-2-3) and Ace-high straight (Q-K-A) handled.
-- [ ] Stance matrix (Brace, Overcharge, Parry) fully operational.
-- [ ] Tactical burns (Veil, Barrier, Siphon, Sunder) fully operational.
-- [ ] All evaluator and combat unit tests pass with code 0.
+- [x] Deterministic 3-card and 2-card poker evaluator implemented.
+- [x] Ace-low wheel straight (A-2-3) and Ace-high straight (Q-K-A) handled.
+- [x] Stance matrix (Brace, Overcharge, Parry) fully operational.
+- [x] Tactical burns (Veil, Barrier, Siphon, Sunder) fully operational.
+- [x] All evaluator and combat unit tests pass with code 0.
+
+### Dispatch verification (2026-10-03)
+- Shared NodeNext build and declaration/map output verified; public contracts,
+  constants, package exports, and explicit `.js` imports audited.
+- Spec-02 command: 67 tests passed (28 evaluator, 39 combat), covering exact scores,
+  input immutability, stance/burn interactions, knockouts, cap and sudden death.
+- Repository gate: `npm run build && npm test && npm run sim` passed;
+  76 tests total and 300 seeded matches. Existing Vite chunk-size warning remains.

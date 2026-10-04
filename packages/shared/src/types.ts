@@ -180,10 +180,11 @@ export interface BotDecision {
   aegisCardIds: [string, string];
   stance: Stance;
 
-  // Spec-05 compatibility aliases
+  // Required Spec-05 card/stance fields plus optional shaping decisions.
+  // Card references and IDs describe the same partition; chosenStance === stance.
   nudges?: BotNudgeAction[];
   cardToBurn?: Card | null;
-  assaultCards?: [Card, Card, Card];
-  aegisCards?: [Card, Card];
-  chosenStance?: Stance;
+  assaultCards: [Card, Card, Card];
+  aegisCards: [Card, Card];
+  chosenStance: Stance;
 }

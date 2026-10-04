@@ -2,7 +2,7 @@
 // CYBERANTE: Deterministic Poker Hand Evaluator (3-Card Assault & 2-Card Aegis)
 // ============================================================================
 
-import { Card, HandEvaluation3, HandEvaluation2, HandTier3, HandTier2, Rank } from './types.js';
+import type { Card, HandEvaluation3, HandEvaluation2, HandTier3, HandTier2, Rank } from './types.js';
 import { GAME_CONSTANTS } from './constants.js';
 
 /**

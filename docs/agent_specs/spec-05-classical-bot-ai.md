@@ -33,13 +33,12 @@ export interface BotConfig {
   burnAggression: number;
 }
 
-export interface BotDecision {
-  assaultCards: [Card, Card, Card];
-  aegisCards: [Card, Card];
-  chosenStance: Stance;
-  cardToBurn?: Card | null;
-  nudges?: Array<{ cardId: string; direction: 'UP' | 'DOWN' }>;
-}
+// BotDecision is defined once in Spec-01 / shared types.ts.
+// Required: assaultCards, aegisCards, chosenStance, fluxActions,
+// assaultCardIds, aegisCardIds, stance.
+// Optional: cardToBurn, burnCardId, nudges.
+// IDs and card references describe the same partition; stance === chosenStance.
+import type { BotDecision } from '@cyberante/shared';
 ```
 
 ### 3.2 ClassicalBotAI Class
@@ -59,6 +58,12 @@ export class ClassicalBotAI {
   ): BotDecision;
 }
 ```
+
+### 3.3 Applying Shaping Decisions
+Apply the proposed burn and Flux actions during SHAPING. After applying them,
+re-evaluate the current five-card hand with `availableFlux = 0` and `canBurn = false`
+before committing in COMMITMENT. A replacement draw can invalidate the original
+partition. Check every action/commit result; do not resolve an incomplete partition.
 
 ## 4. Detailed Behavior & Decision Heuristics
 

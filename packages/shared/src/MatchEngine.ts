@@ -286,33 +286,6 @@ export class MatchEngine {
     this.p1.guardHp = resolution.p1HpRemaining;
     this.p2.guardHp = resolution.p2HpRemaining;
 
-    // Check exchange cap & Sudden Death logic:
-    // If exchange reaches MAX_EXCHANGES_PER_ROUND (10) without a knockout:
-    if (!resolution.isRoundOver && this.currentExchange >= GAME_CONSTANTS.MAX_EXCHANGES_PER_ROUND) {
-      if (this.p1.guardHp > this.p2.guardHp) {
-        resolution.isRoundOver = true;
-        resolution.roundWinnerId = this.p1.playerId;
-      } else if (this.p2.guardHp > this.p1.guardHp) {
-        resolution.isRoundOver = true;
-        resolution.roundWinnerId = this.p2.playerId;
-      } else if (this.currentExchange > GAME_CONSTANTS.MAX_EXCHANGES_PER_ROUND) {
-        // Sudden Death (Exchange 11+): tiebreak by Assault score, then Aegis score
-        if (resolution.p1Eval3.score > resolution.p2Eval3.score) {
-          resolution.isRoundOver = true;
-          resolution.roundWinnerId = this.p1.playerId;
-        } else if (resolution.p2Eval3.score > resolution.p1Eval3.score) {
-          resolution.isRoundOver = true;
-          resolution.roundWinnerId = this.p2.playerId;
-        } else if (resolution.p1Eval2.score > resolution.p2Eval2.score) {
-          resolution.isRoundOver = true;
-          resolution.roundWinnerId = this.p1.playerId;
-        } else {
-          resolution.isRoundOver = true;
-          resolution.roundWinnerId = this.p2.playerId;
-        }
-      }
-    }
-
     // Check if round KO occurred
     if (resolution.isRoundOver) {
       if (resolution.roundWinnerId === this.p1.playerId) {

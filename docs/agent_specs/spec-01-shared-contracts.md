@@ -193,12 +193,12 @@ export interface BotDecision {
   aegisCardIds: [string, string];
   stance: Stance;
 
-  // Spec-05 compatibility aliases
+  // Required Spec-05 card/stance fields plus optional shaping decisions
   nudges?: BotNudgeAction[];
   cardToBurn?: Card | null;
-  assaultCards?: [Card, Card, Card];
-  aegisCards?: [Card, Card];
-  chosenStance?: Stance;
+  assaultCards: [Card, Card, Card];
+  aegisCards: [Card, Card];
+  chosenStance: Stance;
 }
 ```
 
@@ -210,7 +210,7 @@ In `packages/shared/src/constants.ts`:
 | `STARTING_FLUX` | `3` | Flux currency per exchange for transmutations |
 | `BEST_OF_ROUNDS` | `3` | Match format (Bo3) |
 | `ROUNDS_TO_WIN` | `2` | Round wins required to secure match victory |
-| `MAX_EXCHANGES_PER_ROUND` | `10` | Safety limit before sudden-death resolution: If Exchange 10 completes with both HP > 0, higher HP wins. If tied, Exchange 11 Sudden Death (1 HP each, higher net damage wins, tiebroken by assault score then aegis score). |
+| `MAX_EXCHANGES_PER_ROUND` | `10` | Safety limit before sudden-death resolution: If Exchange 10 completes with both HP > 0, higher HP wins. If tied, Exchange 11 Sudden Death (1 HP each, higher net damage wins, tiebroken by assault score then aegis score; exact ties repeat sudden death at 1 HP with no point awarded). |
 | `DEAL_TIME_MS` | `2000` | Dealing animation phase duration |
 | `SHAPING_TIME_MS` | `15000` | Tactical card transmutation phase |
 | `COMMITMENT_TIME_MS` | `10000` | Blind hand splitting and stance lock-in phase |
@@ -262,7 +262,15 @@ Requirements:
 ```
 
 ## 10. Definition of Done Checklist
-- [ ] All card, hand, stance, and phase types defined.
-- [ ] All client and server network messages defined.
-- [ ] Game constants, suit ring adjacencies, glyphs, and colors defined.
-- [ ] Compiles with zero errors under `npm --workspace=packages/shared run build`.
+- [x] All card, hand, stance, and phase types defined.
+- [x] All client and server network messages defined.
+- [x] Game constants, suit ring adjacencies, glyphs, and colors defined.
+- [x] Compiles with zero errors under `npm --workspace=packages/shared run build`.
+
+### Dispatch verification (2026-10-03)
+- Shared NodeNext build and declaration/map output verified; public contracts,
+  constants, package exports, and explicit `.js` imports audited.
+- Spec-02 command: 67 tests passed (28 evaluator, 39 combat), covering exact scores,
+  input immutability, stance/burn interactions, knockouts, cap and sudden death.
+- Repository gate: `npm run build && npm test && npm run sim` passed;
+  76 tests total and 300 seeded matches. Existing Vite chunk-size warning remains.
