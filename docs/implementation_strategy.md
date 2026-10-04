@@ -2,7 +2,7 @@
 
 Audit date: 2026-10-03. Second review: committed baseline `fe9fc48`. Scope: the master design, all ten subsidiary specs,
 workspace configuration, shared/server/client source, existing tests, and CI.
-This strategy records audit findings and dispatch progress. Specs 01–06, 08 and
+This strategy records audit findings and dispatch progress. Specs 01–08 and
 the Spec-10A playable milestone are implemented and verified; later dispatches
 remain outstanding.
 
@@ -214,8 +214,8 @@ This section supersedes historical Spec-05 findings and pacing follow-ups above.
 
 ## Dispatch readiness
 
-**Specs 01–06, 08 and the Spec-10A playable milestone are complete. Spec-07 is next.**
-Continue the planned renderer and tutorial dispatches, then final
+**Specs 01–08 and the Spec-10A playable milestone are complete. Spec-09 is next.**
+Continue the planned tutorial dispatch, then final
 Spec-10B acceptance.
 
 Completed dispatches cover strict COMMITMENT-only lock-in,
@@ -241,7 +241,7 @@ every definition-of-done item. Leave checkboxes unchecked until evidenced.
 | 10A | First complete playable slice using current UI/render/audio foundation. Depends on 04/05. | Solo full phase loop and complete Bo3; two-browser host/join with correct local perspective, reveal, timeout, rematch, return-to-menu, sharing and recovery; production build/start on one port. |
 | 08 | Exact menu/HUD contracts, authoritative control states, countdown, rules access, responsive input. Depends on 10A. | Bot/profile and named host/join flows; lock-in gated to commitment; shaping costs/burn limits displayed accurately; desktop/touch/keyboard acceptance. |
 | 06 | Audio contract, scheduling, FFT, palette, cleanup and integration. Depends on stable phase/action events. | Gesture unlock, mute before/after init, unsupported-audio behavior, phase music, SFX and normalized FFT; no node growth in repeated play. |
-| 07 | Subdivided grid, vector cards/glyphs, shader/compositor, particle pools, accessibility and resource lifecycle. Depends on 06 FFT and 08 interactions. | All visual events wired, independent CRT and reduced-motion toggles, context recovery/disposal, measured 60 FPS on representative devices; no external media. |
+| 07 | Subdivided grid, vector cards/glyphs, shader/compositor, particle pools, accessibility and resource lifecycle. Depends on 06 FFT and 08 interactions. | All visual events wired, independent CRT and reduced-motion toggles, context recovery/disposal and no external media; physical 60 FPS acceptance explicitly staged in 10B. |
 | 09 | Real tutorial curriculum and complete rules. Depends on finalized 08 controls and shared math. | All four specified lesson hands/actions gate progress; invalid actions do not advance; final training clash; skip/Escape; no WebSocket activity. |
 | 10B | Final integration, CI, build footprint, production operation and acceptance. Depends on all preceding dispatches. | Full repository gate, actual solo/online/tutorial acceptance, disconnect and shutdown checks, mobile/accessibility/performance evidence, emitted-asset and gzip audits. |
 
@@ -283,13 +283,73 @@ working directory if the documented invocation needs correction.
 
 ## Recommended next dispatch
 
-Proceed to **Spec-07: Reactive Neon Vector Renderer**. Spec-06 supplies the
-shared audio graph, phase music, complete SFX, normalized FFT and voice cleanup;
-Spec-08 supplies the tactical UI and accessibility controls. Implement the
-subdivided grid, vector glyphs, shader/compositor, particle pools and renderer
-lifecycle next, including independent CRT and reduced-motion behavior.
+Proceed to **Spec-09: Interactive Tutorial & Rules Modal**. Specs 06–08 now
+provide the procedural audio, reactive renderer, psychedelic title screen,
+vector card previews, complete tactical UI and independent accessibility
+settings. Implement the four action-gated tutorial lessons and complete rules
+next, then finish final Spec-10B acceptance.
 
-Continue with 07, 09 and 10B.
+Continue with 09 and 10B. Physical integrated/mobile GPU acceptance of the
+unchanged 60 FPS target is explicitly assigned to Spec-10B by the user's
+2026-10-04 decision; software rendering measurements are diagnostic evidence.
+
+### Spec-07 implementation evidence (2026-10-04)
+
+- Implements every required scene/grid/particle API. The 60-degree perspective
+  camera sits at z=30; the renderer requests antialiasing, alpha and high-performance
+  power preference. ResizeObserver/window resizing updates camera, framebuffer,
+  render target and card layout together, with device pixel ratio capped at two.
+- The 40×25 grid spans exactly 50×30 world units, using 1,066 vertices and 2,065
+  subdivided cell edges. A native line shader applies the radius-eight inverse
+  mouse gravity well, four pooled exponentially damped radial waves and FFT bass
+  resonance. Updates change uniforms without rewriting CPU vertex positions.
+- One 1,000-particle typed pool owns position/velocity/color/lifetime buffers.
+  Bursts use canonical suit colors at actual card coordinates: 40 for shaping,
+  100 for burns, and 250 cyan/crimson sparks for a clash. Velocity is measured
+  in world units/second; accelerated trajectories agree at 30/60/120 FPS.
+  Capacity is reused without per-particle objects or new geometry/materials.
+- Ten preallocated vector card buffers with dark procedural faces draw every rank (2–10/J/Q/K/A) and all
+  four suits. The visible arena strip shows the local hand and geometric masked
+  opponent backs until an authoritative reveal; transformations reuse buffers.
+  Scroll/resize aligns the canvas preview to its DOM viewport.
+- The actual render-target compositor supplies threshold bloom, two-pixel
+  scanlines, barrel curvature, r^4 vignette and damage-driven radial RGB separation.
+  Bass/mid/high FFT bands control grid motion, scanline intensity and spark jitter.
+  CRT and reduced-motion settings are independently available on menu/HUD and
+  remain synchronized with media-query changes and mode switches.
+- The requested splash uses a large animated spectrum title and a procedural
+  psychedelic mandala with rotating petals, radial lace, halos and flowing hues.
+  Panels retain readable contrast and 44px controls. Reduced motion freezes the
+  title/mandala, caps grid deformation at 0.1, disables damage-driven separation
+  and cuts emissions by 75%; CRT remains independently configurable.
+- Context loss prevents default destruction and stops RAF. Restoration rebuilds
+  native rendering; tab visibility pauses/resumes one RAF chain. Destroy removes
+  listeners/observers, cancels frames, disposes every owned GPU resource and
+  releases the context. Repeated matches reuse GPU buffers and textures.
+- Verification: 23 new focused unit tests, 290 total unit/integration tests,
+  warning-free build/test/sim, 300 simulated matches and all 19 Chromium cases.
+  Native tests compare animated/static pixel samples, compile both GLSL stages,
+  exercise real context loss/recovery and check stable GPU allocations. Desktop
+  and 390px splash/arena screenshots were inspected; 320/390/767/1280px UI
+  acceptance retains touch targets and zero horizontal overflow. One intervening
+  run exceeded the existing AI worst-sample 1ms assertion; isolation and the
+  final full gate passed with that assertion unchanged.
+- Production JS totals 145,673 bytes gzipped (Python gzip level 9), with no
+  image, SVG, model or audio files. A diagnostic SwiftShader run at 960×600
+  measured 43.10 FPS (23.20ms mean, 36.00ms p95, 120 completed frames); software
+  rendering does not establish performance on the physical target devices.
+
+**Hardware performance staging:** The user explicitly chose to retain physical
+GPU FPS acceptance in Spec-10B. The 60 FPS target is unchanged and remains open
+there. Against a running production server, collect splash/arena measurements
+with `node scripts/rendererBenchmark.mjs --headed` (default URL
+`http://127.0.0.1:8080`, optional `--url=...`). Do not use `--software` for that
+hardware acceptance; the report identifies any software fallback. Use installed
+Playwright Chromium; on this workspace its browser cache is selected with
+`PLAYWRIGHT_BROWSERS_PATH=/tmp/cyberante-browsers`.
+
+This evidence supersedes historical renderer findings above. The Spec-07
+implementation checklist is checked; tutorial dispatch 09 is next.
 
 ### Spec-06 implementation evidence (2026-10-04)
 

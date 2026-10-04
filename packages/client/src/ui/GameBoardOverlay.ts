@@ -13,6 +13,7 @@ export interface GameBoardCallbacks {
   onReady?: () => void;
   onToggleRules: () => void;
   onToggleCrt?: () => void;
+  onToggleReducedMotion?: () => void;
   onToggleMute?: () => void;
   onRematch?: () => void;
   onExit?: () => void;
@@ -45,6 +46,7 @@ export class GameBoardOverlay {
         <span id="match-progress">ROUND 1/3 • EXCHANGE 1</span>
         <button id="btn-toggle-rules">RULES</button>
         <button id="btn-toggle-crt" aria-pressed="true">CRT: ON</button>
+        <button id="btn-toggle-motion" aria-pressed="false">MOTION: FULL</button>
         <button id="btn-toggle-mute" aria-pressed="false">AUDIO: ON</button>
         <button id="btn-exit">MAIN MENU</button>
       </nav>
@@ -64,6 +66,7 @@ export class GameBoardOverlay {
       </header>
       <div class="room-actions"><span id="room-code"></span><button id="btn-copy-code" hidden>COPY CODE</button><button id="btn-copy-link" hidden>COPY JOIN LINK</button><button id="btn-rematch" hidden>REMATCH</button></div>
       <div id="center-banner" class="display-glow" role="status" aria-live="polite"></div>
+      <div id="arena-preview" aria-hidden="true"><span class="arena-label">THE BLIND CLASH</span></div>
       <div id="clash-reveal" class="panel" aria-label="Clash results"></div>
       <section class="tactical-board panel" aria-label="Your cards and combat stance">
         <h1 id="local-dock-name">YOUR HAND</h1>
@@ -96,10 +99,16 @@ export class GameBoardOverlay {
   private bindEvents(): void {
     this.element('btn-toggle-rules').addEventListener('click', () => { masterAudio.sfx.playClick(); this.callbacks.onToggleRules(); });
     this.element('btn-toggle-crt').addEventListener('click', () => {
-      document.body.classList.toggle('clean-display');
+      if (this.callbacks.onToggleCrt) this.callbacks.onToggleCrt();
+      else document.body.classList.toggle('clean-display');
       this.syncPreferences();
-      this.callbacks.onToggleCrt?.();
     });
+    this.element('btn-toggle-motion').addEventListener('click', () => {
+      if (this.callbacks.onToggleReducedMotion) this.callbacks.onToggleReducedMotion();
+      else document.body.classList.toggle('reduced-motion');
+      this.syncPreferences();
+    });
+    document.addEventListener('visualsettingschange', () => this.syncPreferences());
     this.element('btn-toggle-mute').addEventListener('click', () => {
       if (this.callbacks.onToggleMute) this.callbacks.onToggleMute();
       else masterAudio.toggleMute();
@@ -313,6 +322,9 @@ export class GameBoardOverlay {
     if (durationMs > 0) this.bannerTimer = setTimeout(() => this.text('center-banner', ''), durationMs);
   }
   private syncPreferences(): void {
+    const reduced = document.body.classList.contains('reduced-motion');
+    this.text('btn-toggle-motion', reduced ? 'MOTION: REDUCED' : 'MOTION: FULL');
+    this.element('btn-toggle-motion').setAttribute('aria-pressed', String(reduced));
     const crt = !document.body.classList.contains('clean-display');
     this.text('btn-toggle-crt', crt ? 'CRT: ON' : 'CRT: OFF'); this.element('btn-toggle-crt').setAttribute('aria-pressed', String(crt));
     this.text('btn-toggle-mute', masterAudio.isMuted ? 'AUDIO: MUTED' : 'AUDIO: ON'); this.element('btn-toggle-mute').setAttribute('aria-pressed', String(masterAudio.isMuted));

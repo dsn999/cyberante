@@ -17,6 +17,8 @@ import {
   BotPersonality,
   ServerMessage,
   RoundResolution,
+  Card,
+  SUIT_COLORS,
 } from '@cyberante/shared';
 
 class CyberanteGame {
@@ -38,6 +40,7 @@ class CyberanteGame {
   private joined = false;
   private selfPlayerId: string = 'player';
   private previousHand = '';
+  private previousCards: readonly Card[] = [];
   private previousPhase = '';
   private announcedWinner: string | undefined;
   private clashKey = '';
@@ -67,7 +70,8 @@ class CyberanteGame {
       onBurnCard: (cardId) => this.handleBurn(cardId),
       onCommitHand: (assault, aegis, stance) => this.handleCommit(assault, aegis, stance),
       onToggleRules: () => this.rulesModal.toggle(),
-      onToggleCrt: () => {},
+      onToggleCrt: () => { this.scene.toggleCrt(); },
+      onToggleReducedMotion: () => { this.scene.toggleReducedMotion(); },
       onReady: () => {
         if (this.isSoloMode) this.soloSession?.ready();
         else this.networkClient.send({ type: 'CMD_READY' });
@@ -79,6 +83,8 @@ class CyberanteGame {
       onExit: () => this.returnToMenu(),
     });
 
+    this.scene.setCardViewport(document.getElementById('arena-preview')!);
+
     // Initialize Main Menu
     this.mainMenu = new MainMenuOverlay(uiRoot, {
       onStartSolo: (profile) => {
@@ -89,16 +95,20 @@ class CyberanteGame {
       onJoinMultiplayer: (code, name) => this.joinMultiplayerMatch(code, name),
       onToggleRules: () => this.rulesModal.toggle(),
       onStartTutorial: () => this.startTutorial(),
+      onToggleCrt: () => { this.scene.toggleCrt(); },
+      onToggleReducedMotion: () => { this.scene.toggleReducedMotion(); },
     });
     uiRoot.addEventListener('pointerdown', () => {
       this.unlockAudio();
       if (this.mode === 'solo' || this.mode === 'online') masterAudio.music.start();
     });
+    window.addEventListener('pagehide', event => { if (!event.persisted) this.scene.destroy(); });
     if (this.networkClient.hasSession) this.resumeMultiplayerMatch();
   }
 
   private resumeMultiplayerMatch(): void {
     this.mode = 'online';
+    this.scene.setTitleMode(false);
     this.mainMenu.hide();
     this.gameBoard.show();
     this.gameBoard.setConnected(false);
@@ -116,6 +126,7 @@ class CyberanteGame {
     this.unlockAudio();
     this.returnToMenu();
     this.mode = 'tutorial';
+    this.scene.setTitleMode(false);
     this.mainMenu.hide();
     this.tutorial.start();
   }
@@ -127,6 +138,7 @@ class CyberanteGame {
     this.returnToMenu();
     this.isSoloMode = true;
     this.mode = 'solo';
+    this.scene.setTitleMode(false);
     this.selfPlayerId = 'player';
     this.mainMenu.hide();
     this.gameBoard.show();
@@ -141,6 +153,8 @@ class CyberanteGame {
   private returnToMenu(): void {
     this.generation++;
     this.mode = 'menu';
+    this.scene.setTitleMode(true);
+    this.scene.particles?.clear();
     this.joined = false;
     clearTimeout(this.joinTimer);
     this.soloSession?.destroy();
@@ -151,6 +165,7 @@ class CyberanteGame {
     this.isSoloMode = false;
     this.gameBoard.resetView();
     this.previousHand = '';
+    this.previousCards = [];
     this.previousPhase = '';
     this.announcedWinner = undefined;
     this.clashKey = '';
@@ -188,6 +203,7 @@ class CyberanteGame {
     this.returnToMenu();
     this.isSoloMode = false;
     this.mode = 'online';
+    this.scene.setTitleMode(false);
     const generation = this.generation;
     this.mainMenu.hide();
     this.gameBoard.show();
@@ -244,9 +260,21 @@ class CyberanteGame {
       if (self) {
         const hand = JSON.stringify(msg.selfCards);
         if (msg.phase === 'SHAPING' && this.previousPhase === 'SHAPING' && hand !== this.previousHand) {
-          this.scene.triggerSparks(0, 0, 0x00f3ff);
+          const retired = this.previousCards.find(old => !msg.selfCards.some(card => card.id === old.id));
+          if (retired) {
+            const pos = this.cardPosition(retired.id);
+            this.scene.triggerBurn(pos.x, pos.y, Number.parseInt(SUIT_COLORS[retired.suit].slice(1), 16));
+          } else for (const card of msg.selfCards) {
+            const old = this.previousCards.find(previous => previous.id === card.id);
+            if (old && (old.rank !== card.rank || old.suit !== card.suit)) {
+              const pos = this.cardPosition(card.id);
+              this.scene.triggerSparks(pos.x, pos.y, Number.parseInt(SUIT_COLORS[card.suit].slice(1), 16));
+            }
+          }
         }
         this.previousHand = hand;
+        this.previousCards = msg.selfCards;
+        if (!['CLASH_REVEAL', 'ROUND_RESOLVE', 'MATCH_OVER'].includes(msg.phase)) this.scene.setCards(msg.selfCards);
         this.previousPhase = msg.phase;
         this.gameBoard.setNames(self.name, opponent?.name ?? 'Waiting for opponent', opponent?.connected ?? true);
         this.deadline = msg.timeRemainingMs ? Date.now() + msg.timeRemainingMs : 0;
@@ -277,11 +305,15 @@ class CyberanteGame {
 
   private handleClashOutcome(resolution: RoundResolution): void {
     this.gameBoard.showResolution(resolution, this.selfPlayerId);
-    this.scene.triggerShockwave(0, 0, 2.0);
-    this.scene.triggerSparks(0, 0, 0x00f3ff);
+    const isSelfP1 = resolution.p1PlayerId === this.selfPlayerId;
+    const ownCards = isSelfP1 ? [...resolution.p1Assault, ...resolution.p1Aegis] : [...resolution.p2Assault, ...resolution.p2Aegis];
+    const opponentCards = isSelfP1 ? [...resolution.p2Assault, ...resolution.p2Aegis] : [...resolution.p1Assault, ...resolution.p1Aegis];
+    this.scene.setCards(ownCards, opponentCards);
     const clashKey = `${resolution.roundNumber}:${resolution.exchangeNumber}`;
     if (this.clashKey !== clashKey) {
       this.clashKey = clashKey;
+      this.scene.triggerClashExplosion(resolution.p1Stance, resolution.p2Stance,
+        Math.max(resolution.p1NetDamageReceived, resolution.p2NetDamageReceived) / 10 + 0.5);
       masterAudio.sfx.playClashLaser();
       if (Math.max(resolution.p1NetDamageReceived, resolution.p2NetDamageReceived) > 0) {
         masterAudio.sfx.playDamageImpact(resolution.p1HpRemaining <= 0 || resolution.p2HpRemaining <= 0);
@@ -303,6 +335,13 @@ class CyberanteGame {
     }
 
     this.gameBoard.showBanner(banner, 4000);
+  }
+
+  private cardPosition(cardId: string): { x: number; y: number } {
+    const face = Array.from(document.querySelectorAll<HTMLElement>('.card-face')).find(element => element.dataset.cardId === cardId);
+    if (!face) return { x: 0, y: 0 };
+    const rect = face.getBoundingClientRect();
+    return this.scene.screenToWorld(rect.left + rect.width / 2, rect.top + rect.height / 2);
   }
 
   private announceMatch(winnerId: string | null | undefined): void {

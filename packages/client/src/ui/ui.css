@@ -13,7 +13,7 @@ label { display: grid; gap: 6px; color: var(--muted); }
 .screen { position: absolute; inset: 0; overflow-y: auto; overflow-x: hidden; overscroll-behavior: contain; padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left)); pointer-events: auto; }
 .panel { border: 1px solid var(--line); border-radius: 10px; background: var(--surface); padding: 16px; min-width: 0; }
 .display-glow { text-shadow: 0 0 16px #00f3ff66; }
-body::after { content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 5; background: repeating-linear-gradient(transparent 0 3px, #0003 3px 4px); }
+body::after { content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 5; background: transparent; }
 body.clean-display::after { display: none; }
 body.clean-display .display-glow, body.clean-display .hand-card { text-shadow: none; box-shadow: none; }
 #main-menu-overlay { z-index: 20; background: radial-gradient(circle, #0b1329cc, #030712f5); }
@@ -110,3 +110,40 @@ dialog::backdrop { background: #030712df; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
+
+/* The splash shares the procedural canvas; panels remain readable over the spectrum. */
+#main-menu-overlay { background: linear-gradient(110deg, #03071220 15%, #08081a66 55%, #030712cc); }
+.menu-content { width: min(1120px, 100%); min-height: calc(100dvh - 100px); margin: max(20px, 5vh) auto; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); align-items: center; gap: 64px; }
+.splash-hero { min-width: 0; padding-block: 30px; }
+.splash-kicker { color: #e5d9ff; font: 11px var(--font-mono); letter-spacing: .2em; display: flex; align-items: center; gap: 10px; }
+.status-light { flex: 0 0 6px; height: 6px; border-radius: 50%; background: #00ff88; box-shadow: 0 0 12px #00ff88; }
+.menu-title { display: grid; margin: 30px 0 22px; font: 900 clamp(62px, 7.9vw, 112px)/.95 var(--font-display); letter-spacing: -.025em; width: fit-content; }
+.menu-title > span { background: linear-gradient(110deg, #f2ffff 5%, #00f3ff 20%, #b966ff 40%, #ff57ae 60%, #ffb700 78%, #00ff88 95%); background-size: 250% 100%; background-clip: text; -webkit-background-clip: text; color: transparent; -webkit-text-stroke: .5px #ffffff55; filter: drop-shadow(0 0 16px #8f30ff66); animation: spectrum-drift 16s ease-in-out infinite alternate; }
+.menu-title > span:nth-child(2) { animation-delay: -8s; }
+.title-dot { color: #00ff88; }
+.splash-tagline { font: 700 clamp(18px, 2vw, 26px)/1.4 var(--font-display); letter-spacing: .04em; color: #fff; }
+.menu-subtitle { margin-top: 18px; color: #d3d9e7; }
+.splash-suits { display: flex; gap: 26px; margin-top: 32px; font: 36px/1 var(--font-body); }
+.splash-suits span:nth-child(1) { color: #00f3ff; }
+.splash-suits span:nth-child(2) { color: #00ff88; }
+.splash-suits span:nth-child(3) { color: #ffb700; }
+.splash-suits span:nth-child(4) { color: #ff0055; }
+.splash-caption { margin-top: 22px; font: 10px var(--font-mono); letter-spacing: .16em; color: #b4aec9; }
+.menu-operations { display: grid; gap: 16px; min-width: 0; }
+.menu-operations .panel { background: #080e21e8; border-color: #8061b855; box-shadow: 0 12px 40px #0005; }
+.menu-section h2 { font-size: 12px; letter-spacing: .13em; }
+.menu-operations #btn-solo { background: linear-gradient(110deg, #00f3ff, #a1ffdc); min-height: 50px; }
+.visual-settings button { font-size: 11px; color: #c7bbdf; }
+body.clean-display .menu-title > span { filter: none; -webkit-text-stroke: 0; }
+body.reduced-motion .urgent { animation: none; }
+@keyframes spectrum-drift { from { background-position: 0% 50%; } to { background-position: 100% 50%; } }
+@media (max-width: 767px) {
+  .menu-content { grid-template-columns: 1fr; gap: 26px; width: min(460px, 100%); margin: 0 auto 16px; min-height: auto; }
+  .splash-hero { padding-block: 26px 0; }
+  .menu-title { font-size: clamp(62px, 19vw, 94px); margin-top: 24px; }
+  .splash-suits { margin-top: 22px; }
+  .splash-caption { margin-top: 16px; }
+}
+#arena-preview { min-height: 180px; position: relative; flex: 0 0 180px; pointer-events: none; }
+.arena-label { position: absolute; left: 0; top: 50%; color: var(--muted); font: 10px var(--font-mono); letter-spacing: .12em; }
+@media (max-width: 767px) { #arena-preview { min-height: 150px; flex-basis: 150px; } .arena-label { font-size: 8px; } }

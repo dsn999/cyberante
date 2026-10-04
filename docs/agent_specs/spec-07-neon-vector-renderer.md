@@ -154,9 +154,28 @@ Requirements:
 ```
 
 ## 10. Definition of Done Checklist
-- [ ] Three.js vector scene rendering to `#canvas-container`.
-- [ ] Reactive warping wireframe grid with mouse gravity and shockwave propagation.
-- [ ] Additive vector particle system with pooled buffers.
-- [ ] Audio-reactive FFT bass coupling.
-- [ ] CRT post-processing and reduced-motion accessibility mode.
-- [ ] Zero external image or 3D asset files in client bundle.
+- [x] Three.js vector scene rendering to `#canvas-container`.
+- [x] Reactive warping wireframe grid with mouse gravity and shockwave propagation.
+- [x] Additive vector particle system with pooled buffers.
+- [x] Audio-reactive FFT bass coupling.
+- [x] CRT post-processing and reduced-motion accessibility mode.
+- [x] Zero external image or 3D asset files in client bundle.
+
+### Verification evidence and acceptance staging (2026-10-04)
+
+- Exact client build command and the repository build/test/sim gates pass.
+- 23 renderer unit tests cover subdivided GPU grid uniforms, elapsed-time pooled
+  particles, all ranks/suits, face masking, the compositor, settings, projection,
+  resizing, context/visibility recovery and complete resource destruction.
+- Native Chromium acceptance checks shader compilation, changing splash pixels,
+  frozen reduced-motion pixels, mobile sizing, independent settings, real GPU
+  context loss/restoration and stable buffer/texture allocations across matches.
+- Desktop/mobile splash and arena screenshots were inspected. Production output
+  contains no image, SVG, model or audio asset files.
+- **User-approved staging:** Physical integrated/mobile GPU acceptance of the
+  unchanged 60 FPS target remains in **Spec-10B**. SwiftShader software-renderer
+  timing is diagnostic evidence and does not certify physical GPU performance.
+  `scripts/rendererBenchmark.mjs` reports GPU identity, viewport, framebuffer size,
+  FPS and mean/p95 intervals with actual WebGL work completion.
+- See [the implementation strategy](../implementation_strategy.md#spec-07-implementation-evidence-2026-10-04)
+  for dispatch evidence and the native benchmark command.
