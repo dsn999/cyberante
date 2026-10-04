@@ -189,10 +189,27 @@ Requirements:
 ```
 
 ## 10. Definition of Done Checklist
-- [ ] Responsive GameBoardOverlay with Guard HP, Flux currency, and phase timers.
-- [ ] Split-lane slotting (3 Assault, 2 Aegis) with Auto-Split helper.
-- [ ] Transmutation buttons for Nudge, Bleed, and Burn with Flux validation.
-- [ ] Stance matrix selector with clear risk/reward indicators.
-- [ ] MainMenuOverlay with Solo bot archetype selection and multiplayer matchmaking.
-- [ ] Accessibility features: high-contrast suit glyphs, CRT toggle, mobile responsiveness.
-- [ ] Clean compilation under `npm --workspace=packages/client run build`.
+- [x] Responsive GameBoardOverlay with Guard HP, Flux currency, and phase timers.
+- [x] Split-lane slotting (3 Assault, 2 Aegis) with Auto-Split helper.
+- [x] Transmutation buttons for Nudge, Bleed, and Burn with Flux validation.
+- [x] Stance matrix selector with clear risk/reward indicators.
+- [x] MainMenuOverlay with Solo bot archetype selection and multiplayer matchmaking.
+- [x] Accessibility features: high-contrast suit glyphs, CRT toggle, mobile responsiveness.
+- [x] Clean compilation under `npm --workspace=packages/client run build`.
+
+### Verification evidence (2026-10-04)
+
+`handSelection.test.ts` covers all ten partitions, valid lane swaps, cancellation,
+incomplete manual selections, immutable rank updates, burn replacements and fresh
+exchanges. `e2e/ui.spec.ts` covers actual keyboard/touch input, authoritative
+disabled states, both Bleed neighbors, final-three-second commitment indication,
+focus preservation, modal focus/escape, mute synchronization and menu validation.
+Measured 320/390/767/1280px layouts have no horizontal overflow and all visible
+game buttons are at least 44×44px. Vertical scrolling keeps all cards accessible
+on narrow screens; settings remain in a sticky toolbar.
+
+The existing integration suite now checks rules access in every match phase and
+uses distinct Host/Join actions. All 13 browser cases pass, alongside 234
+unit/integration tests and the unchanged 300-match simulator. Client compilation
+and the full build/test/sim gate pass. UI scanlines/glow switch independently of
+the motion preference; Spec-07 supplies the renderer compositor implementation.

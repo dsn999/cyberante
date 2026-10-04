@@ -13,8 +13,15 @@ test(`offline solo ${profile} completes Bo3, rematches, exits and routes to tuto
   await page.locator('#btn-solo').click();
   await expect(phase(page)).toHaveText('DEAL');
   await expect(page.locator('#btn-lock-in')).toBeDisabled();
+  const checkedPhases = new Set<string>();
   for (let i = 0; i < 120; i++) {
     const current = await phase(page).textContent();
+    if (profile === 'CIPHER_ZERO' && current && !checkedPhases.has(current)) {
+      await page.locator('#btn-toggle-rules').click();
+      await expect(page.locator('#rules-modal')).toBeVisible();
+      await page.keyboard.press('Escape');
+      checkedPhases.add(current);
+    }
     if (current === 'MATCH OVER') break;
     if (current === 'DEAL') await page.clock.fastForward(2000);
     else if (current === 'SHAPING') {
@@ -31,6 +38,7 @@ test(`offline solo ${profile} completes Bo3, rematches, exits and routes to tuto
     else throw new Error(`Unexpected solo phase: ${current}`);
   }
   await expect(phase(page)).toHaveText('MATCH OVER');
+  if (profile === 'CIPHER_ZERO') expect([...checkedPhases].sort()).toEqual(['CLASH REVEAL', 'COMMITMENT', 'DEAL', 'MATCH OVER', 'ROUND RESOLVE', 'SHAPING']);
   await expect(page.locator('#center-banner')).toContainText('MATCH');
   await page.locator('#btn-rematch').click();
   await expect(phase(page)).toHaveText('DEAL');
@@ -59,7 +67,7 @@ test('two browsers share a room, map seats, finish a match, rematch and forfeit'
   try {
     await host.goto('/');
     await host.locator('#player-name-input').fill('Host');
-    await host.locator('#btn-multiplayer').click();
+    await host.locator('#btn-host').click();
     await expect(host.locator('#room-code')).toHaveText(/^ROOM [A-Z0-9]{4}$/);
     const code = (await host.locator('#room-code').textContent())!.slice(5);
     await guest.goto(`/?room=${code}`);
@@ -138,7 +146,7 @@ test('room sharing, timeout, dropped sockets, reload recovery and grace expiry',
   try {
     await host.goto('/');
     await host.locator('#player-name-input').fill('Host');
-    await host.locator('#btn-multiplayer').click();
+    await host.locator('#btn-host').click();
     await expect(host.locator('#room-code')).toHaveText(/^ROOM [A-Z0-9]{4}$/);
     const code = (await host.locator('#room-code').textContent())!.slice(5);
     await host.locator('#btn-copy-code').click();
@@ -201,7 +209,7 @@ test('rejected joins return to menu and exiting a pending room cancels its callb
   await expect(page.locator('#main-menu-overlay')).toBeVisible();
   await expect(page.locator('#menu-error')).not.toBeEmpty();
   await page.locator('#input-room').fill('');
-  await page.locator('#btn-multiplayer').click();
+  await page.locator('#btn-host').click();
   await page.locator('#btn-exit').click();
   await page.locator('#btn-solo').click();
   await page.clock.fastForward(2000);

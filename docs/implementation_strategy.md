@@ -2,9 +2,9 @@
 
 Audit date: 2026-10-03. Second review: committed baseline `fe9fc48`. Scope: the master design, all ten subsidiary specs,
 workspace configuration, shared/server/client source, existing tests, and CI.
-This strategy records audit findings and dispatch progress. Specs 01–05 and the
-Spec-10A playable milestone are implemented and verified; later dispatches remain
-outstanding.
+This strategy records audit findings and dispatch progress. Specs 01–05, 08 and
+the Spec-10A playable milestone are implemented and verified; later dispatches
+remain outstanding.
 
 ## Architectural authority
 
@@ -214,7 +214,7 @@ This section supersedes historical Spec-05 findings and pacing follow-ups above.
 
 ## Dispatch readiness
 
-**Specs 01–05 and the Spec-10A playable milestone are complete. Spec-08 is next.**
+**Specs 01–05, 08 and the Spec-10A playable milestone are complete. Spec-06 is next.**
 Continue the planned UI, audio, renderer and tutorial dispatches, then final
 Spec-10B acceptance.
 
@@ -283,16 +283,40 @@ working directory if the documented invocation needs correction.
 
 ## Recommended next dispatch
 
-Proceed to **Spec-08: Client Tactical UI**. Spec-10A now supplies the timed solo
-loop, bot pauses, perspective mapping, full reveals/results/rematches, exit,
-clipboard room sharing, tab-local token recovery and mode cleanup. Chromium
-acceptance covers offline Bo3 against all three profiles, two independent online
-seats, mutual rematch, timeout, socket/reload recovery and grace-expiry forfeit
-through the single-port production server. CI is configured to run the browser
-tests and simulator.
-Final audio, visual, mobile/performance and deployment acceptance remain Spec-10B.
+Proceed to **Spec-06: Procedural Audio**. Spec-08 completes the tactical UI APIs,
+responsive layout, guarded controls, two-neighbor Bleed, keyboard lane selection,
+countdown cue, named Host/Join, rules access and UI accessibility settings.
+Spec-10A supplies the complete playable solo/online flows and recovery. Finish
+audio scheduling, gain/FFT contracts, SFX palette and node cleanup next; then
+renderer, tutorial and final deployment/mobile/performance acceptance.
 
-Continue with 08, 06, 07, 09 and 10B.
+Continue with 06, 07, 09 and 10B.
+
+### Spec-08 implementation evidence (2026-10-04)
+
+- Replaced inline layouts with responsive CSS and semantic DOM controls.
+  Guard/Flux/wins/barrier and the countdown remain authoritative snapshots;
+  final-three-second commitment cues respect reduced-motion preferences.
+- A UI-only selection model checks all ten splits and preserves deliberate
+  partial choices across ticks. Opposite-lane selections swap cards; badge
+  activation unassigns. Burn replacements retain the retired card's lane.
+  Commit requires a complete owned 3/2 partition during Commitment.
+- Both adjacent Bleed suits are actionable. Shaping controls honor phase,
+  connection, Flux and burn flags; stance controls display mitigation/reflection
+  tradeoffs. Ready/rematch requests expose waiting states and disable duplicates.
+- Distinct Host and Join buttons validate trimmed 1–16-character names and
+  four-character uppercase codes. All three bot profiles remain playable.
+  Rules use a native modal with focus containment, Escape and focus restoration;
+  integration acceptance exercises it in every match phase.
+- Suit glyphs and names supplement color. All measured visible game buttons are
+  at least 44×44px at 320, 390, 767 and 1280px, without horizontal overflow;
+  narrow layouts scroll vertically and retain a sticky settings toolbar.
+  Mute state stays synchronized across menu/HUD; CRT UI scanlines/glow operate
+  independently of motion. Renderer-compositor details remain Spec-07.
+- Seven new selection tests and seven focused browser cases pass. The full
+  gate passes 234 unit/integration tests and 300 seeded simulation matches;
+  all 13 browser cases pass against the compiled production server. Desktop and
+  mobile screenshots were inspected. No core combat/balance constants changed.
 
 ### Spec-10A implementation evidence
 

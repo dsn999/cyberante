@@ -1,3 +1,4 @@
+import './ui/ui.css';
 // ============================================================================
 // CYBERANTE: Client Master Entry & Mode Orchestrator
 // ============================================================================
@@ -246,6 +247,7 @@ class CyberanteGame {
           msg.roundNumber, msg.exchangeNumber, self.roundWins, opponent?.roundWins ?? 0,
           self.activeBarrier);
         this.gameBoard.setControls(msg.phase, self.hasCommitted, self.hasBurnedCard);
+        this.gameBoard.setRematchAvailable(this.mode === 'solo' || Boolean(opponent?.connected));
         if (msg.phase === 'MATCH_OVER') {
           this.gameBoard.showBanner(msg.matchWinnerId === this.selfPlayerId ? 'MATCH VICTORY!' : 'MATCH DEFEAT!', 0);
         }
@@ -259,6 +261,7 @@ class CyberanteGame {
         this.mainMenu.showError(msg.reason);
         return;
       }
+      this.gameBoard.clearPendingActions();
       this.gameBoard.showBanner(`ERROR: ${msg.reason}`);
     }
   }

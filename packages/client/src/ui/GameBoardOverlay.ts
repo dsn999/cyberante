@@ -1,666 +1,323 @@
-// ============================================================================
-// CYBERANTE: In-Game HUD & Tactical Controls Overlay (Option A Multi-Exchange)
-// ============================================================================
-
 import {
-  Card,
-  GamePhase,
-  Stance,
-  Suit,
-  Rank,
-  RoundResolution,
-  SUIT_GLYPHS,
-  SUIT_COLORS,
-  SUIT_RING,
-  GAME_CONSTANTS,
-  evaluateAssaultHand,
-  evaluateAegisHand,
+  type Card, type GamePhase, type Stance, type Suit, type Rank, type RoundResolution,
+  SUIT_GLYPHS, SUIT_COLORS, SUIT_RING, GAME_CONSTANTS, evaluateAssaultHand, evaluateAegisHand,
 } from '@cyberante/shared';
 import { sfx } from '../audio/SoundEffects';
+import { masterAudio } from '../audio/AudioEngine';
+import { HandSelection } from './HandSelection';
 
 export interface GameBoardCallbacks {
   onNudgeRank: (cardId: string, direction: 'UP' | 'DOWN') => void;
   onBleedSuit: (cardId: string, targetSuit: Suit) => void;
   onBurnCard: (cardId: string) => void;
   onCommitHand: (assaultIds: [string, string, string], aegisIds: [string, string], stance: Stance) => void;
+  onReady?: () => void;
   onToggleRules: () => void;
   onToggleCrt?: () => void;
-  onReady?: () => void;
+  onToggleMute?: () => void;
   onRematch?: () => void;
   onExit?: () => void;
 }
 
 export class GameBoardOverlay {
-  private container: HTMLElement;
-  private callbacks: GameBoardCallbacks;
+  private readonly container: HTMLElement;
+  private readonly selection = new HandSelection();
   private selectedStance: Stance = 'BRACE';
-  private assaultCardIds: string[] = [];
-  private aegisCardIds: string[] = [];
-  private currentCards: Card[] = [];
-  private isCrtClean: boolean = false;
   private phase: GamePhase = 'LOBBY_WAIT';
   private committed = false;
   private burned = false;
+  private connected = true;
   private flux = 0;
   private exchangeKey = '';
-  private connected = true;
+  private readySent = false;
+  private rematchSent = false;
+  private rematchAvailable = true;
   private bannerTimer: ReturnType<typeof setTimeout> | undefined;
+  private viewGeneration = 0;
 
-  constructor(parent: HTMLElement, callbacks: GameBoardCallbacks) {
-    this.callbacks = callbacks;
-    this.container = document.createElement('div');
+  constructor(parent: HTMLElement, private readonly callbacks: GameBoardCallbacks) {
+    this.container = document.createElement('section');
     this.container.id = 'game-board-overlay';
-    this.container.style.cssText = `
-      position: absolute;
-      top: 0; left: 0; width: 100%; height: 100%;
-      display: none; flex-direction: column;
-      justify-content: space-between;
-      padding: 16px;
-      pointer-events: none;
-    `;
-
+    this.container.className = 'screen';
+    this.container.hidden = true;
+    this.container.setAttribute('aria-label', 'Tactical game board');
     this.container.innerHTML = `
-      <!-- Top Status Bar -->
-      <div class="interactive" style="
-        display: flex; justify-content: space-between; align-items: center;
-        background: rgba(11, 19, 41, 0.85); backdrop-filter: blur(8px);
-        padding: 10px 18px; border: 1px solid #1f293d; border-radius: 6px;
-        box-shadow: 0 4px 20px rgba(0,0,0,0.5);
-      ">
-        <div style="display: flex; gap: 14px; align-items: center; flex-wrap: wrap;">
-          <span id="player-name" style="color: #00f3ff; font-weight: bold; font-family: var(--font-display); letter-spacing: 1px; font-size: 13px;">OPERATIVE</span>
-          <div style="display: flex; align-items: center; gap: 5px;">
-            <span style="font-size: 11px; color: #9ca3af;">GUARD:</span>
-            <span id="player-hp" style="font-family: var(--font-mono); font-size: 18px; font-weight: bold; color: #00ff66;">20</span>
-          </div>
-          <div style="display: flex; align-items: center; gap: 5px;">
-            <span style="font-size: 11px; color: #9ca3af;">FLUX:</span>
-            <span id="player-flux" style="font-family: var(--font-mono); font-size: 18px; font-weight: bold; color: #ffb700;">3/3</span>
-          </div>
-          <div id="player-barrier-badge" style="display: none; background: rgba(255, 183, 0, 0.2); border: 1px solid #ffb700; color: #ffb700; padding: 2px 6px; border-radius: 3px; font-size: 11px; font-family: var(--font-mono);">
-            BARRIER: <span id="player-barrier-val">0</span>
-          </div>
-          <div style="font-size: 11px; color: #60a5fa; font-family: var(--font-mono);">
-            WINS: <span id="player-wins">0</span>
-          </div>
+      <nav class="game-toolbar" aria-label="Game settings">
+        <span id="match-progress">ROUND 1/3 • EXCHANGE 1</span>
+        <button id="btn-toggle-rules">RULES</button>
+        <button id="btn-toggle-crt" aria-pressed="true">CRT: ON</button>
+        <button id="btn-toggle-mute" aria-pressed="false">AUDIO: ON</button>
+        <button id="btn-exit">MAIN MENU</button>
+      </nav>
+      <header class="scoreboard panel">
+        <div class="player-stats">
+          <span id="player-name" class="name">OPERATIVE</span>
+          <progress id="player-hp-bar" value="20" max="20" aria-label="Your Guard HP"></progress>
+          <div class="stats-values"><span>GUARD <strong id="player-hp">20</strong></span><span>FLUX <strong id="player-flux">3/3</strong></span><span>WINS <strong id="player-wins">0</strong></span></div>
+          <span id="player-barrier-badge" hidden>BARRIER <strong id="player-barrier-val">0</strong></span>
         </div>
-
-        <!-- Center Phase & Exchange Timer -->
-        <div style="text-align: center;">
-          <div id="match-progress" style="font-family: var(--font-mono); font-size: 11px; color: #60a5fa; letter-spacing: 1px;">ROUND 1 • EXCHANGE 1</div>
-          <div id="phase-label" style="font-family: var(--font-display); font-size: 13px; color: #ff0055; letter-spacing: 2px;">SHAPING PHASE</div>
-          <div id="timer-display" style="font-family: var(--font-mono); font-size: 22px; font-weight: bold; color: #e5e7eb;">15.0s</div>
+        <div class="phase-clock"><div id="phase-label">LOBBY WAIT</div><div id="timer-display" role="timer" aria-label="Phase time remaining">0.0s</div></div>
+        <div class="player-stats opponent">
+          <span id="opponent-name" class="name">Waiting for opponent</span>
+          <progress id="opponent-hp-bar" value="20" max="20" aria-label="Opponent Guard HP"></progress>
+          <div class="stats-values"><span>GUARD <strong id="opponent-hp">20</strong></span><span>WINS <strong id="opponent-wins">0</strong></span></div>
         </div>
-
-        <div style="display: flex; gap: 14px; align-items: center; flex-wrap: wrap;">
-          <div style="font-size: 11px; color: #f87171; font-family: var(--font-mono);">
-            WINS: <span id="opponent-wins">0</span>
-          </div>
-          <div style="display: flex; align-items: center; gap: 5px;">
-            <span style="font-size: 11px; color: #9ca3af;">OPPONENT GUARD:</span>
-            <span id="opponent-hp" style="font-family: var(--font-mono); font-size: 18px; font-weight: bold; color: #ff0055;">20</span>
-          </div>
-          <button id="btn-toggle-crt" style="
-            background: rgba(255,255,255,0.06); border: 1px solid #4b5563; color: #9ca3af;
-            padding: 4px 8px; cursor: pointer; border-radius: 4px; font-family: var(--font-mono); font-size: 11px;
-          ">CRT: ON</button>
-          <button id="btn-toggle-rules" style="
-            background: rgba(0, 243, 255, 0.15); border: 1px solid #00f3ff; color: #00f3ff;
-            padding: 4px 10px; cursor: pointer; border-radius: 4px; font-weight: bold; font-size: 11px; font-family: var(--font-display);
-          ">? RULES</button>
+      </header>
+      <div class="room-actions"><span id="room-code"></span><button id="btn-copy-code" hidden>COPY CODE</button><button id="btn-copy-link" hidden>COPY JOIN LINK</button><button id="btn-rematch" hidden>REMATCH</button></div>
+      <div id="center-banner" class="display-glow" role="status" aria-live="polite"></div>
+      <div id="clash-reveal" class="panel" aria-label="Clash results"></div>
+      <section class="tactical-board panel" aria-label="Your cards and combat stance">
+        <h1 id="local-dock-name">YOUR HAND</h1>
+        <div class="lanes">
+          <section class="lane" aria-label="Assault lane"><h2>ASSAULT · 3 CARDS</h2><div id="assault-preview" class="lane-preview"></div><div id="assault-slots" class="lane-slots"></div></section>
+          <section class="lane aegis" aria-label="Aegis lane"><h2>AEGIS · 2 CARDS</h2><div id="aegis-preview" class="lane-preview"></div><div id="aegis-slots" class="lane-slots"></div></section>
         </div>
-      </div>
-
-      <!-- Center Dynamic Banner -->
-      <div id="center-banner" style="
-        text-align: center; font-family: var(--font-display);
-        font-size: 24px; color: #00f3ff; text-shadow: 0 0 15px rgba(0,243,255,0.6);
-        pointer-events: none; min-height: 40px; display: flex; align-items: center; justify-content: center;
-      "></div>
-
-      <!-- Bottom Tactical Board -->
-      <div class="interactive" style="
-        background: rgba(11, 19, 41, 0.9); backdrop-filter: blur(10px);
-        border: 1px solid #1f293d; border-radius: 8px; padding: 14px;
-        display: flex; flex-direction: column; gap: 12px;
-        box-shadow: 0 -4px 20px rgba(0,0,0,0.5);
-      ">
-        <!-- Split Slots and Stance Selector -->
-        <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap;">
-          <div style="display: flex; gap: 18px; align-items: center; flex-wrap: wrap;">
-            <div>
-              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-                <span style="font-size: 11px; color: #ff0055; font-family: var(--font-display); letter-spacing: 1px;">ASSAULT (3 CARDS)</span>
-                <span id="assault-preview" style="font-size: 10px; color: #9ca3af; font-family: var(--font-mono); margin-left: 8px;"></span>
-              </div>
-              <div id="assault-slots" style="display: flex; gap: 6px; min-height: 38px;"></div>
-            </div>
-            <div>
-              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-                <span style="font-size: 11px; color: #00f3ff; font-family: var(--font-display); letter-spacing: 1px;">AEGIS (2 CARDS)</span>
-                <span id="aegis-preview" style="font-size: 10px; color: #9ca3af; font-family: var(--font-mono); margin-left: 8px;"></span>
-              </div>
-              <div id="aegis-slots" style="display: flex; gap: 6px; min-height: 38px;"></div>
-            </div>
-            <button id="btn-auto-split" style="
-              background: rgba(255, 255, 255, 0.08); border: 1px solid #6b7280; color: #e5e7eb;
-              padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 11px; font-family: var(--font-display);
-            ">AUTO SPLIT</button>
-          </div>
-
-          <!-- Stance Selector -->
-          <div style="display: flex; gap: 8px; align-items: center;">
-            <button id="stance-brace" class="stance-btn active" style="
-              background: rgba(0, 243, 255, 0.2); border: 1px solid #00f3ff; color: #00f3ff;
-              padding: 8px 12px; border-radius: 4px; cursor: pointer; font-family: var(--font-display); font-size: 11px;
-            ">BRACE (1x)</button>
-            <button id="stance-overcharge" class="stance-btn" style="
-              background: rgba(255, 0, 85, 0.1); border: 1px solid #4b5563; color: #9ca3af;
-              padding: 8px 12px; border-radius: 4px; cursor: pointer; font-family: var(--font-display); font-size: 11px;
-            ">OVERCHARGE (2x)</button>
-            <button id="stance-parry" class="stance-btn" style="
-              background: rgba(255, 183, 0, 0.1); border: 1px solid #4b5563; color: #9ca3af;
-              padding: 8px 12px; border-radius: 4px; cursor: pointer; font-family: var(--font-display); font-size: 11px;
-            ">PARRY (REFLECT)</button>
-
-            <button id="btn-lock-in" style="
-              background: #00f3ff; color: #030712; font-family: var(--font-display);
-              font-weight: 900; font-size: 13px; letter-spacing: 2px;
-              padding: 10px 22px; border: none; border-radius: 4px; cursor: pointer;
-            ">LOCK IN</button>
-          </div>
+        <p id="selection-hint" role="status" aria-live="polite">Select a card, then a card in the opposite lane to swap. Select a lane badge to unassign.</p>
+        <div id="hand-cards" aria-label="Five-card hand"></div>
+        <div class="stance-grid" role="group" aria-label="Combat stance">
+          <button id="stance-brace" class="stance-btn" aria-pressed="true"><strong>BRACE · 1×</strong><small>Full Aegis mitigation.</small></button>
+          <button id="stance-overcharge" class="stance-btn" aria-pressed="false"><strong>OVERCHARGE · 2×</strong><small>Forfeit your Aegis mitigation.</small></button>
+          <button id="stance-parry" class="stance-btn" aria-pressed="false"><strong>PARRY · ½×</strong><small>Reflect 50% against Overcharge, Pair or High Card.</small></button>
         </div>
-
-        <!-- Hand Cards Container -->
-        <div id="hand-cards" style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;"></div>
-      </div>
-    `;
-
+        <div class="commit-row"><button id="btn-auto-split">AUTO SPLIT</button><button id="btn-ready" hidden>READY FOR COMMITMENT</button><button id="btn-lock-in" class="primary" disabled>LOCK IN</button></div>
+      </section>`;
     parent.appendChild(this.container);
-    const actions = document.createElement('div');
-    actions.className = 'interactive';
-    actions.style.cssText = 'display:flex;gap:12px;justify-content:center;flex-wrap:wrap';
-    actions.innerHTML = '<span id="room-code"></span><button id="btn-copy-code" hidden>COPY CODE</button><button id="btn-copy-link" hidden>COPY JOIN LINK</button><button id="btn-ready">READY FOR COMMITMENT</button><button id="btn-rematch" hidden>REMATCH</button><button id="btn-exit">MAIN MENU</button>';
-    this.container.insertBefore(actions, this.container.querySelector('#center-banner'));
-    const reveal = document.createElement('div');
-    reveal.id = 'clash-reveal';
-    reveal.style.cssText = 'white-space:pre-line;text-align:center;color:#e5e7eb;font-family:var(--font-mono);background:rgba(11,19,41,.8)';
-    this.container.insertBefore(reveal, this.container.querySelector('#center-banner'));
-    const opponentName = document.createElement('span');
-    opponentName.id = 'opponent-name';
-    this.container.querySelector('#opponent-hp')?.parentElement?.prepend(opponentName);
-    const dockName = document.createElement('div');
-    dockName.id = 'local-dock-name';
-    this.container.querySelector('#hand-cards')?.before(dockName);
-    this.container.querySelector('#btn-ready')?.addEventListener('click', () => this.callbacks.onReady?.());
-    this.container.querySelector('#btn-rematch')?.addEventListener('click', () => this.callbacks.onRematch?.());
-    this.container.querySelector('#btn-exit')?.addEventListener('click', () => this.callbacks.onExit?.());
     this.bindEvents();
+    this.renderSelection();
+    this.syncPreferences();
   }
+
+  private element<T extends HTMLElement = HTMLElement>(id: string): T {
+    return this.container.querySelector<T>(`#${id}`)!;
+  }
+  private text(id: string, value: string): void { this.element(id).textContent = value; }
+  private canSelect(): boolean { return this.connected && !this.committed && (this.phase === 'SHAPING' || this.phase === 'COMMITMENT'); }
+  private canShape(): boolean { return this.canSelect() && this.phase === 'SHAPING'; }
 
   private bindEvents(): void {
-    const rulesBtn = this.container.querySelector('#btn-toggle-rules');
-    rulesBtn?.addEventListener('click', () => {
-      sfx.playClick();
-      this.callbacks.onToggleRules();
+    this.element('btn-toggle-rules').addEventListener('click', () => { sfx.playClick(); this.callbacks.onToggleRules(); });
+    this.element('btn-toggle-crt').addEventListener('click', () => {
+      document.body.classList.toggle('clean-display');
+      this.syncPreferences();
+      this.callbacks.onToggleCrt?.();
     });
-
-    const crtBtn = this.container.querySelector('#btn-toggle-crt');
-    crtBtn?.addEventListener('click', () => {
-      this.isCrtClean = !this.isCrtClean;
-      document.body.classList.toggle('reduced-motion', this.isCrtClean);
-      if (crtBtn) crtBtn.textContent = this.isCrtClean ? 'CRT: OFF' : 'CRT: ON';
-      if (this.callbacks.onToggleCrt) this.callbacks.onToggleCrt();
+    this.element('btn-toggle-mute').addEventListener('click', () => {
+      if (this.callbacks.onToggleMute) this.callbacks.onToggleMute();
+      else masterAudio.toggleMute();
+      this.syncPreferences();
     });
-
-    const autoSplitBtn = this.container.querySelector('#btn-auto-split');
-    autoSplitBtn?.addEventListener('click', () => {
+    this.element('btn-exit').addEventListener('click', () => this.callbacks.onExit?.());
+    this.element('btn-ready').addEventListener('click', () => {
+      if (!this.canShape() || this.readySent) return;
+      this.readySent = true;
+      this.updateControls();
+      this.callbacks.onReady?.();
+    });
+    this.element('btn-rematch').addEventListener('click', () => {
+      if (!this.connected || this.phase !== 'MATCH_OVER' || this.rematchSent || !this.rematchAvailable) return;
+      this.rematchSent = true;
+      this.updateControls();
+      this.callbacks.onRematch?.();
+      if (this.phase === 'MATCH_OVER') this.showBanner('Rematch requested • waiting for opponent', 0);
+    });
+    this.element('btn-auto-split').addEventListener('click', () => {
       if (!this.canSelect()) return;
-      this.autoAssignSplit();
+      this.selection.autoSplit();
+      this.renderSelection();
     });
-
-    const setStance = (stance: Stance) => {
-      if (!this.canSelect()) return;
-      this.selectedStance = stance;
-      sfx.playStanceSelect(stance);
-
-      const buttons = this.container.querySelectorAll('.stance-btn');
-      buttons.forEach(btn => {
-        (btn as HTMLElement).style.borderColor = '#4b5563';
-        (btn as HTMLElement).style.color = '#9ca3af';
+    for (const stance of ['BRACE', 'OVERCHARGE', 'PARRY'] as const) {
+      this.element(`stance-${stance.toLowerCase()}`).addEventListener('click', () => {
+        if (!this.canSelect()) return;
+        this.selectedStance = stance;
+        sfx.playStanceSelect(stance);
+        this.updateControls();
       });
-
-      const activeBtn = this.container.querySelector(`#stance-${stance.toLowerCase()}`) as HTMLElement;
-      if (activeBtn) {
-        activeBtn.style.borderColor = stance === 'OVERCHARGE' ? '#ff0055' : (stance === 'PARRY' ? '#ffb700' : '#00f3ff');
-        activeBtn.style.color = stance === 'OVERCHARGE' ? '#ff0055' : (stance === 'PARRY' ? '#ffb700' : '#00f3ff');
+    }
+    this.element('btn-lock-in').addEventListener('click', () => {
+      if (!this.canSelect() || this.phase !== 'COMMITMENT' || !this.selection.valid) return;
+      sfx.playClick();
+      this.callbacks.onCommitHand([...this.selection.assaultIds] as [string, string, string], [...this.selection.aegisIds] as [string, string], this.selectedStance);
+    });
+    this.element('hand-cards').addEventListener('click', event => {
+      const button = (event.target as Element).closest<HTMLButtonElement>('button');
+      if (!button || button.disabled) return;
+      const card = this.selection.cards.find(card => card.id === button.dataset.cardId);
+      if (!card) return;
+      if (button.dataset.action === 'slot') {
+        if (!this.canSelect()) return;
+        this.selection.toggle(card.id); sfx.playClick(); this.renderSelection();
+      } else if (this.canShape()) {
+        const action = button.dataset.action;
+        if (action === 'up' && this.flux >= 1) { sfx.playPipNudge('UP'); this.callbacks.onNudgeRank(card.id, 'UP'); }
+        if (action === 'down' && this.flux >= 1) { sfx.playPipNudge('DOWN'); this.callbacks.onNudgeRank(card.id, 'DOWN'); }
+        if (action === 'bleed' && this.flux >= 2) {
+          const suit = button.dataset.suit as Suit;
+          if (SUIT_RING[card.suit].includes(suit)) { sfx.playSuitBleed(); this.callbacks.onBleedSuit(card.id, suit); }
+        }
+        if (action === 'burn' && !this.burned) { sfx.playBurn(); this.callbacks.onBurnCard(card.id); }
       }
-    };
-
-    this.container.querySelector('#stance-brace')?.addEventListener('click', () => setStance('BRACE'));
-    this.container.querySelector('#stance-overcharge')?.addEventListener('click', () => setStance('OVERCHARGE'));
-    this.container.querySelector('#stance-parry')?.addEventListener('click', () => setStance('PARRY'));
-
-    this.container.querySelector('#btn-lock-in')?.addEventListener('click', () => {
-      if (this.phase !== 'COMMITMENT' || this.committed || this.currentCards.length !== 5) return;
-      if (this.assaultCardIds.length === 3 && this.aegisCardIds.length === 2) {
-        sfx.playClick();
-        this.callbacks.onCommitHand(
-          [this.assaultCardIds[0], this.assaultCardIds[1], this.assaultCardIds[2]],
-          [this.aegisCardIds[0], this.aegisCardIds[1]],
-          this.selectedStance
-        );
-      } else {
-        this.autoAssignSplit();
-        this.callbacks.onCommitHand(
-          [this.assaultCardIds[0], this.assaultCardIds[1], this.assaultCardIds[2]],
-          [this.aegisCardIds[0], this.aegisCardIds[1]],
-          this.selectedStance
-        );
-      }
+    });
+    for (const id of ['assault-slots', 'aegis-slots']) this.element(id).addEventListener('click', event => {
+      const button = (event.target as Element).closest<HTMLButtonElement>('button');
+      if (!this.canSelect() || !button?.dataset.cardId) return;
+      this.selection.remove(button.dataset.cardId);
+      this.renderSelection();
     });
   }
 
-  public updateState(
-    phase: GamePhase,
-    timeRemainingMs: number,
-    playerHp: number,
-    playerFlux: number,
-    opponentHp: number,
-    cards: Card[],
-    roundNumber: number = 1,
-    exchangeNumber: number = 1,
-    playerWins: number = 0,
-    opponentWins: number = 0,
-    activeBarrier: number = 0
-  ): void {
-    const exchangeKey = `${roundNumber}/${exchangeNumber}`;
-    if (exchangeKey !== this.exchangeKey || (phase === 'DEAL' && this.phase !== 'DEAL')) this.resetHandSelection();
-    this.exchangeKey = exchangeKey;
+  public updateState(phase: GamePhase, timeRemainingMs: number, playerHp: number, playerFlux: number, opponentHp: number, cards: Card[], roundNumber = 1, exchangeNumber = 1, playerWins = 0, opponentWins = 0, activeBarrier = 0): void {
+    const key = `${roundNumber}/${exchangeNumber}`;
+    if (key !== this.exchangeKey || (phase === 'DEAL' && this.phase !== 'DEAL')) this.resetHandSelection();
+    this.exchangeKey = key;
+    if (phase !== this.phase) { this.readySent = false; if (phase !== 'MATCH_OVER') this.rematchSent = false; }
     this.phase = phase;
     this.flux = playerFlux;
-    this.currentCards = cards;
-
-    const phaseLabel = this.container.querySelector('#phase-label');
-    const timerDisplay = this.container.querySelector('#timer-display');
-    const playerHpEl = this.container.querySelector('#player-hp');
-    const playerFluxEl = this.container.querySelector('#player-flux');
-    const opponentHpEl = this.container.querySelector('#opponent-hp');
-    const matchProgress = this.container.querySelector('#match-progress');
-    const pWinsEl = this.container.querySelector('#player-wins');
-    const oWinsEl = this.container.querySelector('#opponent-wins');
-    const barrierBadge = this.container.querySelector('#player-barrier-badge') as HTMLElement;
-    const barrierVal = this.container.querySelector('#player-barrier-val');
-
-    if (matchProgress) matchProgress.textContent = `ROUND ${roundNumber}/3 • EXCHANGE ${exchangeNumber}`;
-    if (phaseLabel) phaseLabel.textContent = `${phase.replace('_', ' ')}`;
-    if (timerDisplay) timerDisplay.textContent = `${(timeRemainingMs / 1000).toFixed(1)}s`;
-    if (playerHpEl) playerHpEl.textContent = `${playerHp}`;
-    if (playerFluxEl) playerFluxEl.textContent = `${playerFlux}/3`;
-    if (opponentHpEl) opponentHpEl.textContent = `${opponentHp}`;
-    if (pWinsEl) pWinsEl.textContent = `${playerWins}`;
-    if (oWinsEl) oWinsEl.textContent = `${opponentWins}`;
-
-    if (barrierBadge && barrierVal) {
-      if (activeBarrier > 0) {
-        barrierBadge.style.display = 'inline-block';
-        barrierVal.textContent = `${activeBarrier}`;
-      } else {
-        barrierBadge.style.display = 'none';
-      }
-    }
-
-    // If new cards arrived and slots are empty or out of sync, auto-assign
-    const validIds = new Set(cards.map(c => c.id));
-    const isOutOfSync = !this.assaultCardIds.every(id => validIds.has(id)) || !this.aegisCardIds.every(id => validIds.has(id));
-    if (this.assaultCardIds.length !== 3 || this.aegisCardIds.length !== 2 || isOutOfSync) {
-      this.autoAssignSplit();
-    }
-
-    this.renderSlots();
-    this.renderHand(cards, playerFlux);
-  }
-
-  public showBanner(text: string, durationMs: number = 3000): void {
-    clearTimeout(this.bannerTimer);
-    const banner = this.container.querySelector('#center-banner') as HTMLElement;
-    if (banner) {
-      banner.textContent = text;
-      if (durationMs > 0) this.bannerTimer = setTimeout(() => {
-        if (banner.textContent === text) banner.textContent = '';
-      }, durationMs);
-    }
-  }
-
-  public resetHandSelection(): void {
-    clearTimeout(this.bannerTimer);
-    this.assaultCardIds = [];
-    this.aegisCardIds = [];
-    this.currentCards = [];
-    this.selectedStance = 'BRACE';
-    this.committed = false;
-    this.burned = false;
-    const banner = this.container.querySelector('#center-banner');
-    if (banner) banner.textContent = '';
-    this.container.querySelector('#clash-reveal')!.textContent = '';
-    this.renderSlots();
-    this.renderHand([], this.flux);
-    this.container.querySelectorAll<HTMLButtonElement>('.stance-btn').forEach(button => {
-      button.style.borderColor = button.id === 'stance-brace' ? '#00f3ff' : '#4b5563';
-      button.style.color = button.id === 'stance-brace' ? '#00f3ff' : '#9ca3af';
-    });
-  }
-
-  public resetView(): void {
-    this.resetHandSelection();
-    this.updateState('LOBBY_WAIT', 0, 20, 3, 20, []);
-    this.setControls('LOBBY_WAIT', false, false);
-    this.setNames('Operative', 'Waiting for opponent', true);
-    this.setRoom('');
-  }
-
-  public setNames(self: string, opponent: string, connected: boolean): void {
-    this.container.querySelector('#player-name')!.textContent = self;
-    this.container.querySelector('#local-dock-name')!.textContent = `${self} • YOUR HAND`;
-    this.container.querySelector('#opponent-name')!.textContent = `${opponent}${connected ? '' : ' • reconnecting'} `;
-  }
-
-  public setRoom(code: string): void {
-    this.container.querySelector('#room-code')!.textContent = code ? `ROOM ${code}` : '';
-    const link = new URL(window.location.pathname, window.location.origin);
-    link.searchParams.set('room', code);
-    const bindCopy = (selector: string, value: string) => {
-      const button = this.container.querySelector<HTMLButtonElement>(selector)!;
-      button.hidden = !code;
-      button.onclick = () => {
-        if (!navigator.clipboard) { this.showBanner(value, 10000); return; }
-        navigator.clipboard.writeText(value).then(() => this.showBanner('Copied')).catch(() => this.showBanner(value, 10000));
-      };
-    };
-    bindCopy('#btn-copy-code', code);
-    bindCopy('#btn-copy-link', link.href);
-  }
-
-  public showResolution(resolution: RoundResolution, selfPlayerId: string): void {
-    const p1Self = selfPlayerId === resolution.p1PlayerId;
-    const cards = (hand: Card[]) => hand.map(card => `${this.formatRank(card.rank)}${SUIT_GLYPHS[card.suit]}`).join(' ');
-    const line = (p1: boolean, label: string) => {
-      const assault = p1 ? resolution.p1Assault : resolution.p2Assault;
-      const aegis = p1 ? resolution.p1Aegis : resolution.p2Aegis;
-      const stance = p1 ? resolution.p1Stance : resolution.p2Stance;
-      const burn = p1 ? resolution.p1Burn : resolution.p2Burn;
-      const evaluation = p1 ? resolution.p1Eval3 : resolution.p2Eval3;
-      const incoming = p1 ? resolution.p1NetDamageReceived : resolution.p2NetDamageReceived;
-      return `${label}: ASSAULT ${cards(assault)} (${evaluation.description}) • AEGIS ${cards(aegis)} • ${stance} • ${burn ?? 'NO BURN'} • RECEIVED ${incoming}`;
-    };
-    this.container.querySelector('#clash-reveal')!.textContent = `${line(!p1Self, 'OPPONENT')}\n${line(p1Self, 'YOU')}`;
+    this.selection.setCards(cards);
+    this.text('match-progress', `ROUND ${roundNumber}/3 • EXCHANGE ${exchangeNumber}`);
+    this.text('phase-label', phase.replaceAll('_', ' '));
+    this.text('player-hp', String(playerHp)); this.text('opponent-hp', String(opponentHp));
+    this.element<HTMLProgressElement>('player-hp-bar').value = playerHp;
+    this.element<HTMLProgressElement>('opponent-hp-bar').value = opponentHp;
+    this.text('player-flux', `${playerFlux}/${GAME_CONSTANTS.STARTING_FLUX}`);
+    this.text('player-wins', String(playerWins)); this.text('opponent-wins', String(opponentWins));
+    this.element('player-barrier-badge').hidden = activeBarrier <= 0;
+    this.text('player-barrier-val', String(activeBarrier));
+    this.renderSelection();
+    this.updateCountdown(timeRemainingMs);
   }
 
   public updateCountdown(timeRemainingMs: number): void {
-    const display = this.container.querySelector('#timer-display');
-    if (display) display.textContent = `${(timeRemainingMs / 1000).toFixed(1)}s`;
+    const time = Math.max(0, timeRemainingMs);
+    this.text('timer-display', `${(time / 1000).toFixed(1)}s`);
+    this.element('btn-lock-in').classList.toggle('urgent', this.phase === 'COMMITMENT' && time > 0 && time <= 3000);
   }
-
   public setControls(phase: GamePhase, committed: boolean, burned: boolean): void {
-    this.phase = phase;
-    this.committed = committed;
-    this.burned = burned;
-    this.updateControls();
+    this.phase = phase; this.committed = committed; this.burned = burned; this.updateControls();
   }
-
-  private canSelect(): boolean {
-    return this.connected && !this.committed && (this.phase === 'SHAPING' || this.phase === 'COMMITMENT');
-  }
-
-  public setConnected(connected: boolean): void {
-    this.connected = connected;
-    this.updateControls();
-  }
+  public setConnected(connected: boolean): void { this.connected = connected; this.updateControls(); }
+  public setRematchAvailable(available: boolean): void { this.rematchAvailable = available; this.updateControls(); }
+  public clearPendingActions(): void { this.readySent = false; this.rematchSent = false; this.updateControls(); }
 
   private updateControls(): void {
-    const disable = (selector: string, disabled: boolean) => {
-      this.container.querySelectorAll<HTMLButtonElement>(selector).forEach(button => button.disabled = disabled);
+    const disable = (selector: string, disabled: boolean) => this.container.querySelectorAll<HTMLButtonElement>(selector).forEach(button => button.disabled = disabled);
+    disable('.card-face,.slot-card,.stance-btn,#btn-auto-split', !this.canSelect());
+    disable('.nudge-up-btn,.nudge-down-btn', !this.canShape() || this.flux < 1);
+    disable('.bleed-btn', !this.canShape() || this.flux < 2);
+    disable('.burn-btn', !this.canShape() || this.burned);
+    disable('#btn-lock-in', !this.canSelect() || this.phase !== 'COMMITMENT' || !this.selection.valid);
+    disable('#btn-ready', !this.canShape() || this.readySent);
+    disable('#btn-rematch', !this.connected || this.rematchSent || !this.rematchAvailable);
+    this.element('btn-ready').hidden = this.phase !== 'SHAPING' || !this.callbacks.onReady;
+    this.element('btn-rematch').hidden = this.phase !== 'MATCH_OVER' || !this.callbacks.onRematch;
+    for (const stance of ['BRACE', 'OVERCHARGE', 'PARRY']) this.element(`stance-${stance.toLowerCase()}`).setAttribute('aria-pressed', String(this.selectedStance === stance));
+    this.text('btn-ready', this.readySent ? 'READY • WAITING' : 'READY FOR COMMITMENT');
+    this.text('btn-lock-in', this.committed ? 'COMMITTED' : 'LOCK IN');
+  }
+
+  private renderSelection(): void {
+    const active = document.activeElement as HTMLElement | null;
+    const focusKey = this.container.contains(active) ? active?.dataset.focusKey : undefined;
+    const oldCardId = active?.dataset.cardId;
+    const oldIndex = Array.from(this.element('hand-cards').querySelectorAll<HTMLElement>('.hand-card')).findIndex(card => card.dataset.cardId === oldCardId);
+    const renderLane = (id: string, ids: string[], size: number) => {
+      const lane = this.element(id); lane.replaceChildren();
+      for (let index = 0; index < size; index++) {
+        const card = this.selection.cards.find(card => card.id === ids[index]);
+        if (!card) { const empty = document.createElement('span'); empty.className = 'slot-empty'; empty.textContent = '+'; lane.append(empty); continue; }
+        const badge = document.createElement('button'); badge.className = 'slot-card';
+        badge.dataset.cardId = card.id; badge.dataset.focusKey = `${card.id}:badge`;
+        badge.textContent = `${this.formatRank(card.rank)}${SUIT_GLYPHS[card.suit]}`;
+        badge.style.color = SUIT_COLORS[card.suit];
+        badge.setAttribute('aria-label', `Unassign ${this.cardName(card)} from ${id.startsWith('assault') ? 'Assault' : 'Aegis'}`);
+        lane.append(badge);
+      }
     };
-    const shaping = this.connected && this.phase === 'SHAPING' && !this.committed;
-    disable('.nudge-up-btn,.nudge-down-btn', !shaping || this.flux < 1);
-    disable('.bleed-btn', !shaping || this.flux < 2);
-    disable('.burn-btn', !shaping || this.burned);
-    disable('.stance-btn,#btn-auto-split', !this.canSelect());
-    disable('#btn-lock-in', !this.connected || this.phase !== 'COMMITMENT' || this.committed || this.assaultCardIds.length !== 3 || this.aegisCardIds.length !== 2);
-    disable('#btn-ready,#btn-rematch', !this.connected);
-    const ready = this.container.querySelector<HTMLButtonElement>('#btn-ready')!;
-    ready.hidden = this.phase !== 'SHAPING';
-    const rematch = this.container.querySelector<HTMLButtonElement>('#btn-rematch')!;
-    rematch.hidden = this.phase !== 'MATCH_OVER';
-  }
-
-  private autoAssignSplit(): void {
-    if (this.currentCards.length !== 5) return;
-
-    let bestScore = -Infinity;
-    let bestAssault: string[] = [];
-    let bestAegis: string[] = [];
-
-    const cards = this.currentCards;
-    for (let i = 0; i < 5; i++) {
-      for (let j = i + 1; j < 5; j++) {
-        for (let k = j + 1; k < 5; k++) {
-          const assaultCards: [Card, Card, Card] = [cards[i], cards[j], cards[k]];
-          const aegisCards = cards.filter((_, idx) => idx !== i && idx !== j && idx !== k) as [Card, Card];
-
-          const aEval = evaluateAssaultHand(assaultCards);
-          const dEval = evaluateAegisHand(aegisCards);
-          const score = aEval.baseDamage * 1.5 + dEval.mitigation;
-
-          if (score > bestScore) {
-            bestScore = score;
-            bestAssault = [cards[i].id, cards[j].id, cards[k].id];
-            bestAegis = [aegisCards[0].id, aegisCards[1].id];
-          }
-        }
+    renderLane('assault-slots', this.selection.assaultIds, 3); renderLane('aegis-slots', this.selection.aegisIds, 2);
+    const assault = this.selection.assaultIds.map(id => this.selection.cards.find(card => card.id === id)!).filter(Boolean);
+    const aegis = this.selection.aegisIds.map(id => this.selection.cards.find(card => card.id === id)!).filter(Boolean);
+    this.text('assault-preview', assault.length === 3 ? `${evaluateAssaultHand(assault as [Card, Card, Card]).description} • ${evaluateAssaultHand(assault as [Card, Card, Card]).baseDamage} DMG` : `${assault.length}/3 selected`);
+    this.text('aegis-preview', aegis.length === 2 ? `${evaluateAegisHand(aegis as [Card, Card]).description} • ${evaluateAegisHand(aegis as [Card, Card]).mitigation} BLOCK` : `${aegis.length}/2 selected`);
+    this.text('selection-hint', this.selection.pendingSwap ? 'Select a card in the opposite lane to swap, or select this card again to cancel.' : 'Select opposite-lane cards to swap; select a lane badge to unassign. Nudge: 1 Flux. Bleed: 2 Flux.');
+    const hand = this.element('hand-cards'); hand.replaceChildren();
+    for (const card of this.selection.cards) {
+      const lane = this.selection.assaultIds.includes(card.id) ? 'assault' : this.selection.aegisIds.includes(card.id) ? 'aegis' : 'unassigned';
+      const node = document.createElement('article'); node.className = 'hand-card'; node.dataset.lane = lane; node.dataset.cardId = card.id;
+      const face = this.cardButton(card, 'slot', '', `Select ${this.cardName(card)}, ${lane}`);
+      face.className = 'card-face'; face.setAttribute('aria-pressed', String(this.selection.pendingSwap === card.id));
+      for (const [className, text] of [['lane-label', lane.toUpperCase()], ['rank', this.formatRank(card.rank)], ['suit', SUIT_GLYPHS[card.suit]], ['suit-name', card.suit]]) {
+        const label = document.createElement('span'); label.className = className; label.textContent = text;
+        if (className === 'rank' || className === 'suit') label.style.color = SUIT_COLORS[card.suit]; face.append(label);
       }
-    }
-
-    this.assaultCardIds = bestAssault;
-    this.aegisCardIds = bestAegis;
-    this.renderSlots();
-    this.renderHand(this.currentCards, this.flux);
-  }
-
-  private toggleCardSlot(cardId: string): void {
-    if (!this.canSelect()) return;
-    if (this.assaultCardIds.includes(cardId)) {
-      this.assaultCardIds = this.assaultCardIds.filter(id => id !== cardId);
-      if (this.aegisCardIds.length < 2) {
-        this.aegisCardIds.push(cardId);
+      const actions = document.createElement('div'); actions.className = 'card-actions';
+      const up = this.cardButton(card, 'up', '+1', `Increase ${this.cardName(card)} rank, 1 Flux`); up.className = 'nudge-up-btn';
+      const down = this.cardButton(card, 'down', '−1', `Decrease ${this.cardName(card)} rank, 1 Flux`); down.className = 'nudge-down-btn';
+      actions.append(up, down);
+      for (const suit of SUIT_RING[card.suit]) {
+        const bleed = this.cardButton(card, 'bleed', `BLEED ${SUIT_GLYPHS[suit]}`, `Bleed ${this.cardName(card)} to ${suit.toLowerCase()}, 2 Flux`, suit);
+        bleed.className = 'bleed-btn'; actions.append(bleed);
       }
-    } else if (this.aegisCardIds.includes(cardId)) {
-      this.aegisCardIds = this.aegisCardIds.filter(id => id !== cardId);
-      if (this.assaultCardIds.length < 3) {
-        this.assaultCardIds.push(cardId);
-      }
-    } else {
-      if (this.assaultCardIds.length < 3) {
-        this.assaultCardIds.push(cardId);
-      } else if (this.aegisCardIds.length < 2) {
-        this.aegisCardIds.push(cardId);
-      }
+      const burn = this.cardButton(card, 'burn', 'BURN', `Burn ${this.cardName(card)}, once per exchange`); burn.className = 'burn-btn'; actions.append(burn);
+      node.append(face, actions); hand.append(node);
     }
-
-    this.renderSlots();
-    this.renderHand(this.currentCards, this.flux);
-  }
-
-  private renderSlots(): void {
-    const assaultContainer = this.container.querySelector('#assault-slots');
-    const aegisContainer = this.container.querySelector('#aegis-slots');
-    const assaultPreview = this.container.querySelector('#assault-preview');
-    const aegisPreview = this.container.querySelector('#aegis-preview');
-
-    if (assaultContainer) {
-      assaultContainer.innerHTML = '';
-      this.assaultCardIds.forEach(id => {
-        const card = this.currentCards.find(c => c.id === id);
-        if (card) assaultContainer.appendChild(this.createMiniCardBadge(card, '#ff0055'));
-      });
-    }
-
-    if (aegisContainer) {
-      aegisContainer.innerHTML = '';
-      this.aegisCardIds.forEach(id => {
-        const card = this.currentCards.find(c => c.id === id);
-        if (card) aegisContainer.appendChild(this.createMiniCardBadge(card, '#00f3ff'));
-      });
-    }
-
-    // Evaluation preview
-    if (this.assaultCardIds.length === 3 && assaultPreview) {
-      const cards = this.assaultCardIds.map(id => this.currentCards.find(c => c.id === id)!) as [Card, Card, Card];
-      const ev = evaluateAssaultHand(cards);
-      assaultPreview.textContent = `${ev.description} (${ev.baseDamage} Dmg)`;
-    } else if (assaultPreview) {
-      assaultPreview.textContent = `${this.assaultCardIds.length}/3`;
-    }
-
-    if (this.aegisCardIds.length === 2 && aegisPreview) {
-      const cards = this.aegisCardIds.map(id => this.currentCards.find(c => c.id === id)!) as [Card, Card];
-      const ev = evaluateAegisHand(cards);
-      aegisPreview.textContent = `${ev.description} (${ev.mitigation} Block)`;
-    } else if (aegisPreview) {
-      aegisPreview.textContent = `${this.aegisCardIds.length}/2`;
-    }
-  }
-
-  private createMiniCardBadge(card: Card, borderColor: string): HTMLElement {
-    const el = document.createElement('div');
-    const glyph = SUIT_GLYPHS[card.suit];
-    const color = SUIT_COLORS[card.suit];
-    const rName = this.formatRank(card.rank);
-
-    el.style.cssText = `
-      background: rgba(17, 30, 59, 0.9); border: 1px solid ${borderColor};
-      border-radius: 3px; padding: 4px 8px; font-family: var(--font-mono);
-      font-size: 11px; color: ${color}; font-weight: bold; cursor: pointer;
-    `;
-    el.textContent = `${rName}${glyph}`;
-    el.title = 'Click to unassign';
-    el.addEventListener('click', () => this.toggleCardSlot(card.id));
-    return el;
-  }
-
-  private renderHand(cards: Card[], flux: number): void {
-    const handContainer = this.container.querySelector('#hand-cards');
-    if (!handContainer) return;
-    handContainer.innerHTML = '';
-
-    cards.forEach((card) => {
-      const isAssault = this.assaultCardIds.includes(card.id);
-      const isAegis = this.aegisCardIds.includes(card.id);
-      const glyph = SUIT_GLYPHS[card.suit];
-      const color = SUIT_COLORS[card.suit];
-      const rName = this.formatRank(card.rank);
-
-      const cardEl = document.createElement('div');
-      const borderColor = isAssault ? '#ff0055' : (isAegis ? '#00f3ff' : '#374151');
-      const shadowColor = isAssault ? 'rgba(255,0,85,0.4)' : (isAegis ? 'rgba(0,243,255,0.4)' : 'transparent');
-
-      cardEl.style.cssText = `
-        background: #0b1329; border: 2px solid ${borderColor}; border-radius: 6px;
-        padding: 8px; width: 125px; display: flex; flex-direction: column;
-        align-items: center; gap: 6px; box-shadow: 0 0 10px ${shadowColor};
-        transition: transform 0.15s ease;
-      `;
-
-      const slotTag = isAssault ? 'ASSAULT' : (isAegis ? 'AEGIS' : 'UNASSIGNED');
-      const slotColor = isAssault ? '#ff0055' : (isAegis ? '#00f3ff' : '#6b7280');
-
-      cardEl.innerHTML = `
-        <div style="width: 100%; display: flex; justify-content: space-between; align-items: center;">
-          <span style="font-size: 10px; color: ${slotColor}; font-family: var(--font-display); font-weight: bold;">${slotTag}</span>
-          <span style="font-size: 9px; color: #6b7280; font-family: var(--font-mono);">CLICK TO SLOT</span>
-        </div>
-
-        <div class="card-face" style="cursor: pointer; display: flex; flex-direction: column; align-items: center; width: 100%; padding: 4px 0;">
-          <span style="font-family: var(--font-mono); font-size: 26px; font-weight: bold; color: ${color}; line-height: 1;">
-            ${rName}
-          </span>
-          <span style="font-size: 20px; color: ${color}; line-height: 1;">${glyph}</span>
-          <span style="font-size: 10px; color: #9ca3af; font-family: var(--font-mono);">${card.suit}</span>
-        </div>
-
-        <div style="display: flex; gap: 4px; width: 100%; justify-content: center;">
-          <button class="nudge-up-btn" title="Nudge Rank +1 (1 Flux)" style="
-            background: #1f293d; border: 1px solid #00f3ff; color: #00f3ff;
-            padding: 2px 6px; cursor: pointer; border-radius: 3px; font-size: 10px; font-family: var(--font-mono);
-          ">+1</button>
-          <button class="nudge-down-btn" title="Nudge Rank -1 (1 Flux)" style="
-            background: #1f293d; border: 1px solid #00f3ff; color: #00f3ff;
-            padding: 2px 6px; cursor: pointer; border-radius: 3px; font-size: 10px; font-family: var(--font-mono);
-          ">-1</button>
-          <button class="bleed-btn" title="Bleed Suit (2 Flux)" style="
-            background: #1f293d; border: 1px solid #ffb700; color: #ffb700;
-            padding: 2px 6px; cursor: pointer; border-radius: 3px; font-size: 10px; font-family: var(--font-mono);
-          ">BLEED</button>
-          <button class="burn-btn" title="Burn Card for Tactical Power" style="
-            background: rgba(255,0,85,0.2); border: 1px solid #ff0055; color: #ff0055;
-            padding: 2px 6px; cursor: pointer; border-radius: 3px; font-size: 10px; font-family: var(--font-display);
-          ">BURN</button>
-        </div>
-      `;
-
-      // Card face click toggles slot assignment
-      cardEl.querySelector('.card-face')?.addEventListener('click', () => {
-        sfx.playClick();
-        this.toggleCardSlot(card.id);
-      });
-
-      cardEl.querySelector('.nudge-up-btn')?.addEventListener('click', (e) => {
-        e.stopPropagation();
-        sfx.playPipNudge('UP');
-        this.callbacks.onNudgeRank(card.id, 'UP');
-      });
-
-      cardEl.querySelector('.nudge-down-btn')?.addEventListener('click', (e) => {
-        e.stopPropagation();
-        sfx.playPipNudge('DOWN');
-        this.callbacks.onNudgeRank(card.id, 'DOWN');
-      });
-
-      cardEl.querySelector('.bleed-btn')?.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const adjacent = SUIT_RING[card.suit];
-        // Bleed to first adjacent suit
-        const nextSuit = adjacent[0];
-        sfx.playSuitBleed();
-        this.callbacks.onBleedSuit(card.id, nextSuit);
-      });
-
-      cardEl.querySelector('.burn-btn')?.addEventListener('click', (e) => {
-        e.stopPropagation();
-        sfx.playBurn();
-        this.callbacks.onBurnCard(card.id);
-      });
-
-      handContainer.appendChild(cardEl);
-    });
     this.updateControls();
-  }
-
-  private formatRank(rank: Rank): string {
-    switch (rank) {
-      case 14: return 'A';
-      case 13: return 'K';
-      case 12: return 'Q';
-      case 11: return 'J';
-      default: return rank.toString();
+    if (focusKey) {
+      const buttons = Array.from(this.container.querySelectorAll<HTMLButtonElement>('button'));
+      const same = buttons.find(button => button.dataset.focusKey === focusKey);
+      const fallback = buttons.find(button => button.dataset.cardId === oldCardId && button.dataset.action === 'slot')
+        ?? this.element('hand-cards').querySelectorAll<HTMLButtonElement>('.card-face')[Math.max(0, oldIndex)];
+      const target = same && !same.disabled ? same : fallback;
+      if (target && !target.disabled) target.focus({ preventScroll: true });
     }
   }
-
-  public show(): void {
-    this.container.style.display = 'flex';
+  private cardButton(card: Card, action: string, text: string, label: string, suit?: Suit): HTMLButtonElement {
+    const button = document.createElement('button'); button.type = 'button'; button.textContent = text;
+    button.dataset.cardId = card.id; button.dataset.action = action; button.dataset.focusKey = `${card.id}:${action}:${suit ?? ''}`;
+    if (suit) button.dataset.suit = suit;
+    button.setAttribute('aria-label', label); button.title = label;
+    return button;
   }
+  private formatRank(rank: Rank): string { return ({ 11: 'J', 12: 'Q', 13: 'K', 14: 'A' } as Record<number, string>)[rank] ?? String(rank); }
+  private cardName(card: Card): string { return `${({ 11: 'Jack', 12: 'Queen', 13: 'King', 14: 'Ace' } as Record<number, string>)[card.rank] ?? card.rank} of ${card.suit.toLowerCase()}`; }
 
-  public hide(): void {
-    this.container.style.display = 'none';
+  public resetHandSelection(): void {
+    clearTimeout(this.bannerTimer); this.selection.reset(); this.selectedStance = 'BRACE'; this.committed = false; this.burned = false;
+    this.readySent = false; this.rematchSent = false; this.text('center-banner', ''); this.text('clash-reveal', ''); this.renderSelection();
   }
+  public resetView(): void {
+    this.viewGeneration++; this.exchangeKey = ''; this.resetHandSelection(); this.updateState('LOBBY_WAIT', 0, 20, 3, 20, []);
+    this.setControls('LOBBY_WAIT', false, false); this.setNames('Operative', 'Waiting for opponent', true); this.setRoom('');
+  }
+  public setNames(self: string, opponent: string, connected: boolean): void {
+    this.text('player-name', self); this.text('local-dock-name', `${self} • YOUR HAND`); this.text('opponent-name', `${opponent}${connected ? '' : ' • reconnecting'}`);
+  }
+  public setRoom(code: string): void {
+    this.text('room-code', code ? `ROOM ${code}` : '');
+    const link = new URL(window.location.pathname, window.location.origin); link.searchParams.set('room', code);
+    for (const [id, value] of [['btn-copy-code', code], ['btn-copy-link', link.href]]) {
+      const button = this.element<HTMLButtonElement>(id); button.hidden = !code;
+      button.onclick = () => {
+        const generation = this.viewGeneration;
+        const show = (text: string) => { if (generation === this.viewGeneration) this.showBanner(text, 10000); };
+        if (!navigator.clipboard) show(value);
+        else void navigator.clipboard.writeText(value).then(() => show('Copied')).catch(() => show(value));
+      };
+    }
+  }
+  public showResolution(resolution: RoundResolution, selfPlayerId: string): void {
+    const selfP1 = selfPlayerId === resolution.p1PlayerId;
+    const format = (cards: Card[]) => cards.map(card => `${this.formatRank(card.rank)}${SUIT_GLYPHS[card.suit]}`).join(' ');
+    const line = (p1: boolean, label: string) => `${label}: ASSAULT ${format(p1 ? resolution.p1Assault : resolution.p2Assault)} (${(p1 ? resolution.p1Eval3 : resolution.p2Eval3).description}) • AEGIS ${format(p1 ? resolution.p1Aegis : resolution.p2Aegis)} • ${p1 ? resolution.p1Stance : resolution.p2Stance} • ${(p1 ? resolution.p1Burn : resolution.p2Burn) ?? 'NO BURN'} • RECEIVED ${p1 ? resolution.p1NetDamageReceived : resolution.p2NetDamageReceived}`;
+    this.text('clash-reveal', `${line(!selfP1, 'OPPONENT')}\n${line(selfP1, 'YOU')}`);
+  }
+  public showBanner(text: string, durationMs = 3000): void {
+    clearTimeout(this.bannerTimer); this.text('center-banner', text);
+    if (durationMs > 0) this.bannerTimer = setTimeout(() => this.text('center-banner', ''), durationMs);
+  }
+  private syncPreferences(): void {
+    const crt = !document.body.classList.contains('clean-display');
+    this.text('btn-toggle-crt', crt ? 'CRT: ON' : 'CRT: OFF'); this.element('btn-toggle-crt').setAttribute('aria-pressed', String(crt));
+    this.text('btn-toggle-mute', masterAudio.isMuted ? 'AUDIO: MUTED' : 'AUDIO: ON'); this.element('btn-toggle-mute').setAttribute('aria-pressed', String(masterAudio.isMuted));
+  }
+  public show(): void { this.container.hidden = false; this.syncPreferences(); }
+  public hide(): void { this.container.hidden = true; clearTimeout(this.bannerTimer); }
 }

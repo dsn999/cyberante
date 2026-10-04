@@ -1,7 +1,3 @@
-// ============================================================================
-// CYBERANTE: Main Menu Overlay
-// ============================================================================
-
 import { masterAudio } from '../audio/AudioEngine';
 import type { BotPersonality } from '@cyberante/shared';
 import { sfx } from '../audio/SoundEffects';
@@ -10,199 +6,66 @@ export interface MainMenuCallbacks {
   onStartSolo: (profile: BotPersonality) => void;
   onCreateMultiplayer: (playerName: string) => void;
   onJoinMultiplayer: (roomCode: string, playerName: string) => void;
-  onToggleRules: () => void;
   onStartTutorial: () => void;
+  onToggleRules: () => void;
 }
 
 export class MainMenuOverlay {
-  private container: HTMLElement;
-  private callbacks: MainMenuCallbacks;
-
-  constructor(parent: HTMLElement, callbacks: MainMenuCallbacks) {
-    this.callbacks = callbacks;
-    this.container = document.createElement('div');
-    this.container.id = 'main-menu-overlay';
-    this.container.className = 'interactive';
-    this.container.style.cssText = `
-      position: absolute;
-      top: 0; left: 0; width: 100%; height: 100%;
-      display: flex; flex-direction: column;
-      align-items: center; justify-content: center;
-      background: radial-gradient(circle, rgba(11,19,41,0.6) 0%, rgba(3,7,18,0.92) 80%);
-      z-index: 20;
-    `;
-
-    this.container.innerHTML = `
-      <div style="text-align: center; margin-bottom: 32px;">
-        <h1 style="
-          font-family: 'Orbitron', sans-serif;
-          font-size: clamp(36px, 8vw, 64px);
-          font-weight: 900;
-          letter-spacing: 6px;
-          color: #00f3ff;
-          text-shadow: 0 0 20px rgba(0,243,255,0.7), 0 0 40px rgba(0,243,255,0.3);
-          margin-bottom: 8px;
-        ">CYBERANTE</h1>
-        <p style="
-          font-family: 'Share Tech Mono', monospace;
-          font-size: 15px;
-          color: #ff0055;
-          letter-spacing: 3px;
-          text-transform: uppercase;
-        ">[ PROCEDURAL VECTOR POKER-COMBAT MATRIX ]</p>
-      </div>
-
-      <div style="display: flex; flex-direction: column; gap: 14px; width: 90%; max-width: 380px;">
-        <label>Solo opponent
-          <select id="bot-profile" aria-label="Solo opponent">
-            <option value="CIPHER_ZERO">Cipher Zero</option>
-            <option value="VEKTOR_AGGRO">Vektor Aggro</option>
-            <option value="AEGIS_WALL">Aegis Wall</option>
-          </select>
-        </label>
-        <label>Player name <input id="player-name-input" aria-label="Player name" maxlength="16" value="Operative" /></label>
+  private readonly container: HTMLElement;
+  constructor(parent: HTMLElement, private readonly callbacks: MainMenuCallbacks) {
+    this.container = document.createElement('section');
+    this.container.id = 'main-menu-overlay'; this.container.className = 'screen';
+    this.container.setAttribute('aria-label', 'Main menu');
+    this.container.innerHTML = `<div class="menu-content">
+      <header><h1 class="menu-title display-glow">CYBERANTE</h1><p class="menu-subtitle">Five cards. Two lanes. One blind clash.<br>Win two rounds to take the match.</p></header>
+      <section class="menu-section panel" aria-labelledby="solo-heading"><h2 id="solo-heading">SOLO OPERATIONS</h2>
+        <label for="bot-profile">Solo opponent</label><select id="bot-profile"><option value="CIPHER_ZERO">Cipher Zero · Balanced</option><option value="VEKTOR_AGGRO">Vektor Aggro · Aggressive</option><option value="AEGIS_WALL">Aegis Wall · Defensive</option></select>
+        <button id="btn-solo" class="primary">PLAY SOLO</button>
+      </section>
+      <form class="menu-section panel" id="multiplayer-form" novalidate aria-labelledby="online-heading"><h2 id="online-heading">ONLINE OPERATIONS</h2>
+        <label for="player-name-input">Player name · 1–16 characters</label><input id="player-name-input" name="playerName" maxlength="16" value="Operative" autocomplete="nickname" required>
+        <label for="input-room">Room code · 4 letters or digits</label><input id="input-room" name="roomCode" maxlength="4" placeholder="ABCD" autocapitalize="characters" autocomplete="off" spellcheck="false" aria-describedby="menu-error">
+        <div class="button-row"><button id="btn-host" type="button">HOST ROOM</button><button id="btn-multiplayer" type="submit" class="primary">JOIN ROOM</button></div>
         <p id="menu-error" role="alert"></p>
-        <button id="btn-solo" class="menu-btn" style="
-          background: rgba(0, 243, 255, 0.12);
-          border: 1px solid #00f3ff;
-          color: #00f3ff;
-          padding: 14px;
-          font-family: 'Orbitron', sans-serif;
-          font-size: 14px;
-          font-weight: 700;
-          letter-spacing: 2px;
-          cursor: pointer;
-          border-radius: 4px;
-          transition: all 0.2s ease;
-          box-shadow: 0 0 15px rgba(0,243,255,0.2);
-        ">1. PLAY SOLO (VS LOCAL AI)</button>
-
-        <div style="display: flex; gap: 8px;">
-          <input id="input-room" type="text" placeholder="ROOM CODE (OPTIONAL)" maxlength="4" style="
-            flex: 1;
-            background: rgba(17, 30, 59, 0.6);
-            border: 1px solid #1f293d;
-            padding: 12px;
-            color: #ffb700;
-            font-family: 'Share Tech Mono', monospace;
-            font-size: 14px;
-            text-align: center;
-            letter-spacing: 2px;
-            border-radius: 4px;
-            outline: none;
-          " />
-          <button id="btn-multiplayer" class="menu-btn" style="
-            background: rgba(255, 0, 85, 0.15);
-            border: 1px solid #ff0055;
-            color: #ff0055;
-            padding: 12px 18px;
-            font-family: 'Orbitron', sans-serif;
-            font-size: 13px;
-            font-weight: 700;
-            letter-spacing: 1px;
-            cursor: pointer;
-            border-radius: 4px;
-            transition: all 0.2s ease;
-          ">JOIN / HOST</button>
-        </div>
-
-        <button id="btn-tutorial" class="menu-btn" style="
-          background: rgba(255, 183, 0, 0.12);
-          border: 1px solid #ffb700;
-          color: #ffb700;
-          padding: 14px;
-          font-family: 'Orbitron', sans-serif;
-          font-size: 14px;
-          font-weight: 700;
-          letter-spacing: 2px;
-          cursor: pointer;
-          border-radius: 4px;
-          transition: all 0.2s ease;
-        ">3. INTERACTIVE TUTORIAL</button>
-      </div>
-
-      <div style="margin-top: 36px; display: flex; gap: 20px;">
-        <button id="btn-menu-rules">RULES</button>
-        <button id="btn-mute" style="
-          background: transparent; border: 1px solid #4b5563; color: #9ca3af;
-          padding: 6px 12px; font-family: 'Share Tech Mono', monospace; font-size: 12px;
-          cursor: pointer; border-radius: 4px;
-        ">AUDIO: ON</button>
-      </div>
-    `;
-
+      </form>
+      <div class="button-row"><button id="btn-tutorial">TUTORIAL</button><button id="btn-menu-rules">RULES</button><button id="btn-mute" aria-pressed="false">AUDIO: ON</button></div>
+    </div>`;
     parent.appendChild(this.container);
-    this.bindEvents();
-  }
-
-  private bindEvents(): void {
-    const soloBtn = this.container.querySelector('#btn-solo');
-    const multiBtn = this.container.querySelector('#btn-multiplayer');
-    const tutorialBtn = this.container.querySelector('#btn-tutorial');
-    const muteBtn = this.container.querySelector('#btn-mute');
-    const roomInput = this.container.querySelector('#input-room') as HTMLInputElement;
-
-    roomInput.value = new URLSearchParams(window.location.search).get('room')?.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 4) ?? '';
-    roomInput.addEventListener('input', () => roomInput.value = roomInput.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 4));
-    this.container.querySelector('#btn-menu-rules')?.addEventListener('click', () => this.callbacks.onToggleRules());
-
-    const startAudio = () => {
-      masterAudio.init();
-      masterAudio.resume();
+    const room = this.element<HTMLInputElement>('input-room');
+    const sanitizeRoom = () => {
+      room.value = room.value.trim().toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 4);
     };
-
-    soloBtn?.addEventListener('click', () => {
-      startAudio();
-      sfx.playClick();
-      this.hide();
-      const profile = (this.container.querySelector('#bot-profile') as HTMLSelectElement).value as BotPersonality;
-      this.callbacks.onStartSolo(profile);
+    room.value = new URLSearchParams(window.location.search).get('room') ?? ''; sanitizeRoom();
+    room.addEventListener('input', sanitizeRoom);
+    this.element('multiplayer-form').addEventListener('submit', event => { event.preventDefault(); this.multiplayer(false); });
+    this.element('btn-host').addEventListener('click', () => this.multiplayer(true));
+    this.element('btn-solo').addEventListener('click', () => {
+      const profile = this.element<HTMLSelectElement>('bot-profile').value;
+      if (profile !== 'CIPHER_ZERO' && profile !== 'VEKTOR_AGGRO' && profile !== 'AEGIS_WALL') return;
+      this.unlock(); this.hide(); this.callbacks.onStartSolo(profile);
     });
-
-    multiBtn?.addEventListener('click', () => {
-      startAudio();
-      sfx.playClick();
-      const code = roomInput?.value.trim().toUpperCase() || '';
-      this.hide();
-      const playerName = (this.container.querySelector('#player-name-input') as HTMLInputElement).value.trim().slice(0, 16);
-      if (!playerName) { this.show(); this.showError('Enter a player name.'); return; }
-      if (code) this.callbacks.onJoinMultiplayer(code, playerName);
-      else this.callbacks.onCreateMultiplayer(playerName);
-    });
-
-    tutorialBtn?.addEventListener('click', () => {
-      startAudio();
-      sfx.playClick();
-      this.hide();
-      this.callbacks.onStartTutorial();
-    });
-
-    muteBtn?.addEventListener('click', () => {
-      const isMuted = masterAudio.toggleMute();
-      if (muteBtn) {
-        muteBtn.textContent = isMuted ? 'AUDIO: MUTED' : 'AUDIO: ON';
-      }
-    });
+    this.element('btn-tutorial').addEventListener('click', () => { this.unlock(); this.hide(); this.callbacks.onStartTutorial(); });
+    this.element('btn-menu-rules').addEventListener('click', () => this.callbacks.onToggleRules());
+    this.element('btn-mute').addEventListener('click', () => { masterAudio.toggleMute(); this.syncMute(); });
+    this.syncMute();
   }
-
-  public show(): void {
-    this.container.style.display = 'flex';
-    const error = this.container.querySelector('#menu-error');
-    if (error) error.textContent = '';
+  private element<T extends HTMLElement = HTMLElement>(id: string): T { return this.container.querySelector<T>(`#${id}`)!; }
+  private unlock(): void { masterAudio.init(); masterAudio.resume(); sfx.playClick(); }
+  private multiplayer(host: boolean): void {
+    const nameInput = this.element<HTMLInputElement>('player-name-input');
+    const name = nameInput.value.trim().slice(0, 16); nameInput.value = name;
+    const code = this.element<HTMLInputElement>('input-room').value.trim().toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 4);
+    if (!name) { this.showError('Enter a player name.'); nameInput.setAttribute('aria-invalid', 'true'); nameInput.focus(); return; }
+    nameInput.removeAttribute('aria-invalid');
+    if (!host && code.length !== 4) { this.showError('Room codes contain four letters or digits.'); this.element('input-room').focus(); return; }
+    this.unlock(); this.hide();
+    if (host) this.callbacks.onCreateMultiplayer(name); else this.callbacks.onJoinMultiplayer(code, name);
   }
-
-  public showError(message: string): void {
-    let error = this.container.querySelector('#menu-error');
-    if (!error) {
-      error = document.createElement('p');
-      error.id = 'menu-error';
-      error.setAttribute('role', 'alert');
-      this.container.appendChild(error);
-    }
-    error.textContent = message;
+  private syncMute(): void {
+    this.element('btn-mute').textContent = masterAudio.isMuted ? 'AUDIO: MUTED' : 'AUDIO: ON';
+    this.element('btn-mute').setAttribute('aria-pressed', String(masterAudio.isMuted));
   }
-
-  public hide(): void {
-    this.container.style.display = 'none';
-  }
+  public show(): void { this.container.hidden = false; this.element('menu-error').textContent = ''; this.syncMute(); }
+  public hide(): void { this.container.hidden = true; }
+  public showError(message: string): void { this.element('menu-error').textContent = message; }
 }

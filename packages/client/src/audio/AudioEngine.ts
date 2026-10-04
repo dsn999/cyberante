@@ -6,7 +6,7 @@ export class AudioEngine {
   private ctx: AudioContext | null = null;
   private masterGain: GainNode | null = null;
   private analyser: AnalyserNode | null = null;
-  private isMuted: boolean = false;
+  private muted: boolean = false;
   private fftData: Uint8Array | null = null;
 
   constructor() {
@@ -21,7 +21,7 @@ export class AudioEngine {
     this.ctx = new AudioContextClass();
 
     this.masterGain = this.ctx.createGain();
-    this.masterGain.gain.setValueAtTime(this.isMuted ? 0 : 0.7, this.ctx.currentTime);
+    this.masterGain.gain.setValueAtTime(this.muted ? 0 : 0.7, this.ctx.currentTime);
 
     this.analyser = this.ctx.createAnalyser();
     this.analyser.fftSize = 64;
@@ -45,12 +45,14 @@ export class AudioEngine {
     }
   }
 
+  public get isMuted(): boolean { return this.muted; }
+
   public toggleMute(): boolean {
-    this.isMuted = !this.isMuted;
+    this.muted = !this.muted;
     if (this.masterGain && this.ctx) {
-      this.masterGain.gain.setValueAtTime(this.isMuted ? 0 : 0.7, this.ctx.currentTime);
+      this.masterGain.gain.setValueAtTime(this.muted ? 0 : 0.7, this.ctx.currentTime);
     }
-    return this.isMuted;
+    return this.muted;
   }
 
   /**
