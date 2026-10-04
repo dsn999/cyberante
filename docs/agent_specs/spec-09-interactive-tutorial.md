@@ -133,8 +133,39 @@ Requirements:
 ```
 
 ## 10. Definition of Done Checklist
-- [ ] 4 interactive tutorial steps with clear cybernetic instructions.
-- [ ] Action validation gates requiring player participation.
-- [ ] Skip button allowing immediate exit to main menu.
-- [ ] Floating in-game rules modal with complete reference tables.
-- [ ] Clean compilation under `npm --workspace=packages/client run build`.
+- [x] 4 interactive tutorial steps with clear cybernetic instructions.
+- [x] Action validation gates requiring player participation.
+- [x] Skip button allowing immediate exit to main menu.
+- [x] Floating in-game rules modal with complete reference tables.
+- [x] Clean compilation under `npm --workspace=packages/client run build`.
+
+
+### Implementation evidence (2026-10-04)
+
+- The specified three fixture hands run through the normal tactical board, with
+  exact partition validation, the targeted shared-math A–2–3 nudge and a Diamond
+  K burn granting Barrier 10 plus an immediate replacement. Results remain visible
+  until the player selects Continue. Invalid actions cannot bypass the gates.
+- The final lesson requires explicitly selecting Overcharge and locking in a
+  valid split. Shared combat resolution against a Parry drone drives vector
+  sparks and procedural audio; the completion banner remains until the player
+  returns to the Main Menu. No lesson advances on a timer.
+- Start/next/previous/hide/action APIs and running/index getters are implemented.
+  `TutorialStep` includes id, instructions, highlight selector and validator;
+  action payloads use `unknown` with runtime checks. The payload-free
+  `onUserAction('COMMIT_HAND')` reads the board's current selection and calls
+  `nextStep()` only for a valid partition, as directly covered by a unit test.
+- Skip and Escape cleanly return to the menu from every lesson; replay/restart
+  reset training state. Rules preserve selected cards, stance, commitments and
+  room membership while clocks keep running. Native modal focus returns to the
+  invoker; Escape closes rules before exiting training.
+- The reference contains all Assault/Aegis values, a stance matrix, all four
+  burn powers, per-exchange resources, Ace wrap and sudden-death rules. Shared
+  constants supply numeric damage, mitigation and stance values.
+- Verification: exact client build, 31 focused unit tests, full build/test/sim
+  (321 tests / 300 seeded matches), and all 28 Chromium cases pass. Nine new
+  browser cases include completed desktop/mobile training with networking
+  disabled and zero WebSockets/API requests, manual assignment, replay, exits,
+  lobby/solo reference isolation, 320px and landscape instruction/navigation
+  visibility, 44px controls and reduced-motion keyboard operation. Screenshots
+  were inspected. Production output adds no external media assets.

@@ -69,6 +69,12 @@ class CyberanteGame {
       onBleedSuit: (cardId, suit) => this.handleBleed(cardId, suit),
       onBurnCard: (cardId) => this.handleBurn(cardId),
       onCommitHand: (assault, aegis, stance) => this.handleCommit(assault, aegis, stance),
+      onSelectionChange: () => {
+        if (this.mode === 'tutorial' && this.tutorial.currentStepIndex === 0) this.tutorial.onUserAction('COMMIT_HAND');
+      },
+      onStanceSelect: stance => {
+        if (this.mode === 'tutorial') this.tutorial.onUserAction('SELECT_STANCE', { stance });
+      },
       onToggleRules: () => this.rulesModal.toggle(),
       onToggleCrt: () => { this.scene.toggleCrt(); },
       onToggleReducedMotion: () => { this.scene.toggleReducedMotion(); },
@@ -84,6 +90,23 @@ class CyberanteGame {
     });
 
     this.scene.setCardViewport(document.getElementById('arena-preview')!);
+    this.tutorial.readSelection = () => this.gameBoard.selectedHand;
+    this.tutorial.onStateChange = state => {
+      this.gameBoard.setTrainingLesson(state.stepIndex + 1);
+      this.gameBoard.show(); this.gameBoard.setConnected(true);
+      const phase = state.complete ? 'CLASH_REVEAL' : state.stepIndex === 3 ? 'COMMITMENT' : 'SHAPING';
+      this.gameBoard.updateState(phase, 0, state.resolution?.p1HpRemaining ?? 20, state.flux,
+        state.resolution?.p2HpRemaining ?? 20, state.cards, 1, state.stepIndex + 1, 0, 0, state.barrier);
+      this.gameBoard.setControls(phase, state.complete, state.burn !== null);
+      this.gameBoard.setNames('Training Operative', 'Training Drone', true);
+      if (state.stepIndex === 0) this.gameBoard.clearHandSelection();
+      this.scene.setCards(state.cards);
+      masterAudio.music.setPhase(phase);
+    };
+    this.tutorial.onClash = resolution => {
+      this.selfPlayerId = 'training-player'; this.handleClashOutcome(resolution);
+      document.getElementById('clash-reveal')?.scrollIntoView({ block: 'center', behavior: 'auto' });
+    };
 
     // Initialize Main Menu
     this.mainMenu = new MainMenuOverlay(uiRoot, {
@@ -100,7 +123,7 @@ class CyberanteGame {
     });
     uiRoot.addEventListener('pointerdown', () => {
       this.unlockAudio();
-      if (this.mode === 'solo' || this.mode === 'online') masterAudio.music.start();
+      if (this.mode === 'solo' || this.mode === 'online' || this.mode === 'tutorial') masterAudio.music.start();
     });
     window.addEventListener('pagehide', event => { if (!event.persisted) this.scene.destroy(); });
     if (this.networkClient.hasSession) this.resumeMultiplayerMatch();
@@ -129,6 +152,7 @@ class CyberanteGame {
     this.scene.setTitleMode(false);
     this.mainMenu.hide();
     this.tutorial.start();
+    masterAudio.music.start();
   }
 
   // --------------------------------------------------------------------------
@@ -163,6 +187,7 @@ class CyberanteGame {
     clearInterval(this.countdownTimer);
     this.countdownTimer = undefined;
     this.isSoloMode = false;
+    this.gameBoard.setTrainingLesson(null);
     this.gameBoard.resetView();
     this.previousHand = '';
     this.previousCards = [];
@@ -355,24 +380,41 @@ class CyberanteGame {
   // User Tactical Actions
   // --------------------------------------------------------------------------
   private handleNudge(cardId: string, direction: 'UP' | 'DOWN'): void {
+    if (this.mode === 'tutorial') {
+      const before = this.tutorial.state.cards.find(card => card.id === cardId)?.rank;
+      this.tutorial.onUserAction('NUDGE_RANK', { cardId, direction });
+      if (this.tutorial.state.cards.find(card => card.id === cardId)?.rank !== before) {
+        const pos = this.cardPosition(cardId); this.scene.triggerSparks(pos.x, pos.y);
+      }
+      return;
+    }
     if (this.isSoloMode) {
       this.soloSession?.nudgeRank(cardId, direction);
     } else this.networkClient.send({ type: 'CMD_NUDGE_RANK', cardId, direction });
   }
 
   private handleBleed(cardId: string, targetSuit: Suit): void {
+    if (this.mode === 'tutorial') { this.tutorial.onUserAction('BLEED_SUIT', { cardId, targetSuit }); return; }
     if (this.isSoloMode) {
       this.soloSession?.bleedSuit(cardId, targetSuit);
     } else this.networkClient.send({ type: 'CMD_BLEED_SUIT', cardId, targetSuit });
   }
 
   private handleBurn(cardId: string): void {
+    if (this.mode === 'tutorial') {
+      const card = this.tutorial.state.cards.find(card => card.id === cardId);
+      const pos = this.cardPosition(cardId);
+      this.tutorial.onUserAction('BURN_CARD', { cardId });
+      if (card && !this.tutorial.state.cards.some(current => current.id === cardId)) this.scene.triggerBurn(pos.x, pos.y, Number.parseInt(SUIT_COLORS[card.suit].slice(1), 16));
+      return;
+    }
     if (this.isSoloMode) {
       this.soloSession?.burnCard(cardId);
     } else this.networkClient.send({ type: 'CMD_BURN_CAST', cardId });
   }
 
   private handleCommit(assault: [string, string, string], aegis: [string, string], stance: Stance): void {
+    if (this.mode === 'tutorial') { this.tutorial.onUserAction('COMMIT_HAND', { assaultIds: assault, aegisIds: aegis, stance }); return; }
     if (this.isSoloMode) this.soloSession?.commitHand(assault, aegis, stance);
     else this.networkClient.send({ type: 'CMD_COMMIT_HAND', assaultCardIds: assault, aegisCardIds: aegis, stance });
   }

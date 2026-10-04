@@ -2,9 +2,9 @@
 
 Audit date: 2026-10-03. Second review: committed baseline `fe9fc48`. Scope: the master design, all ten subsidiary specs,
 workspace configuration, shared/server/client source, existing tests, and CI.
-This strategy records audit findings and dispatch progress. Specs 01–08 and
-the Spec-10A playable milestone are implemented and verified; later dispatches
-remain outstanding.
+This strategy records audit findings and dispatch progress. Specs 01–09 and
+the Spec-10A playable milestone are implemented and verified; Spec-10B remains
+outstanding.
 
 ## Architectural authority
 
@@ -214,9 +214,9 @@ This section supersedes historical Spec-05 findings and pacing follow-ups above.
 
 ## Dispatch readiness
 
-**Specs 01–08 and the Spec-10A playable milestone are complete. Spec-09 is next.**
-Continue the planned tutorial dispatch, then final
-Spec-10B acceptance.
+**Specs 01–09 and the Spec-10A playable milestone are complete. Spec-10B is next.**
+Proceed to final integration and deployment acceptance, including the physical
+GPU performance evidence explicitly staged there by the user.
 
 Completed dispatches cover strict COMMITMENT-only lock-in,
 full payload validation, cryptographic token generation, disconnected-seat-only
@@ -283,15 +283,73 @@ working directory if the documented invocation needs correction.
 
 ## Recommended next dispatch
 
-Proceed to **Spec-09: Interactive Tutorial & Rules Modal**. Specs 06–08 now
-provide the procedural audio, reactive renderer, psychedelic title screen,
-vector card previews, complete tactical UI and independent accessibility
-settings. Implement the four action-gated tutorial lessons and complete rules
-next, then finish final Spec-10B acceptance.
+Proceed to **Spec-10B: Final Integration & Universal Deployment Acceptance**. The procedural audio, renderer, psychedelic title,
+tactical UI and interactive curriculum now form the intended playable experience.
+Spec-10B covers final CI, production operation, build footprint, mode transitions,
+disconnect/shutdown behavior and physical device performance evidence.
 
-Continue with 09 and 10B. Physical integrated/mobile GPU acceptance of the
-unchanged 60 FPS target is explicitly assigned to Spec-10B by the user's
-2026-10-04 decision; software rendering measurements are diagnostic evidence.
+Physical integrated/mobile GPU acceptance of the unchanged 60 FPS target remains
+assigned to Spec-10B by the user's 2026-10-04 decision; software rendering
+measurements are diagnostic evidence.
+
+### Spec-09 implementation evidence (2026-10-04)
+
+- `TutorialManager` exposes start/next/previous/hide/action APIs and running/index
+  getters. `TutorialStep` supplies numbered instructions, highlight selectors and
+  validators using `unknown` payloads. A separate local `TutorialSession` owns
+  deterministic hand fixtures and action gates without timers or networking.
+- Lesson 1 starts with the specified A/K/Q Spades and 10/4 Diamonds, unassigned.
+  Manual card selection and Auto Split notify the gate; only an exact owned,
+  unique 3/2 partition advances through `COMMIT_HAND`. The payload-free API call
+  reads and validates the board’s current selection; direct payloads are also
+  checked rather than trusted.
+- Lesson 2 deals the specified A/2/4 Spades and Club/Diamond 8 pair. Only the
+  targeted downward nudge succeeds; shared `nudgeRank` produces A–2–3 and spends
+  exactly one Flux. The actual board shows 18 base damage and 2/3 Flux while the
+  player inspects the result before selecting Continue. Instructions explain
+  Ace wrap and both suit-bleed directions.
+- Lesson 3 deals the specified Diamond K / Spades 7/8 / Club 9 / Heart 10 hand.
+  Shared `evaluateBurn` grants Barrier 10 and replaces only the burned King with
+  a predetermined Spade 9. The five-card replacement, Barrier and once-per-exchange
+  burn flag remain visible; Continue carries them into the stance lesson.
+- Lesson 4 requires an explicit Overcharge selection and valid Lock In. The shared
+  combat calculator resolves a Parry drone: the guided Straight Flush deals 36
+  raw / 34 net damage, Parry reflects 18, and Guard ends at 2 versus 0. Normal
+  vector clash particles, procedural laser/impact effects and lesson-completion
+  audio run through the existing controller. A neon completion banner and an
+  explicit Return to Main Menu action let the player inspect the result.
+- Incorrect actions cannot consume Flux, retire the required card, bypass gates
+  or prevent completion. Previous resets the prior fixture; skip/Escape exit
+  immediately, restart resets progress, and hide removes key listeners,
+  highlights, the size observer and training layout state.
+- The glass instruction card stays fixed at center-bottom. Only its instruction
+  text scrolls; Skip and navigation remain visible. Scroll padding brings targets
+  above the card and sticky toolbar. Responsive controls retain 44px targets,
+  landscape instructions remain readable, and reduced motion disables pulses
+  and the completion entrance animation. Escape closes an open rules dialog
+  before exiting training.
+- The rules modal references shared damage, block and stance constants; separate
+  stance/burn tables cover all powers, shield values, reflection bypass, healing
+  limits and Sunder rounding. It also explains per-exchange resources, Ace-low
+  straights, ready/commitment, the ten-exchange cap and repeat sudden-death ties.
+  Focus returns to the invoking button; opening rules preserves selected lanes,
+  stance, pending commitment and room membership without pausing the clock.
+- Focused verification passes 31 new unit tests. Desktop and 390px training ran
+  to completion after disabling networking, with zero WebSockets or API requests.
+  Browser checks also cover manual assignment, replay, all lesson exits, menu/solo
+  transitions, online lobby rules, commitment isolation, 320px/landscape layout
+  and reduced-motion keyboard controls. The exact client build and full
+  `npm run build && npm test && npm run sim` gate pass without diagnostics:
+  321 unit/integration tests and 300 seeded simulated matches. All 28 Chromium
+  cases pass, including nine new tutorial/rules cases. Desktop, 390px, 320px
+  and landscape screenshots were inspected; capture disables finite animations
+  so the completion banner is recorded after its fade.
+- Production JavaScript totals 148,463 bytes gzipped (Python gzip level 9); the
+  build emits no image, SVG, model or audio artifacts. No shared/server game math
+  changes or dependency additions were needed.
+
+This evidence supersedes the historical tutorial findings above. Every Spec-09
+Definition of Done item is verified and checked; final Spec-10B acceptance is next.
 
 ### Spec-07 implementation evidence (2026-10-04)
 
@@ -349,7 +407,8 @@ Playwright Chromium; on this workspace its browser cache is selected with
 `PLAYWRIGHT_BROWSERS_PATH=/tmp/cyberante-browsers`.
 
 This evidence supersedes historical renderer findings above. The Spec-07
-implementation checklist is checked; tutorial dispatch 09 is next.
+implementation checklist is checked; later tutorial progress is recorded in
+the Spec-09 evidence section above.
 
 ### Spec-06 implementation evidence (2026-10-04)
 

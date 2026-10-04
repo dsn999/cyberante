@@ -147,3 +147,30 @@ body.reduced-motion .urgent { animation: none; }
 #arena-preview { min-height: 180px; position: relative; flex: 0 0 180px; pointer-events: none; }
 .arena-label { position: absolute; left: 0; top: 50%; color: var(--muted); font: 10px var(--font-mono); letter-spacing: .12em; }
 @media (max-width: 767px) { #arena-preview { min-height: 150px; flex-basis: 150px; } .arena-label { font-size: 8px; } }
+
+/* Training keeps the actual board interactive above a floating instruction card. */
+#tutorial-overlay { position: fixed; z-index: 30; bottom: max(12px, env(safe-area-inset-bottom)); left: 50%; transform: translateX(-50%); width: min(620px, calc(100% - 24px)); max-height: 42dvh; pointer-events: auto; }
+.tutorial-card { max-height: inherit; border-color: var(--amber); background: #0b1329f5; backdrop-filter: blur(12px); box-shadow: 0 0 24px #ffb70033; display: flex; flex-direction: column; gap: 10px; }
+.tutorial-card > :not(.tutorial-copy) { flex-shrink: 0; }
+.tutorial-copy { min-height: 44px; overflow-y: auto; display: grid; gap: 10px; }
+.tutorial-heading { display: flex; justify-content: space-between; gap: 12px; align-items: center; font: 12px var(--font-mono); color: var(--amber); }
+#tutorial-title { font: 700 clamp(14px, 2vw, 18px) var(--font-display); color: var(--amber); line-height: 1.5; overflow-wrap: anywhere; }
+#tutorial-instruction { line-height: 1.5; font-size: 14px; }
+#tutorial-feedback { color: #8cffff; font: 13px/1.5 var(--font-mono); overflow-wrap: anywhere; }
+#tutorial-feedback:empty { display: none; }
+#tutorial-overlay[data-complete=true] .tutorial-card { border-color: var(--cyan); box-shadow: 0 0 26px #00f3ff44; animation: training-complete-entry .4s ease-out; }
+@keyframes training-complete-entry { from { opacity: 0; } to { opacity: 1; } }
+#tutorial-overlay[data-complete=true] #tutorial-title { color: var(--cyan); }
+body.training-active #game-board-overlay { padding-bottom: calc(var(--tutorial-height, 320px) + 36px + env(safe-area-inset-bottom)); scroll-padding-bottom: calc(var(--tutorial-height, 320px) + 36px); scroll-padding-top: 140px; }
+body.training-active .phase-clock { display: none; }
+body.training-active .scoreboard { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.tutorial-target:not(:disabled) { outline: 2px solid var(--amber); outline-offset: 3px; animation: training-pulse 2.5s ease-in-out infinite alternate; }
+@keyframes training-pulse { from { box-shadow: 0 0 3px #ffb70055; } to { box-shadow: 0 0 16px #ffb700aa; } }
+body.reduced-motion .tutorial-target { animation: none; }
+.rules-content table { table-layout: fixed; overflow-wrap: anywhere; }
+@media (max-width: 390px) { .rules-heading h2 { font-size: 16px; } #tutorial-overlay .button-row button { padding: 8px 6px; font-size: 12px; } }
+@media (max-height: 500px) {
+  #tutorial-overlay { max-height: 60dvh; }
+  .tutorial-card { padding: 10px; gap: 6px; }
+  body.training-active #game-board-overlay { scroll-padding-top: 80px; }
+}

@@ -10,6 +10,8 @@ export interface GameBoardCallbacks {
   onBleedSuit: (cardId: string, targetSuit: Suit) => void;
   onBurnCard: (cardId: string) => void;
   onCommitHand: (assaultIds: [string, string, string], aegisIds: [string, string], stance: Stance) => void;
+  onSelectionChange?: (assaultIds: string[], aegisIds: string[]) => void;
+  onStanceSelect?: (stance: Stance) => void;
   onReady?: () => void;
   onToggleRules: () => void;
   onToggleCrt?: () => void;
@@ -34,6 +36,7 @@ export class GameBoardOverlay {
   private rematchAvailable = true;
   private bannerTimer: ReturnType<typeof setTimeout> | undefined;
   private viewGeneration = 0;
+  private trainingLesson: number | null = null;
 
   constructor(parent: HTMLElement, private readonly callbacks: GameBoardCallbacks) {
     this.container = document.createElement('section');
@@ -132,6 +135,7 @@ export class GameBoardOverlay {
       if (!this.canSelect()) return;
       this.selection.autoSplit();
       this.renderSelection();
+      this.notifySelection();
     });
     for (const stance of ['BRACE', 'OVERCHARGE', 'PARRY'] as const) {
       this.element(`stance-${stance.toLowerCase()}`).addEventListener('click', () => {
@@ -139,6 +143,7 @@ export class GameBoardOverlay {
         this.selectedStance = stance;
         masterAudio.sfx.playStanceSelect(stance);
         this.updateControls();
+        this.callbacks.onStanceSelect?.(stance);
       });
     }
     this.element('btn-lock-in').addEventListener('click', () => {
@@ -153,7 +158,7 @@ export class GameBoardOverlay {
       if (!card) return;
       if (button.dataset.action === 'slot') {
         if (!this.canSelect()) return;
-        this.selection.toggle(card.id); masterAudio.sfx.playCardSelect(); this.renderSelection();
+        this.selection.toggle(card.id); masterAudio.sfx.playCardSelect(); this.renderSelection(); this.notifySelection();
       } else if (this.canShape()) {
         const action = button.dataset.action;
         if (action === 'up' && this.flux >= 1) { masterAudio.sfx.playPipNudge('UP'); this.callbacks.onNudgeRank(card.id, 'UP'); }
@@ -170,6 +175,7 @@ export class GameBoardOverlay {
       if (!this.canSelect() || !button?.dataset.cardId) return;
       this.selection.remove(button.dataset.cardId);
       this.renderSelection();
+      this.notifySelection();
     });
   }
 
@@ -181,7 +187,7 @@ export class GameBoardOverlay {
     this.phase = phase;
     this.flux = playerFlux;
     this.selection.setCards(cards);
-    this.text('match-progress', `ROUND ${roundNumber}/3 • EXCHANGE ${exchangeNumber}`);
+    this.text('match-progress', this.trainingLesson === null ? `ROUND ${roundNumber}/3 • EXCHANGE ${exchangeNumber}` : `TRAINING • LESSON ${this.trainingLesson}/4`);
     this.text('phase-label', phase.replaceAll('_', ' '));
     this.text('player-hp', String(playerHp)); this.text('opponent-hp', String(opponentHp));
     this.element<HTMLProgressElement>('player-hp-bar').value = playerHp;
@@ -215,7 +221,7 @@ export class GameBoardOverlay {
     disable('#btn-lock-in', !this.canSelect() || this.phase !== 'COMMITMENT' || !this.selection.valid);
     disable('#btn-ready', !this.canShape() || this.readySent);
     disable('#btn-rematch', !this.connected || this.rematchSent || !this.rematchAvailable);
-    this.element('btn-ready').hidden = this.phase !== 'SHAPING' || !this.callbacks.onReady;
+    this.element('btn-ready').hidden = this.trainingLesson !== null || this.phase !== 'SHAPING' || !this.callbacks.onReady;
     this.element('btn-rematch').hidden = this.phase !== 'MATCH_OVER' || !this.callbacks.onRematch;
     for (const stance of ['BRACE', 'OVERCHARGE', 'PARRY']) this.element(`stance-${stance.toLowerCase()}`).setAttribute('aria-pressed', String(this.selectedStance === stance));
     this.text('btn-ready', this.readySent ? 'READY • WAITING' : 'READY FOR COMMITMENT');
@@ -291,6 +297,12 @@ export class GameBoardOverlay {
     clearTimeout(this.bannerTimer); this.selection.reset(); this.selectedStance = 'BRACE'; this.committed = false; this.burned = false;
     this.readySent = false; this.rematchSent = false; this.text('center-banner', ''); this.text('clash-reveal', ''); this.renderSelection();
   }
+  private notifySelection(): void { this.callbacks.onSelectionChange?.([...this.selection.assaultIds], [...this.selection.aegisIds]); }
+  public clearHandSelection(): void { this.selection.assaultIds = []; this.selection.aegisIds = []; this.selection.pendingSwap = null; this.renderSelection(); }
+  public get selectedHand(): { assaultIds: string[]; aegisIds: string[]; stance: Stance } {
+    return { assaultIds: [...this.selection.assaultIds], aegisIds: [...this.selection.aegisIds], stance: this.selectedStance };
+  }
+  public setTrainingLesson(lesson: number | null): void { this.trainingLesson = lesson; this.updateControls(); }
   public resetView(): void {
     this.viewGeneration++; this.exchangeKey = ''; this.resetHandSelection(); this.updateState('LOBBY_WAIT', 0, 20, 3, 20, []);
     this.setControls('LOBBY_WAIT', false, false); this.setNames('Operative', 'Waiting for opponent', true); this.setRoom('');

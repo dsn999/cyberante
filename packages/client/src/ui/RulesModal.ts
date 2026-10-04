@@ -3,6 +3,7 @@ import { GAME_CONSTANTS } from '@cyberante/shared';
 /** Native modal focus handling keeps the reference usable with keyboard and touch. */
 export class RulesModal {
   private readonly container: HTMLDialogElement;
+  private returnFocus: HTMLElement | null = null;
   constructor(parent: HTMLElement) {
     this.container = document.createElement('dialog');
     this.container.id = 'rules-modal';
@@ -22,11 +23,27 @@ export class RulesModal {
           <tr><td>Aegis</td><td>High Card</td><td>${GAME_CONSTANTS.MITIGATION_HIGH_CARD} block</td></tr>
         </tbody></table>
         <section><h3>2. Shaping and Flux</h3><p>Receive ${GAME_CONSTANTS.STARTING_FLUX} Flux each exchange. During Shaping, +1/−1 costs one Flux, wrapping Ace ↔ 2. Bleed costs two Flux and allows either neighboring suit: Spades ↔ Clubs ↔ Diamonds ↔ Hearts ↔ Spades.</p><p>Burn once per exchange to draw a replacement and cast its suit power: Spades suppress Overcharge and reflection; Diamonds add a temporary barrier (Ace 11, faces 10, other ranks their pip value); Hearts heal half of net damage dealt, capped at 20 HP without resurrecting a defeated player; Clubs halve effective Aegis and barrier.</p></section>
-        <section><h3>3. Blind combat stances</h3><ul><li><strong>BRACE:</strong> 1× damage with full Aegis mitigation.</li><li><strong>OVERCHARGE:</strong> 2× damage and forfeits your Aegis mitigation.</li><li><strong>PARRY:</strong> ½× damage; reflects 50% of incoming raw damage against Overcharge or a Pair/High Card assault, unless suppressed by Spade Veil.</li></ul></section>
-        <section><h3>4. Ready and commitment</h3><p>Ready advances early when both players finish shaping. Choose your split and stance, then Lock In during Commitment. Missing commitments are automatically assigned a valid split with Brace when time expires. Opponent cards and stance remain hidden until Clash Reveal.</p><p>Rules stay available during every phase. Opening this reference does not pause the match clock. Keyboard: Tab to navigate, Enter/Space to activate buttons, and Escape to close this dialog.</p></section>
+        <section><h3>3. Combat stance matrix</h3>
+          <table><caption>Stances and counter-play</caption><thead><tr><th scope="col">Stance</th><th scope="col">Damage</th><th scope="col">Defense / counter</th></tr></thead><tbody>
+            <tr><th scope="row">BRACE</th><td>${GAME_CONSTANTS.STANCE_BRACE_MULTIPLIER}×</td><td>Full Aegis mitigation.</td></tr>
+            <tr><th scope="row">OVERCHARGE</th><td>${GAME_CONSTANTS.STANCE_OVERCHARGE_MULTIPLIER}×</td><td>Forfeits your own Aegis, even under Veil. An active Barrier still applies.</td></tr>
+            <tr><th scope="row">PARRY</th><td>${GAME_CONSTANTS.STANCE_PARRY_MULTIPLIER}×</td><td>Reflects ${GAME_CONSTANTS.STANCE_PARRY_REFLECT_RATIO * 100}% incoming raw damage against Overcharge or a Pair / High Card assault, unless suppressed by Spade Veil.</td></tr>
+          </tbody></table><p>Damage and reflection round to the nearest integer. Reflection bypasses Aegis and Barrier.</p>
+        </section>
+        <section><h3>4. Burn-to-Cast suit powers</h3><table><caption>Tactical burns — once per exchange, no Flux cost</caption><thead><tr><th scope="col">Suit / power</th><th scope="col">Effect</th></tr></thead><tbody>
+          <tr><th scope="row">♠ Spades · Veil</th><td>Suppresses the opponent’s Overcharge bonus and Parry reflection.</td></tr>
+          <tr><th scope="row">♦ Diamonds · Barrier</th><td>Temporary shield of 2–11: Ace 11; 10 / J / Q / K give 10; 2–9 give their pip value.</td></tr>
+          <tr><th scope="row">♥ Hearts · Siphon</th><td>Heals 50% of net assault damage dealt, rounded down, capped at ${GAME_CONSTANTS.STARTING_GUARD_HP} HP. Cannot resurrect a defeated player.</td></tr>
+          <tr><th scope="row">♣ Clubs · Sunder</th><td>Halves the opponent’s effective Aegis and Barrier separately, rounded down.</td></tr>
+        </tbody></table><p>Discard the chosen card and immediately draw its replacement. Burns last for this exchange only.</p></section>
+        <section><h3>5. Ready and commitment</h3><p>Ready advances early when both players finish shaping. Choose your split and stance, then Lock In during Commitment. Missing commitments are automatically assigned a valid split with Brace when time expires. Opponent cards and stance remain hidden until Clash Reveal.</p><p>Ace can be high (Q–K–A) or low (A–2–3) in a straight; K–A–2 is not a straight. Suits do not break equal hand scores.</p><p>At the ${GAME_CONSTANTS.MAX_EXCHANGES_PER_ROUND}-exchange cap, higher remaining Guard wins. Equal Guard starts sudden death at 1 HP each: compare net assault damage dealt, then Assault score, then Aegis score. An exact tie repeats sudden death at 1 HP. Simultaneous knockouts before the cap compare Assault scores; equal scores continue at 1 HP.</p><p>Rules stay available during every phase. Opening this reference does not pause the match clock. Keyboard: Tab to navigate, Enter/Space to activate buttons, and Escape to close this dialog.</p></section>
       </div>`;
     parent.appendChild(this.container);
     this.container.querySelector('#close-rules-btn')!.addEventListener('click', () => this.hide());
+    this.container.addEventListener('close', () => {
+      if (this.returnFocus?.isConnected && !this.returnFocus.matches(':disabled')) this.returnFocus.focus({ preventScroll: true });
+      this.returnFocus = null;
+    });
     this.container.addEventListener('keydown', event => {
       if (event.key !== 'Tab') return;
       const controls = Array.from(this.container.querySelectorAll<HTMLElement>('button:not(:disabled),a[href],input:not(:disabled),select:not(:disabled),textarea:not(:disabled),[tabindex]:not([tabindex="-1"])')).filter(control => !control.hidden);
@@ -42,7 +59,11 @@ export class RulesModal {
     });
   }
   public get isVisible(): boolean { return this.container.open; }
-  public show(): void { if (!this.container.open) this.container.showModal(); }
+  public show(): void {
+    if (this.container.open) return;
+    this.returnFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    this.container.showModal();
+  }
   public hide(): void { if (this.container.open) this.container.close(); }
   public toggle(): void { if (this.isVisible) this.hide(); else this.show(); }
 }
