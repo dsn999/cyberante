@@ -1,0 +1,963 @@
+{
+  "date": "2026-10-05",
+  "reviewedParentCommit": "a0931055b80014d0865e45b05883028661a2b375",
+  "scope": "Final contest-project compliance and public-repository hygiene; source fingerprints bind the candidate release, not an inferred remote Git revision",
+  "rules": {
+    "file": "[AI Skills Studio Challenge] Contest Official Rules.pdf",
+    "sha256": "a91fa6ad6aab3ebbae5dcb392aee9531acc6b1f3f40b1e0eded21539fbf314a2",
+    "decodedPages": 7,
+    "unmappedGlyphs": 0,
+    "entryDeadline": "2026-10-30 23:59 America/Los_Angeles",
+    "entrantEligibility": "User attested",
+    "missionParticipation": "User affirmed bundled eligibility/mission question",
+    "separateCodeOfConduct": "Referenced by PDF, not separately supplied or certified",
+    "entrySubmitted": false
+  },
+  "commands": [
+    {
+      "command": "npm ci --fetch-retries=0 --fetch-timeout=15000",
+      "exitCode": 0
+    },
+    {
+      "command": "npm run build && npm test && npm run sim && npm run verify:build && npm run test:math:coverage",
+      "exitCode": 0,
+      "unitIntegrationTests": 358,
+      "serverSharedTests": 230,
+      "clientTests": 128,
+      "seededMatches": 300,
+      "mathCoverageTests": 68,
+      "gzipJavaScriptBytes": 152156
+    },
+    {
+      "command": "PLAYWRIGHT_BROWSERS_PATH=/tmp/cyberante-browsers npx playwright test e2e/acceptance.spec.ts e2e/audio.spec.ts e2e/designQa.spec.ts",
+      "exitCode": 0,
+      "passingCases": 7
+    },
+    {
+      "command": "PLAYWRIGHT_BROWSERS_PATH=/tmp/cyberante-browsers npx playwright test e2e/integration.spec.ts",
+      "exitCode": 0,
+      "passingCases": 6
+    },
+    {
+      "command": "PLAYWRIGHT_BROWSERS_PATH=/tmp/cyberante-browsers npx playwright test e2e/tutorial.spec.ts e2e/ui.spec.ts e2e/renderer.spec.ts --grep-invert 'renderer frame timing'",
+      "exitCode": 0,
+      "passingCases": 18
+    },
+    {
+      "command": "PLAYWRIGHT_BROWSERS_PATH=/tmp/cyberante-browsers npx playwright test e2e/renderer.spec.ts --grep 'renderer frame timing'",
+      "exitCode": 0,
+      "passingCases": 1
+    },
+    {
+      "command": "CYBERANTE_BASE_PATH=/cyberante/ npm run build && CYBERANTE_BASE_PATH=/cyberante/ npm run verify:build",
+      "exitCode": 0,
+      "gzipJavaScriptBytes": 152157
+    },
+    {
+      "command": "npm audit --json",
+      "exitCode": 0,
+      "reportedAdvisories": 0
+    },
+    {
+      "command": "npm audit --omit=dev --json",
+      "exitCode": 0,
+      "reportedAdvisories": 0
+    },
+    {
+      "command": "git diff --check",
+      "exitCode": 0
+    }
+  ],
+  "coverage": {
+    "combatCalculator.ts": {
+      "lines": {
+        "total": 84,
+        "covered": 84,
+        "skipped": 0,
+        "pct": 100
+      },
+      "functions": {
+        "total": 3,
+        "covered": 3,
+        "skipped": 0,
+        "pct": 100
+      },
+      "statements": {
+        "total": 84,
+        "covered": 84,
+        "skipped": 0,
+        "pct": 100
+      },
+      "branches": {
+        "total": 84,
+        "covered": 84,
+        "skipped": 0,
+        "pct": 100
+      }
+    },
+    "pokerEvaluator.ts": {
+      "lines": {
+        "total": 76,
+        "covered": 76,
+        "skipped": 0,
+        "pct": 100
+      },
+      "functions": {
+        "total": 5,
+        "covered": 5,
+        "skipped": 0,
+        "pct": 100
+      },
+      "statements": {
+        "total": 78,
+        "covered": 78,
+        "skipped": 0,
+        "pct": 100
+      },
+      "branches": {
+        "total": 46,
+        "covered": 46,
+        "skipped": 0,
+        "pct": 100
+      }
+    }
+  },
+  "browserScope": {
+    "passingCases": 32,
+    "workers": 1,
+    "headless": true,
+    "renderer": "SwiftShader",
+    "nativeWslGpuAttempted": false,
+    "physicalPerformance": "User accepted Windows Chrome and physical iPad Safari; no numeric measurement or universal compatibility claim"
+  },
+  "softwareDiagnostic": {
+    "viewport": "960x600",
+    "frames": 120,
+    "fps": 59.99,
+    "meanMs": 16.67,
+    "p95Ms": 18.9,
+    "maxMs": 21.4,
+    "physicalAcceptanceEvidence": false
+  },
+  "secretScan": {
+    "history": {
+      "reachableObjects": 593,
+      "scannedBlobs": 345,
+      "blobBytes": 6315234,
+      "trackedFiles": 130,
+      "trackedSensitivePaths": [],
+      "patternFindings": [],
+      "scope": "All blobs reachable from local --all refs; bounded recognizable credential patterns, not an absolute proof of absence"
+    },
+    "candidateFiles": 133,
+    "candidatePatternFindings": [],
+    "historyRewritten": false
+  },
+  "publicTransport": {
+    "url": "https://holactie.com/cyberante/",
+    "date": "2026-10-05T23:07:04.726Z",
+    "checks": [
+      "TLS WebSocket upgrade at /cyberante/ws",
+      "two independent clients create/join same match",
+      "private five-card hands and opponent-ID suppression",
+      "authenticated reconnect restores the same seat and match",
+      "both ready and commit, receiving identical authoritative exchange outcome"
+    ],
+    "pass": true,
+    "scope": "Production transport; not browser rendering or measured FPS"
+  },
+  "publicHttp": {
+    "pageStatus": 200,
+    "healthStatus": 200,
+    "roomsBeforeAndAfterQa": 0,
+    "index": {
+      "file": "/tmp/cyberante-public-index.html",
+      "bytes": 2358,
+      "sha256": "fd76faa6020ec6a058acacb85ff24e44a1b8cc35b6aa443ca4cd83f8868845b4"
+    },
+    "assetUrls": [
+      "/cyberante/assets/game--xTXXzNi.js",
+      "/cyberante/assets/modulepreload-polyfill-B5Qt9EMX.js",
+      "/cyberante/assets/three-Cy3Tryvl.js",
+      "/cyberante/assets/game-DmQMLAL4.css"
+    ],
+    "licenseNoticeStatus": 404,
+    "requiredAction": "Redeploy final hygiene release and confirm license notice availability",
+    "exactRemoteGitRevisionVerified": false
+  },
+  "submissionCover": {
+    "file": "docs/submission/cover.png",
+    "width": 1440,
+    "height": 900,
+    "sha256": "581c215e13a9cac565c59de67b1f7db034c7be4025e84af35e7121db5283e892"
+  },
+  "externalActions": {
+    "githubCliAuthenticated": false,
+    "visibilityChanged": false,
+    "gitPushed": false,
+    "remotelyDeployedDuringReview": false,
+    "dockerBuiltInWorkspace": false,
+    "contestEntrySubmitted": false
+  },
+  "defaultBuildFingerprints": [
+    {
+      "file": "packages/client/dist/LICENSE.txt",
+      "bytes": 1069,
+      "sha256": "24ce45295f880060740928fcb04f0aec4f683065c12218b46890e203378e96cf"
+    },
+    {
+      "file": "packages/client/dist/THIRD_PARTY_NOTICES.txt",
+      "bytes": 2913,
+      "sha256": "b0cd9fdc70f8927e212eda1ebdfa17c3c12e3d06572d555dd3e798d1d04df9b8"
+    },
+    {
+      "file": "packages/client/dist/assets/benchmark-CrJyvpP_.js",
+      "bytes": 4373,
+      "sha256": "6fde0e982f950718754be0a484e3f562014bde46a406b677d72828769fb20636"
+    },
+    {
+      "file": "packages/client/dist/assets/game-CGJyxdmT.js",
+      "bytes": 112350,
+      "sha256": "69cc26497dccd81efaa0febe2bc973c6357cefda6131dc2bca72db623d7a9957"
+    },
+    {
+      "file": "packages/client/dist/assets/game-D1tiifk9.css",
+      "bytes": 25094,
+      "sha256": "1538df72453e401f9cd9d87bf1b45d4626998c8a211e9bbf627ea5aa697f97fe"
+    },
+    {
+      "file": "packages/client/dist/assets/modulepreload-polyfill-B5Qt9EMX.js",
+      "bytes": 711,
+      "sha256": "d2a32840421496e872ade591618d2fa5c33797605d1aec04301717e5a90757d0"
+    },
+    {
+      "file": "packages/client/dist/assets/three-ISh9r9hF.js",
+      "bytes": 462042,
+      "sha256": "db71b5531930c47ef6c5452e12972f1bc674eab5971588d107666523e072a0e5"
+    },
+    {
+      "file": "packages/client/dist/benchmark.html",
+      "bytes": 2793,
+      "sha256": "a83a774380b5f9eb622abd123902e637e012a7f57e269f6f8f238b7820f553fc"
+    },
+    {
+      "file": "packages/client/dist/index.html",
+      "bytes": 2318,
+      "sha256": "22aa05bcff7ed6c9e4ed273357b519467842d32d607bc45a0582afdea7029db8"
+    }
+  ],
+  "subpathBuildFingerprints": [
+    {
+      "file": "packages/client/dist/LICENSE.txt",
+      "bytes": 1069,
+      "sha256": "24ce45295f880060740928fcb04f0aec4f683065c12218b46890e203378e96cf"
+    },
+    {
+      "file": "packages/client/dist/THIRD_PARTY_NOTICES.txt",
+      "bytes": 2913,
+      "sha256": "b0cd9fdc70f8927e212eda1ebdfa17c3c12e3d06572d555dd3e798d1d04df9b8"
+    },
+    {
+      "file": "packages/client/dist/assets/benchmark-CrJyvpP_.js",
+      "bytes": 4373,
+      "sha256": "6fde0e982f950718754be0a484e3f562014bde46a406b677d72828769fb20636"
+    },
+    {
+      "file": "packages/client/dist/assets/game-8mYMWoal.js",
+      "bytes": 112360,
+      "sha256": "ccba65612f0aa41cbc4bebb47d56dfc9839d598d80bee1b9fa46150f75880e34"
+    },
+    {
+      "file": "packages/client/dist/assets/game-D1tiifk9.css",
+      "bytes": 25094,
+      "sha256": "1538df72453e401f9cd9d87bf1b45d4626998c8a211e9bbf627ea5aa697f97fe"
+    },
+    {
+      "file": "packages/client/dist/assets/modulepreload-polyfill-B5Qt9EMX.js",
+      "bytes": 711,
+      "sha256": "d2a32840421496e872ade591618d2fa5c33797605d1aec04301717e5a90757d0"
+    },
+    {
+      "file": "packages/client/dist/assets/three-ISh9r9hF.js",
+      "bytes": 462042,
+      "sha256": "db71b5531930c47ef6c5452e12972f1bc674eab5971588d107666523e072a0e5"
+    },
+    {
+      "file": "packages/client/dist/benchmark.html",
+      "bytes": 2813,
+      "sha256": "3a0a711603115e629ac44cc91270c2b65ab32ca1d76cae40246cabfdd09f09b3"
+    },
+    {
+      "file": "packages/client/dist/index.html",
+      "bytes": 2358,
+      "sha256": "b93eb4db35b62fb15d9fec74366262266e210f1dcbdfddcae93b837c69dc7768"
+    }
+  ],
+  "sourceFingerprints": [
+    {
+      "file": ".dockerignore",
+      "bytes": 111,
+      "sha256": "c0261f0ba4cd8dcabbe58c7a7f82a0866fb2362d827f32d0a941f36b5fe4f70b"
+    },
+    {
+      "file": ".github/workflows/ci.yml",
+      "bytes": 987,
+      "sha256": "4ab91fef886b3a25c4cb7200197ebff4c02b1f464ed11227b8cbe9967c5c71b6"
+    },
+    {
+      "file": ".gitignore",
+      "bytes": 654,
+      "sha256": "8ee766d2ea0edaf437c234a1a69bae7e341fa61fe84255c255f1dfdd95fe6f5a"
+    },
+    {
+      "file": ".nvmrc",
+      "bytes": 3,
+      "sha256": "68ca3fba3b7e864770cb61aeb306d4bd4354b68ab4dd38450860c5d823e42a53"
+    },
+    {
+      "file": "AGENTS.md",
+      "bytes": 17333,
+      "sha256": "7e6af1d8b7fbe1140534e727ec5e2f033ab6d82b16f4e71b9725bbb01db490bc"
+    },
+    {
+      "file": "Dockerfile",
+      "bytes": 1378,
+      "sha256": "314f3da0049a0c1b6dfb62ccdc49cb228a2a895d766cf5ed221c015475333691"
+    },
+    {
+      "file": "LICENSE",
+      "bytes": 1069,
+      "sha256": "24ce45295f880060740928fcb04f0aec4f683065c12218b46890e203378e96cf"
+    },
+    {
+      "file": "README.md",
+      "bytes": 4566,
+      "sha256": "62998a75bc1e2dd9a03ddc3215f651b7389d305575771a9c1145a622ef08a4f0"
+    },
+    {
+      "file": "THIRD_PARTY_NOTICES.txt",
+      "bytes": 2913,
+      "sha256": "b0cd9fdc70f8927e212eda1ebdfa17c3c12e3d06572d555dd3e798d1d04df9b8"
+    },
+    {
+      "file": "[AI Skills Studio Challenge] Contest Official Rules.pdf",
+      "bytes": 120965,
+      "sha256": "a91fa6ad6aab3ebbae5dcb392aee9531acc6b1f3f40b1e0eded21539fbf314a2"
+    },
+    {
+      "file": "cyberante_design_document.md",
+      "bytes": 323,
+      "sha256": "26184c7c8271acb56a59867becacd5462730dea1a6c0115833e65cc5c10bcacd"
+    },
+    {
+      "file": "deploy/holactie/Caddyfile",
+      "bytes": 175,
+      "sha256": "84210e6915ec7e89503d55882aa019e650523d9bd991341128bdf0bf1fd055a8"
+    },
+    {
+      "file": "deploy/holactie/compose.yaml",
+      "bytes": 756,
+      "sha256": "40e0072f42b4ed6258b9490852520788e81002a39d245b63a472d5e3a29fb447"
+    },
+    {
+      "file": "docs/agent_specs/spec-01-shared-contracts.md",
+      "bytes": 9429,
+      "sha256": "2323c33463ac12bde49564ae9542e5dadbb8ab07248d997fc8b62453407a071b"
+    },
+    {
+      "file": "docs/agent_specs/spec-02-poker-evaluator.md",
+      "bytes": 9446,
+      "sha256": "aa9b5b2a9616b46607c7ab25147a67b512e05a84bf9f454a28cec9d7c2211c10"
+    },
+    {
+      "file": "docs/agent_specs/spec-03-deck-flux-engine.md",
+      "bytes": 11988,
+      "sha256": "22bcd503807785b5a74ee5ee2c02a184310e20470b32521c3e22f93519dcd3f7"
+    },
+    {
+      "file": "docs/agent_specs/spec-04-authoritative-server.md",
+      "bytes": 15815,
+      "sha256": "254259d21e9a067f25531df176d8cde8d8c9dd26800f38d7d12cb7a83bd547f0"
+    },
+    {
+      "file": "docs/agent_specs/spec-05-classical-bot-ai.md",
+      "bytes": 11888,
+      "sha256": "5b2e1d486f87f77884b983c6d087114d7abe43f01dfddb56e5ee0c31b7f64ed2"
+    },
+    {
+      "file": "docs/agent_specs/spec-06-procedural-audio-engine.md",
+      "bytes": 8368,
+      "sha256": "52140562afe42615d5f20b06e6c029dba19e38ed9589c5654cbd06c28861d97a"
+    },
+    {
+      "file": "docs/agent_specs/spec-07-neon-vector-renderer.md",
+      "bytes": 11320,
+      "sha256": "501d87add09706b84e82c6585a9e95bfd3320023e7d3d888a42155bf88b81f42"
+    },
+    {
+      "file": "docs/agent_specs/spec-07.1-full-screen-arena-ui.md",
+      "bytes": 10550,
+      "sha256": "685574be95a4365f1a50d45bc2bff770e800740d50e280a76048d11a464dd02f"
+    },
+    {
+      "file": "docs/agent_specs/spec-08-client-game-ui.md",
+      "bytes": 10790,
+      "sha256": "035a7013fdd4f282ec7c5c3785728ecfaa2700fc3480be8d0ec768c51f93e618"
+    },
+    {
+      "file": "docs/agent_specs/spec-09-interactive-tutorial.md",
+      "bytes": 9793,
+      "sha256": "c2b014bb8cbaf7d021bf1d6b002a24e4a75beb2cace3b3d51e1d47c838fa2297"
+    },
+    {
+      "file": "docs/agent_specs/spec-10-e2e-integration-deploy.md",
+      "bytes": 12995,
+      "sha256": "1b6fdbc86e78dac303dee1540c5ca6e9f05f6c12299c7f6b18aee55511c1b3fe"
+    },
+    {
+      "file": "docs/cyberante_design_document.md",
+      "bytes": 48153,
+      "sha256": "dae8da2b07f9256a423d17f2c74e5423c14919bbee83061dc4b4bb60b2bfbb86"
+    },
+    {
+      "file": "docs/deployment.md",
+      "bytes": 3787,
+      "sha256": "cee904ad78248e88116f15760e28f8a5cff8490c0467f90df95dc2d875a7c5e9"
+    },
+    {
+      "file": "docs/holactie_deployment.md",
+      "bytes": 4528,
+      "sha256": "6c07211c40c554b7e5f4e2ef7b537ec5666ccf7b7612789f9f844ded80be866e"
+    },
+    {
+      "file": "docs/implementation_strategy.md",
+      "bytes": 42055,
+      "sha256": "2cf31d2e17d11301267af36f3fe79ab444a1455d78a0565d415ccaaf66e4bd87"
+    },
+    {
+      "file": "docs/performance_acceptance.md",
+      "bytes": 7430,
+      "sha256": "4bf10fd54af9958655ce1330cc8a8a02b742608a134f42cc9a740a3fff901d47"
+    },
+    {
+      "file": "docs/performance_capture_record.md",
+      "bytes": 2463,
+      "sha256": "8b50cdaebe68a5343a39883f8bcdfb26319d62f91e41c12839b191c266410480"
+    },
+    {
+      "file": "docs/qa/contest_readiness_2026-10-05.md",
+      "bytes": 9139,
+      "sha256": "297f5400b789003f5a455ecb04742702e5bcfe5a75bf3cc14b471428aefa702a"
+    },
+    {
+      "file": "docs/qa/design_certification.md",
+      "bytes": 21735,
+      "sha256": "8bad57ba27df2f1f6806133ca9f919ae284b7a85f2a031b21335b09e18e6d482"
+    },
+    {
+      "file": "docs/qa/design_certification_2026-10-05.md",
+      "bytes": 7346,
+      "sha256": "8f55c248279cabb634cd9d1b1b01963cf8da0d70a847b7ffe0eab956ea355429"
+    },
+    {
+      "file": "docs/qa/design_certification_2026-10-05_evidence.json",
+      "bytes": 24725,
+      "sha256": "fe5d8bbabb4160623aed0f2b14c9f3897ef4c21c0d4f98e0a4998cf0a739ee32"
+    },
+    {
+      "file": "docs/qa/evidence.json",
+      "bytes": 13814,
+      "sha256": "24a0c2781e3a2c961ffa8cd1cbcbf6115b9dda530d3ac55a34acfed8618aa13c"
+    },
+    {
+      "file": "docs/qa/release_acceptance.md",
+      "bytes": 4011,
+      "sha256": "78b408f3fdd736c61bf45f57106a419e4f66e2aadb42b6f845a9bfe021aa0915"
+    },
+    {
+      "file": "docs/qa/ui-redesign-desktop.png",
+      "bytes": 484276,
+      "sha256": "2f91de6ffd8e7e4a48984a78e0df38c494630cdd4af229d89156fc07b5a567ab"
+    },
+    {
+      "file": "docs/qa/ui-redesign-mobile.png",
+      "bytes": 254104,
+      "sha256": "d45d92372cc565256b83b67aaac6f7e2962561f2c6951708545015e4e2df0c0d"
+    },
+    {
+      "file": "docs/qa/ui_redesign.md",
+      "bytes": 3854,
+      "sha256": "cc3742868f24a854397842892aff131d286a292863953188a49565fc9367bd57"
+    },
+    {
+      "file": "docs/qa/ui_redesign_evidence.json",
+      "bytes": 7345,
+      "sha256": "37d3e600c9da9ad06933ab3b870e164c29684efccc0a42b0d7d2297a0c3783e3"
+    },
+    {
+      "file": "docs/submission/README.md",
+      "bytes": 2539,
+      "sha256": "a42f84aa6f2b81daa0d1f26186edf744f00091f1a86cf05905c05a7f36268edb"
+    },
+    {
+      "file": "docs/submission/cover.png",
+      "bytes": 1477890,
+      "sha256": "581c215e13a9cac565c59de67b1f7db034c7be4025e84af35e7121db5283e892"
+    },
+    {
+      "file": "docs/submission/description.md",
+      "bytes": 884,
+      "sha256": "d43edee638f94e27d7759f058930e25e77faaf85f03de7369983a320bb415eb2"
+    },
+    {
+      "file": "e2e/acceptance.spec.ts",
+      "bytes": 2998,
+      "sha256": "b320ce773f12d9fd6ab03bd7a4e5f38828b2cb0f8b35e14483f6a39cf8830f60"
+    },
+    {
+      "file": "e2e/audio.spec.ts",
+      "bytes": 7777,
+      "sha256": "27c673b32db15c8e4738c542279d22356078b60ff6f1a505f70485d9e8ac52b1"
+    },
+    {
+      "file": "e2e/designQa.spec.ts",
+      "bytes": 3417,
+      "sha256": "1d1dcc55661bb0b0f24f549a4398ecb0e63df2633825f8a23edfeebb19e191e3"
+    },
+    {
+      "file": "e2e/helpers.ts",
+      "bytes": 494,
+      "sha256": "33e7116191fbd05cee019d186d5746686f19089ae06481631cd84e50e8177744"
+    },
+    {
+      "file": "e2e/integration.spec.ts",
+      "bytes": 11627,
+      "sha256": "685c046e7131d377c81ad50e4a9092d08f0111780f0b852376be09bcca647048"
+    },
+    {
+      "file": "e2e/renderer.spec.ts",
+      "bytes": 7656,
+      "sha256": "0c43bd11d91a2dc7e19a17d71fffd28f5219e105372db66ac6c8131700a5385c"
+    },
+    {
+      "file": "e2e/tutorial.spec.ts",
+      "bytes": 15142,
+      "sha256": "b76daf92e81618eca5973737728aa13b892cd23c9ce65d7bd22473d7bf0095f6"
+    },
+    {
+      "file": "e2e/ui.spec.ts",
+      "bytes": 8782,
+      "sha256": "79f00c82275bb5340e45dc6fde1d9175712c12b6636769cb2b2bd49e30ba198f"
+    },
+    {
+      "file": "package-lock.json",
+      "bytes": 86702,
+      "sha256": "723e6e7cfd912d3b23f9ddc76671528168e12505272d31e5ebdb2a08fbf3ce26"
+    },
+    {
+      "file": "package.json",
+      "bytes": 1435,
+      "sha256": "8bb858563f6a66819427dc65e58c9455c7679e08a2a2e1b7f61305c52193f1a7"
+    },
+    {
+      "file": "packages/client/benchmark.html",
+      "bytes": 2676,
+      "sha256": "1e367f71860bdf2565aff0a14f22aa9ee5fcf07df0e5ba0f524eb4cd56b993bc"
+    },
+    {
+      "file": "packages/client/index.html",
+      "bytes": 2052,
+      "sha256": "3e664eef21737bf7926651f2e0b09178f4f694372d7574c37e0dddfee5bf7a1b"
+    },
+    {
+      "file": "packages/client/package.json",
+      "bytes": 452,
+      "sha256": "c94a9be2b17dbfd00c5fa9eb5ed02e08fc20ec512b15ac1442fc4c3a1eded35e"
+    },
+    {
+      "file": "packages/client/src/__tests__/audio.test.ts",
+      "bytes": 16701,
+      "sha256": "88eb6b75bbc8bc3faee95d0776364cf0de78ebc84570f1de8160a9e7a6740aa3"
+    },
+    {
+      "file": "packages/client/src/__tests__/gameController.test.ts",
+      "bytes": 4904,
+      "sha256": "38ba8c4c746192e1bd308c71e11a895020f3fb8a5afeb0d190aa5081563ab1f4"
+    },
+    {
+      "file": "packages/client/src/__tests__/handSelection.test.ts",
+      "bytes": 3811,
+      "sha256": "b06adad40736d73b5ce34ce427fe9f1bfbdf0d09fbb65854b95d2d1cf8a8d310"
+    },
+    {
+      "file": "packages/client/src/__tests__/networkClient.test.ts",
+      "bytes": 7134,
+      "sha256": "90364a7bdbdbc882dfcf78883f74cb7120eaee7b8f37eb0df40eff4341f95b7d"
+    },
+    {
+      "file": "packages/client/src/__tests__/renderer.test.ts",
+      "bytes": 10744,
+      "sha256": "396ba7c10abeade443a14dced11f8a04097e21f68ca42bf9abeb4705805ee792"
+    },
+    {
+      "file": "packages/client/src/__tests__/rendererBenchmark.test.ts",
+      "bytes": 4454,
+      "sha256": "261bce5cd7c4ebee4ca46e871c8c89ede8aed27b8d97af5f43962d4e130f96ce"
+    },
+    {
+      "file": "packages/client/src/__tests__/soloMatchSession.test.ts",
+      "bytes": 4705,
+      "sha256": "891b54af78c5c33a49e9387671a6bf3eaddb9181f7666eedf88e210c47ff9e86"
+    },
+    {
+      "file": "packages/client/src/__tests__/tutorial.test.ts",
+      "bytes": 8340,
+      "sha256": "b85c22b53cacb184bb5d20e94cbe97c96a14fa9cf2afe02d9a1a02eebe4cce08"
+    },
+    {
+      "file": "packages/client/src/__tests__/tutorialManager.test.ts",
+      "bytes": 7494,
+      "sha256": "26e1e05b59e6bbe2b2478113346bd61d56e3db25641c9224ae9651027134a477"
+    },
+    {
+      "file": "packages/client/src/__tests__/vectorScene.test.ts",
+      "bytes": 11782,
+      "sha256": "7454cfa95f8257b9c0cc2875663583da8f23a634106775b3766ea8bd8e0a58cf"
+    },
+    {
+      "file": "packages/client/src/ai/BotProfiles.ts",
+      "bytes": 140,
+      "sha256": "009d023a942bee65b925636a59ed829261095640903c60d0649d744c376b213b"
+    },
+    {
+      "file": "packages/client/src/ai/ClassicalBotAI.ts",
+      "bytes": 105,
+      "sha256": "09477b28a144b672d6e7eff6f3ff0e719abea1a8c2379b90b865898a8b08b21c"
+    },
+    {
+      "file": "packages/client/src/audio/AudioEngine.ts",
+      "bytes": 3032,
+      "sha256": "db3158a9c43e9228a85df2407ab1fc18c82eaf82ce6c87b7fc886c189432fcd1"
+    },
+    {
+      "file": "packages/client/src/audio/ProceduralMusic.ts",
+      "bytes": 5255,
+      "sha256": "498acaaf4b9411a4311c1a06eaee06f6d5ac783a934f22e6774cc3e8be16cedd"
+    },
+    {
+      "file": "packages/client/src/audio/SoundEffects.ts",
+      "bytes": 6689,
+      "sha256": "38e0410027a66678bd8e17ccb16d5be18f82465035d1d535cf3115e9e297c7bd"
+    },
+    {
+      "file": "packages/client/src/audio/VoicePool.ts",
+      "bytes": 1920,
+      "sha256": "57e74bc835959b987d515949094aa100f74ca45d3234df88f2def0c9bac5e63b"
+    },
+    {
+      "file": "packages/client/src/benchmark.ts",
+      "bytes": 4182,
+      "sha256": "05fe9c79afd7ff18624ee63fbf9757800883e538b324fd0fd684d246ab662d3c"
+    },
+    {
+      "file": "packages/client/src/game/SoloMatchSession.ts",
+      "bytes": 5538,
+      "sha256": "44956230d0ccba546f6de3c888d4c0c25be01b2e1df5b90f713b6f327b2834fa"
+    },
+    {
+      "file": "packages/client/src/main.ts",
+      "bytes": 19027,
+      "sha256": "9b9ad643ac0f26491d4a4e2d2473af5000c529d8d9134157067169b5a755800f"
+    },
+    {
+      "file": "packages/client/src/net/NetworkClient.ts",
+      "bytes": 9461,
+      "sha256": "79e248631befc6bc28cfac4d3405c454614a8301855d69a1380216eb10f77a4f"
+    },
+    {
+      "file": "packages/client/src/render/ParticleSystem.ts",
+      "bytes": 5774,
+      "sha256": "22e1d19aeabd7fde44ec6bb8969f820bd536dbbd1d1c3a299429e5606ad41f1d"
+    },
+    {
+      "file": "packages/client/src/render/ProceduralCard.ts",
+      "bytes": 6130,
+      "sha256": "e16978b035ad54bda2975822e07a90547fcb4c8b31ebad72a9448dd3ee5bd78a"
+    },
+    {
+      "file": "packages/client/src/render/ReactiveGrid.ts",
+      "bytes": 3386,
+      "sha256": "67580fe625c6c81baed1ec07d53eda3918b2fb5d711e4797eb9a852151ce2bae"
+    },
+    {
+      "file": "packages/client/src/render/VectorScene.ts",
+      "bytes": 16374,
+      "sha256": "a6cdb96e66b320a10a7d742f9a6203315e76619a5eda0c3b73607eb153fba2e8"
+    },
+    {
+      "file": "packages/client/src/render/shaders.d.ts",
+      "bytes": 81,
+      "sha256": "1ba362a47115469a11c97b1003d7c16a78aa8f2a2f9a8d487c5c899a07dd2eb6"
+    },
+    {
+      "file": "packages/client/src/render/shaders/gridDisplacement.glsl",
+      "bytes": 733,
+      "sha256": "a270b2fb85247ce9d02925a9422af6079269058fb915d909b7ef41d382c05384"
+    },
+    {
+      "file": "packages/client/src/render/shaders/postCrtBloom.glsl",
+      "bytes": 2147,
+      "sha256": "72abda74219e95cf8ac32b04c45fc6109a1a8caa23eb38a5c29c556c1bf6ad78"
+    },
+    {
+      "file": "packages/client/src/tutorial/TutorialManager.ts",
+      "bytes": 6696,
+      "sha256": "f60bd748c49728489b4df26b6f9a5c270b0068d1337d8a342ef268835fc74ff7"
+    },
+    {
+      "file": "packages/client/src/tutorial/TutorialSession.ts",
+      "bytes": 8921,
+      "sha256": "27f3b85cb53494e92bf65a8c21836218dc5b4cee4f6a92963df1c9078a79d17c"
+    },
+    {
+      "file": "packages/client/src/ui/GameBoardOverlay.ts",
+      "bytes": 30028,
+      "sha256": "47bfb14fc2591d465494f6f0f9094d6fdb0101d89dcfa1c20a0befa6e79eb532"
+    },
+    {
+      "file": "packages/client/src/ui/HandSelection.ts",
+      "bytes": 3642,
+      "sha256": "e7ab51b2e744dd1cfce5cbe2e1a841724fc59e81bf772e341cbc3009593669f7"
+    },
+    {
+      "file": "packages/client/src/ui/MainMenuOverlay.ts",
+      "bytes": 7162,
+      "sha256": "bf6de8cdc237fcd334c4c56539262ca506cf88f0d88f61c9dd4533e6f672073a"
+    },
+    {
+      "file": "packages/client/src/ui/RulesModal.ts",
+      "bytes": 7755,
+      "sha256": "51f9c9acb6aef4960aa5a477af4e237cb56cf4bf5276ddda04aa93d79ab62ae1"
+    },
+    {
+      "file": "packages/client/src/ui/ui.css",
+      "bytes": 28638,
+      "sha256": "3c57e7bde800c82952fefd24380f36cbd7e5ec77803ccfce8a2896e28f9aeaf9"
+    },
+    {
+      "file": "packages/client/src/vite-env.d.ts",
+      "bytes": 38,
+      "sha256": "65996936fbb042915f7b74a200fcdde7e410f32a669b1ab9597cfaa4b0faddb5"
+    },
+    {
+      "file": "packages/client/tsconfig.json",
+      "bytes": 543,
+      "sha256": "fd6533575700b7204fd5a7e7c8866b6e0f3f86ce44413b90ad0597b27d5d881e"
+    },
+    {
+      "file": "packages/client/vite.config.ts",
+      "bytes": 1394,
+      "sha256": "4e5d5de9423532e34ef484908312467b87b210f5ac8bb5956c8bb0a3823c04ba"
+    },
+    {
+      "file": "packages/server/package.json",
+      "bytes": 597,
+      "sha256": "a929d873f9df3d8017b1f684cdd3ef9985488324432c218934859efd33db450f"
+    },
+    {
+      "file": "packages/server/src/Deck.ts",
+      "bytes": 2251,
+      "sha256": "c30b4fc9afb21a84a07269a194f57c2335511f51abb2de798ba616c480732e75"
+    },
+    {
+      "file": "packages/server/src/Room.ts",
+      "bytes": 12301,
+      "sha256": "0f54125a5026f91d6209cd90e01e066b84e6f9562e7d2f29752922faa6ca20f8"
+    },
+    {
+      "file": "packages/server/src/RoomManager.ts",
+      "bytes": 1619,
+      "sha256": "cfeeedc0e997b7bb41ee2dd495182acb931c5b8e415e23ee36d9093346f656bd"
+    },
+    {
+      "file": "packages/server/src/__tests__/balanceSimulator.test.ts",
+      "bytes": 9151,
+      "sha256": "4963b984adc9d7f40e4fa03e0d6b6b0e88e8d48253186e91c7f5ff197292e515"
+    },
+    {
+      "file": "packages/server/src/__tests__/benchmarkCli.test.ts",
+      "bytes": 721,
+      "sha256": "bd9003a74165888ccd9e264ebd3ab5874d4315b32bdd76c761e255c821a7e3bc"
+    },
+    {
+      "file": "packages/server/src/__tests__/botAI.test.ts",
+      "bytes": 18075,
+      "sha256": "0b1df2e02a6f947ecdb3491bc0b5587dc27c937851d86af48a6f56cb2c84f01d"
+    },
+    {
+      "file": "packages/server/src/__tests__/buildAudit.test.ts",
+      "bytes": 2826,
+      "sha256": "69f6f006bef00708dde948c54e16e3ac4a94c22bd5454feea435f074fc36b299"
+    },
+    {
+      "file": "packages/server/src/__tests__/combat.test.ts",
+      "bytes": 18537,
+      "sha256": "31d46d9d7f7a1999d37f2e601590981c8c326d3076f39dd1c977524f5dccdc0a"
+    },
+    {
+      "file": "packages/server/src/__tests__/deckFlux.test.ts",
+      "bytes": 9238,
+      "sha256": "357a689369eadc69748dbe747c57ff1fe94e36e3766628375f47fbd5bcb97796"
+    },
+    {
+      "file": "packages/server/src/__tests__/evaluator.test.ts",
+      "bytes": 8523,
+      "sha256": "46cd96dae043d0ff0ce570359925d861a8d6d5c26c585531ce767cde349e94e5"
+    },
+    {
+      "file": "packages/server/src/__tests__/matchEngine.test.ts",
+      "bytes": 13573,
+      "sha256": "ff5b376f64c77116048835c23847b67cb8a3cff9db60767f8f84a98543792903"
+    },
+    {
+      "file": "packages/server/src/__tests__/messageValidation.test.ts",
+      "bytes": 2497,
+      "sha256": "6e318095601984ad0d912453772d4c09fd85fa5f02544ce062c8681ba12d38ae"
+    },
+    {
+      "file": "packages/server/src/__tests__/roomLifecycle.test.ts",
+      "bytes": 20681,
+      "sha256": "ddc6df2354cfe48c169780fd7a830ffd2e7bc32d11739f3d94b4dd4241488eea"
+    },
+    {
+      "file": "packages/server/src/__tests__/serverTransport.test.ts",
+      "bytes": 16992,
+      "sha256": "741d8332b9c055273a7c92d254690fe505c8f463a31f63aee3fb3de06313e271"
+    },
+    {
+      "file": "packages/server/src/index.ts",
+      "bytes": 7911,
+      "sha256": "caa1720269271d9f78e879a1957b8840e1a30ec72948af2442039670b593864e"
+    },
+    {
+      "file": "packages/server/src/messageValidation.ts",
+      "bytes": 1801,
+      "sha256": "6db79ac1c309d6e3830e13a6818230e6717ba63a690573e1853658143a87e258"
+    },
+    {
+      "file": "packages/server/tsconfig.json",
+      "bytes": 416,
+      "sha256": "21c38a9f32f076bda23159c8eb12fb5c2c7b535a85239efd3382dcbefaab5919"
+    },
+    {
+      "file": "packages/server/vitest.config.ts",
+      "bytes": 160,
+      "sha256": "dc683888e7f8efdbdb04bd0003a0beb18e73556ac529f4be32653b6794f58fec"
+    },
+    {
+      "file": "packages/shared/package.json",
+      "bytes": 421,
+      "sha256": "8d5a5b0c31e5d3effaef95858d3f5ac9179a7b806864fcfb09b7b0c2eef26e6a"
+    },
+    {
+      "file": "packages/shared/src/MatchEngine.ts",
+      "bytes": 15632,
+      "sha256": "73811bd6b052621a3a5c9208d7e6439f63653d30dd45d2ccb2502b29b09006f2"
+    },
+    {
+      "file": "packages/shared/src/ai/BotProfiles.ts",
+      "bytes": 1609,
+      "sha256": "c56de38c3950e2ded15a2080d55db500751f0baef5fc3049fcd78515ece69026"
+    },
+    {
+      "file": "packages/shared/src/ai/ClassicalBotAI.ts",
+      "bytes": 6991,
+      "sha256": "d0b29f48f04e001eb5bd99e521358d8424be3276baf127fd97c5b1ec2b8fa9fe"
+    },
+    {
+      "file": "packages/shared/src/combatCalculator.ts",
+      "bytes": 6750,
+      "sha256": "b2e5a5bff910edc6d7d1ec619d9c5d0f41f83579b22f11a760314542244868f4"
+    },
+    {
+      "file": "packages/shared/src/constants.ts",
+      "bytes": 1904,
+      "sha256": "3a89064d522f2b8f752826698bc9523dd6dc01c589167d59d9b36451bcc8eb43"
+    },
+    {
+      "file": "packages/shared/src/fluxEngine.ts",
+      "bytes": 2304,
+      "sha256": "405fec371d74b6f251810e8052f50c2a6b5fe5af7fd1f746c22ef4ee7493565f"
+    },
+    {
+      "file": "packages/shared/src/index.ts",
+      "bytes": 487,
+      "sha256": "8e81cc7fc6f693d204c26cf04fb96085422e6cbf2fcd993ff47ce586693dfafc"
+    },
+    {
+      "file": "packages/shared/src/pokerEvaluator.ts",
+      "bytes": 4353,
+      "sha256": "c77a471ff645e82b8d31968e4964d19b1f8c415b25ff8716302e3930aae933f0"
+    },
+    {
+      "file": "packages/shared/src/types.ts",
+      "bytes": 5241,
+      "sha256": "df5fa6eeabdfef67883ebbe1e78885ff2364c58e86f7791a7f63b28c9350a6c8"
+    },
+    {
+      "file": "packages/shared/tsconfig.json",
+      "bytes": 365,
+      "sha256": "3f8cf16ab04279e659b7ec71d46900b118d26ad8a67bb5344e009f69bac62398"
+    },
+    {
+      "file": "playwright.config.ts",
+      "bytes": 489,
+      "sha256": "3218c4cf0177c861603dec9a5b88fe5c50856136e6ac03eb79757aabe5164272"
+    },
+    {
+      "file": "projectbrief.txt",
+      "bytes": 341,
+      "sha256": "2b51aec4e3e2f286c455e2841b8f8f979a5388741b7fd9a344758a2376725d44"
+    },
+    {
+      "file": "scripts/measureRenderer.d.mts",
+      "bytes": 399,
+      "sha256": "3c86fef87443b6b1ae5f877bc97e99405da64aefd2867088caa3183b9b775d08"
+    },
+    {
+      "file": "scripts/measureRenderer.mjs",
+      "bytes": 2820,
+      "sha256": "6ae4b0b410c6c0579392876d967a2561765537d0ef938a81f10aa5e3d8a9d229"
+    },
+    {
+      "file": "scripts/rendererBenchmark.mjs",
+      "bytes": 1799,
+      "sha256": "847b807956ca825a6a1cfd53fc871a835beba7b20cf54f044ae632dd5f44fc45"
+    },
+    {
+      "file": "scripts/verifyBuild.d.mts",
+      "bytes": 207,
+      "sha256": "2f5ca4cae4b74dbc319cb39a97a47ef81c19d119324f1c2898dabb3a159143e7"
+    },
+    {
+      "file": "scripts/verifyBuild.mjs",
+      "bytes": 2788,
+      "sha256": "2123107433a438a7f3858792a6507c6a67601e4b5c9a2b21f0040a6745fe212b"
+    },
+    {
+      "file": "scripts/verifyMathCoverage.mjs",
+      "bytes": 1080,
+      "sha256": "74983cd95d3482d93c7b37415a22219c3a92cefdc5169b794a1351d681c29da7"
+    },
+    {
+      "file": "tsconfig.json",
+      "bytes": 595,
+      "sha256": "a7a8d3cd8fa1907b2d2e2d995940179729d5e3a63878dda6c83062968f0ff684"
+    },
+    {
+      "file": "vitest.math.config.mts",
+      "bytes": 802,
+      "sha256": "8c61f87a185b064736a1db4ca3a9fea5b6d2c35417db477f0f70acad79220f3c"
+    }
+  ]
+}

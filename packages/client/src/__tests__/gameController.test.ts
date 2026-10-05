@@ -10,15 +10,15 @@ const probe = vi.hoisted(() => ({
   board: { show: vi.fn(), setConnected: vi.fn(), setRoom: vi.fn(), showBanner: vi.fn(), showResolution: vi.fn() },
   victory: vi.fn(), defeat: vi.fn(), laser: vi.fn(), impact: vi.fn(),
 }));
-vi.mock('../render/VectorScene', () => ({ VectorScene: vi.fn(() => probe.scene) }));
-vi.mock('../ui/MainMenuOverlay', () => ({ MainMenuOverlay: vi.fn(() => ({ hide: vi.fn() })) }));
-vi.mock('../ui/GameBoardOverlay', () => ({ GameBoardOverlay: vi.fn(() => probe.board) }));
+vi.mock('../render/VectorScene', () => ({ VectorScene: vi.fn(function () { return probe.scene; }) }));
+vi.mock('../ui/MainMenuOverlay', () => ({ MainMenuOverlay: vi.fn(function () { return { hide: vi.fn() }; }) }));
+vi.mock('../ui/GameBoardOverlay', () => ({ GameBoardOverlay: vi.fn(function () { return probe.board; }) }));
 vi.mock('../ui/RulesModal', () => ({ RulesModal: vi.fn() }));
 vi.mock('../tutorial/TutorialManager', () => ({ TutorialManager: vi.fn() }));
-vi.mock('../net/NetworkClient', () => ({ NetworkClient: vi.fn(() => ({
+vi.mock('../net/NetworkClient', () => ({ NetworkClient: vi.fn(function () { return {
   hasSession: true, on: vi.fn(), connect: vi.fn(() => Promise.resolve()),
   onMessage: (handler: (message: ServerMessage) => void) => { probe.receive = handler; },
-})) }));
+}; }) }));
 vi.mock('../audio/AudioEngine', () => ({ masterAudio: {
   music: { setPhase: vi.fn() },
   sfx: { playVictory: probe.victory, playDefeat: probe.defeat, playClashLaser: probe.laser, playDamageImpact: probe.impact },

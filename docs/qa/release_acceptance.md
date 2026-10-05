@@ -14,14 +14,16 @@ evidence before certification.
 | Deployment configuration | Prepared in `bf484a6`; actual deployed revision not independently recorded |
 | Desktop performance | User accepted Windows Chrome multiplayer play; GPU type and numeric FPS not recorded |
 | Tablet performance | User accepted physical iPad Safari multiplayer play; numeric FPS not recorded |
-| Full master-design certification | Pending external acceptance evidence |
+| Current readiness review | Final local software/public transport checks pass; deploy the license-notice hygiene release before submission |
 
 ## Open gates
 
 - [x] Public game URL supplied; user reports successful end-to-end play.
-- [ ] Public HTTPS game URL identifies the deployed build and passes external
-  two-player WebSocket/gameplay/recovery checks with a recorded checklist.
-  The broad end-to-end confirmation does not itemize recovery behavior.
+- [x] Public HTTPS assets recorded; two independent QA clients create/join,
+  shape/commit and receive an identical authoritative exchange outcome.
+- [x] Authenticated public WebSocket recovery restores the same seat and match.
+- [ ] Deploy the hygiene release and confirm the public third-party license
+  notice URL responds; it returned 404 during the final review.
 - [x] Desktop observed performance accepted by the user in Windows Chrome.
 - [x] Tablet observed performance accepted by the user on a physical iPad using Safari.
 - [x] User explicitly replaced mandatory numeric FPS evidence with subjective
@@ -30,7 +32,8 @@ evidence before certification.
 
 The master §10.2 URL deliverable is now available on user-reported evidence.
 Spec-10B performance items are closed under the user-approved revised contract.
-The detailed release-evidence gate remains open.
+The public gameplay/recovery gate is now verified. License-notice deployment
+is the remaining final-release action.
 
 Use the [deployment guide](../deployment.md) for release operation. The
 [physical capture protocol](../performance_acceptance.md) and
@@ -53,3 +56,12 @@ combinations; compatibility with every modern device is not established.
 The earlier certification reports and JSON records are historical. Their missing
 FPS-evidence statements describe the contract before this decision; they are not
 rewritten as measured passes.
+
+## Final public check — 2026-10-05
+
+The [contest readiness review](contest_readiness_2026-10-05.md) records the rules,
+user-confirmed eligibility, fresh software gates, history hygiene scan and
+independent production transport check. `/cyberante/health` returned HTTP 200
+with zero rooms before and after the temporary QA room. Production asset URLs
+identify the public artifact build; the exact remote Git revision is not exposed
+by the health endpoint. New local assets/license notices require deployment.

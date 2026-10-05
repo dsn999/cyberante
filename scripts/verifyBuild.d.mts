@@ -1,1 +1,1 @@
-export function auditProductionBuild(directory: string): Promise<{ gzipBytes: number; limitBytes: number; files: string[]; chunks: { file: string; bytes: number; gzipBytes: number }[] }>;
+export function auditProductionBuild(directory: string, basePath?: string): Promise<{ gzipBytes: number; limitBytes: number; files: string[]; chunks: { file: string; bytes: number; gzipBytes: number }[] }>;

@@ -65,6 +65,8 @@ describe('Spec-02 stance, burn and knockout boundaries', () => {
     const defender = combatant('right', { stance: 'PARRY' });
     expect(resolveCombatRound(strong, defender).p1ReflectedDamage).toBe(0);
     expect(resolveCombatRound({ ...strong, stance: 'OVERCHARGE' }, defender).p1ReflectedDamage).toBe(10);
+    expect(resolveCombatRound(defender, strong).p2ReflectedDamage).toBe(0);
+    expect(resolveCombatRound(defender, { ...strong, stance: 'OVERCHARGE' }).p2ReflectedDamage).toBe(10);
   });
 
   it('Parry reflects high-card damage even when a barrier fully absorbs the attack', () => {

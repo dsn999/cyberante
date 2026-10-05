@@ -10,6 +10,13 @@
 > **Platform:** Universal Web (Zero-Install Desktop / Mobile / Tablet)  
 > **Architecture Blueprint:** See [`docs/cyberante_design_document.md`](./docs/cyberante_design_document.md)
 
+## Play
+
+**[Play CYBERANTE](https://holactie.com/cyberante/)** — solo, multiplayer and tutorial.
+For multiplayer, choose **Host Room** and share the invitation link with a friend.
+The user verified a real match between Windows Chrome and iPadOS Safari.
+Other browser/device combinations have not all been tested.
+
 ---
 
 ## Overview
@@ -34,7 +41,7 @@ cyberante/
 │   └── agent_specs/                   # 10 base specs + Spec-07.1 visual revision
 ├── packages/
 │   ├── shared/                        # Zero-dependency TypeScript models & math
-│   ├── server/                        # Authoritative Node/Bun WebSocket Server
+│   ├── server/                        # Authoritative Node.js WebSocket Server
 │   └── client/                        # Vite + Three.js Procedural Vector Web App
 └── package.json                       # Root workspaces configuration
 ```
@@ -44,8 +51,8 @@ cyberante/
 ## Quickstart
 
 ```bash
-# Install dependencies
-npm install
+# Use Node 24 (also recorded in .nvmrc), then install dependencies
+npm ci
 
 # Start local WebSocket server (port 8080)
 npm run dev:server
@@ -74,11 +81,21 @@ each browser tab retains its seat token for automatic recovery within 30 seconds
 
 See [production operation](docs/deployment.md) for build/start settings, HTTPS
 proxy requirements, health checks, shutdown behavior and verification commands.
-Browser tests use software rendering; physical integrated/mobile GPU FPS
-acceptance remains open.
+Browser tests use software rendering. The user accepted observed performance
+in Windows Chrome and iPadOS Safari; 60 FPS remains an engineering target,
+not a measured claim. See [release acceptance](docs/qa/release_acceptance.md).
+
+Prepared entry materials are in [docs/submission](docs/submission/README.md).
+The [final readiness review](docs/qa/contest_readiness_2026-10-05.md) records
+contest requirements, verification and the remaining deployment/submission steps.
 
 ---
 
 ## License
 
 MIT © Blaze Giroux
+
+Runtime dependency licenses are preserved in
+[THIRD_PARTY_NOTICES.txt](THIRD_PARTY_NOTICES.txt) and the production build.
+The supplied organizer rules PDF is a separate document and is not covered by
+the project's MIT license.

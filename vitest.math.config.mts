@@ -7,11 +7,9 @@ export default defineConfig({
   test: {
     include: ['packages/server/src/__tests__/evaluator.test.ts', 'packages/server/src/__tests__/combat.test.ts'],
     maxWorkers: 1,
-    minWorkers: 1,
     coverage: {
       enabled: true,
       provider: 'v8',
-      all: true,
       include: ['packages/shared/src/pokerEvaluator.ts', 'packages/shared/src/combatCalculator.ts'],
       reporter: ['text', 'json-summary', 'json'],
       reportsDirectory: 'coverage/math',

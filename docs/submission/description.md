@@ -14,4 +14,4 @@ assets and runs in a browser.
 Built with OpenAI Codex through a TypeScript specification-driven workflow,
 with an authoritative multiplayer server and automated gameplay verification.
 
-This is prepared submission copy. It has not been published or submitted.
+Play: https://holactie.com/cyberante/

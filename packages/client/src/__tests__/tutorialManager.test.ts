@@ -1,4 +1,4 @@
-import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, afterEach, describe, expect, it, vi, type Mock } from 'vitest';
 import { TutorialManager } from '../tutorial/TutorialManager';
 const sound = vi.hoisted(() => ({ playVictory: vi.fn() }));
 vi.mock('../audio/AudioEngine', () => ({ masterAudio: { sfx: sound } }));
@@ -25,7 +25,9 @@ class Node {
 }
 let parent: Node; let body: Node; let doc: Node; let target: Node;
 let modalOpen: boolean; let tutorial: TutorialManager;
-let complete: ReturnType<typeof vi.fn>; let publish: ReturnType<typeof vi.fn>; let clash: ReturnType<typeof vi.fn>;
+let complete: Mock<() => void>;
+let publish: Mock<NonNullable<TutorialManager['onStateChange']>>;
+let clash: Mock<NonNullable<TutorialManager['onClash']>>;
 let disconnect: ReturnType<typeof vi.fn>;
 const overlay = (): Node => parent.children[0];
 const button = (id: string): Node => overlay().querySelector(`#${id}`);
@@ -34,7 +36,7 @@ beforeEach(() => {
   parent = new Node(); body = new Node(); doc = new Node(); target = new Node(); modalOpen = false;
   vi.stubGlobal('document', Object.assign(doc, { body, createElement: () => new Node(), querySelector: () => modalOpen ? new Node() : null, querySelectorAll: () => [target] }));
   disconnect = vi.fn(); vi.stubGlobal('ResizeObserver', class { observe = vi.fn(); disconnect = disconnect; });
-  complete = vi.fn(); publish = vi.fn(); clash = vi.fn(); sound.playVictory.mockClear();
+  complete = vi.fn<() => void>(); publish = vi.fn<NonNullable<TutorialManager['onStateChange']>>(); clash = vi.fn<NonNullable<TutorialManager['onClash']>>(); sound.playVictory.mockClear();
   tutorial = new TutorialManager(parent as unknown as HTMLElement, complete); tutorial.onStateChange = publish; tutorial.onClash = clash;
 });
 afterEach(() => { tutorial.hide(); vi.unstubAllGlobals(); });

@@ -184,7 +184,7 @@ To de-risk the project early and maintain a working vertical slice at all times,
 All development commands are executed from the repository root:
 
 ```bash
-# Install dependencies (Node >= 20.0.0 required)
+# Install dependencies (Node 24 supported; see .nvmrc and package.json)
 npm install
 
 # Build all packages in dependency order (shared -> server -> client)

@@ -1,10 +1,17 @@
 # Prepared submission artifacts
 
+- **Title:** CYBERANTE: Procedural Vector Poker-Combat Matrix
 - [Description](description.md): prepared project copy with OpenAI Codex
   attribution, tactical mechanics, procedural graphics/audio and game modes.
 - [Cover](cover.png): 1440 × 900 PNG captured from the real production WebGL
   canvas during the tutorial's resolved Overcharge/Parry clash. It shows the
   revealed cards, reactive grid, chromatic effect and pooled particle bursts.
+- **Project URL:** https://holactie.com/cyberante/
+
+Submit these four fields through Handshake's **Create a Multiplayer Game**
+mission. The supplied rules PDF gives **October 30, 2026, 11:59 PM Pacific** as
+the deadline. A public GitHub repository is useful supporting material; the PDF
+does not list repository publication as an entry requirement.
 
 The cover was generated with Chromium using the repository's single-worker
 SwiftShader configuration. The capture test temporarily hides the DOM overlay
@@ -28,6 +35,10 @@ These files are prepared locally; no contest submission has been performed.
 The user confirmed end-to-end operation of the public deployment at
 [holactie.com/cyberante/](https://holactie.com/cyberante/) on 2026-10-05.
 See [release acceptance](../qa/release_acceptance.md) for outstanding evidence.
+
+The [final contest/readiness review](../qa/contest_readiness_2026-10-05.md)
+covers the supplied PDF and public-repository hygiene. Deploy the final license
+notices before submitting; the previously live build did not yet serve them.
 
 ## Current cover provenance
 

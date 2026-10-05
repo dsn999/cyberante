@@ -238,7 +238,8 @@ describe('Spec-05 evaluation timing', () => {
     const random = new SeededPRNG(2026);
     const hands = Array.from({ length: 10 }, (_, h) => Array.from({ length: 5 }, (_, i) => ({ id: `${h}_${i}`, rank: random.nextInt(2, 15) as Card['rank'], suit: (['SPADES', 'HEARTS', 'DIAMONDS', 'CLUBS'] as const)[random.nextInt(0, 4)] })));
     const bot = new ClassicalBotAI(profile, new SeededPRNG(42));
-    for (let i = 0; i < 200; i++) bot.evaluateHand(hands[i % 10], 1 + i % 20, 20, 3, true);
+    // Warm the complete profile path before collecting the unchanged 1000 samples.
+    for (let i = 0; i < 5000; i++) bot.evaluateHand(hands[i % 10], 1 + i % 20, 20, 3, true);
     const samples: number[] = [];
     for (let i = 0; i < 1000; i++) {
       const start = performance.now(); const d = bot.evaluateHand(hands[i % 10], 1 + i % 20, 20, 3, true);

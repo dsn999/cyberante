@@ -4,7 +4,7 @@
   "description": "CYBERANTE - Procedural Vector Poker-Combat Matrix (Handshake x OpenAI Challenge)",
   "private": true,
   "engines": {
-    "node": ">=20.0.0"
+    "node": "^20.19.0 || ^22.12.0 || >=24.0.0"
   },
   "workspaces": [
     "packages/shared",
@@ -37,6 +37,8 @@
   "author": "Blaze Giroux",
   "license": "MIT",
   "devDependencies": {
-    "@playwright/test": "^1.63.0"
+    "@playwright/test": "^1.63.0",
+    "@vitest/coverage-v8": "^4.1.11",
+    "vitest": "^4.1.11"
   }
 }
