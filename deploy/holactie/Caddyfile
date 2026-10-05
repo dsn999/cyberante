@@ -1,0 +1,11 @@
+holactie.com {
+    redir /cyberante /cyberante/ 308
+
+    handle_path /cyberante/* {
+        reverse_proxy game:8080
+    }
+
+    handle {
+        respond "Holactie" 200
+    }
+}

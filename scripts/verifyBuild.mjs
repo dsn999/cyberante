@@ -6,7 +6,8 @@ import { fileURLToPath } from 'node:url';
 const LIMIT = 250000;
 const forbidden = new Set(['.png', '.jpg', '.jpeg', '.webp', '.gif', '.avif', '.svg', '.gltf', '.glb', '.mp3', '.wav', '.ogg', '.flac', '.aac', '.ts', '.tsx', '.map']);
 /** Audits all emitted chunks, including the separate hardware acceptance page. */
-export async function auditProductionBuild(directory) {
+export async function auditProductionBuild(directory, basePath = process.env.CYBERANTE_BASE_PATH ?? '/') {
+  if (!/^\/(?:[A-Za-z0-9_-]+\/)*$/.test(basePath)) throw new Error('Invalid production base path');
   const root = resolve(directory);
   const files = [];
   async function walk(dir) {
@@ -23,8 +24,9 @@ export async function auditProductionBuild(directory) {
   for (const file of files.filter(file => file.endsWith('.html'))) {
     const html = await readFile(file, 'utf8');
     const entries = [...html.matchAll(/<script\b[^>]*\bsrc=["']([^"']+)["']/gi)].map(match => match[1]);
-    if (!entries.length || entries.some(entry => !/^\/assets\/[\w.-]+\.js$/.test(entry))) throw new Error('Production HTML must load bundled JavaScript');
-    for (const entry of entries) if (!files.includes(resolve(root, `.${entry}`))) throw new Error('Missing production entry');
+    const assetPrefix = `${basePath}assets/`;
+    if (!entries.length || entries.some(entry => !entry.startsWith(assetPrefix) || !/^[\w.-]+\.js$/.test(entry.slice(assetPrefix.length)))) throw new Error('Production HTML must load bundled JavaScript');
+    for (const entry of entries) if (!files.includes(resolve(root, entry.slice(basePath.length)))) throw new Error('Missing production entry');
   }
   const chunks = [];
   for (const file of files.filter(file => file.endsWith('.js'))) {

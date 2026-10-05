@@ -1,5 +1,9 @@
 # Production operation
 
+For the user's GoDaddy domain and Droplet, see the concrete
+[holactie.com/cyberante deployment guide](holactie_deployment.md) and
+`deploy/holactie/compose.yaml`.
+
 CYBERANTE requires Node.js 20 or newer. The compiled Node server serves the game,
 the diagnostic page and WebSockets from one port. It needs no database.
 

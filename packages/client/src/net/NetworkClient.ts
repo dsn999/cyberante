@@ -26,7 +26,7 @@ export class NetworkClient {
 
   constructor(serverUrl?: string) {
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    this.serverUrl = serverUrl ?? `${protocol}//${window.location.host}/ws`;
+    this.serverUrl = serverUrl ?? `${protocol}//${window.location.host}${import.meta.env.BASE_URL}ws`;
     this.readSession();
   }
 

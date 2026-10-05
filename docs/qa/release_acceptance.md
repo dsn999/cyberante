@@ -1,13 +1,16 @@
 # Pending release acceptance
 
-Updated: 2026-10-05. The user requested a placeholder because hosting has not
-been secured. Runtime source under review is `6e25db8` (Spec-07.1); subsequent
-certification notes and the refreshed cover change documentation/artifacts only.
+Updated: 2026-10-05. The user initially requested a placeholder and has now
+created a DigitalOcean Droplet at `143.198.161.195`. Deployment and DNS acceptance
+remain unverified. The earlier QA audit covers runtime `6e25db8` (Spec-07.1);
+subsequent GitHub-link and deployment-path changes require their own release
+evidence before certification.
 
 | Field | Current value |
 | --- | --- |
 | Public production game URL | `PUBLIC_GAME_URL_PENDING` |
-| Hosting provider/account | `HOSTING_PROVIDER_PENDING` |
+| Hosting provider | DigitalOcean Droplet, `143.198.161.195` (user supplied) |
+| Planned public address | `https://holactie.com/cyberante/` (not yet verified) |
 | Integrated-GPU computer trace bundle | `INTEGRATED_GPU_TRACE_PENDING` |
 | Physical phone/tablet trace bundle | `MOBILE_GPU_TRACE_PENDING` |
 | Full master-design certification | Pending external acceptance evidence |
@@ -28,3 +31,7 @@ Use the [deployment guide](../deployment.md) and
 reviewable evidence. Device metadata and trace review belong in completed copies
 of the [capture record](../performance_capture_record.md). No further native WSL
 GPU experiment is part of this acceptance route.
+
+The [Droplet setup guide](../holactie_deployment.md) and committed Compose/Caddy
+configuration prepare this target. No remote installation or public acceptance
+is claimed by preparing these files.

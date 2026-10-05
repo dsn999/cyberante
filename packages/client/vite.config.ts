@@ -1,7 +1,11 @@
 import { defineConfig } from 'vite';
 import path from 'path';
 
+const base = process.env.CYBERANTE_BASE_PATH ?? '/';
+if (!/^\/(?:[A-Za-z0-9_-]+\/)*$/.test(base)) throw new Error('CYBERANTE_BASE_PATH must be / or a slash-delimited path such as /cyberante/');
+
 export default defineConfig({
+  base,
   root: '.',
   server: {
     port: 5173,
