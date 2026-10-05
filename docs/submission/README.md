@@ -24,8 +24,10 @@ The capture is attached to the test and saved as `cover.png` in that case's
 `test-results` directory. Inspect it before copying it here. Tests do not
 overwrite the committed submission artifact.
 
-These files are prepared locally. No contest submission or public deployment
-has been performed. A public game URL is still required.
+These files are prepared locally; no contest submission has been performed.
+The user confirmed end-to-end operation of the public deployment at
+[holactie.com/cyberante/](https://holactie.com/cyberante/) on 2026-10-05.
+See [release acceptance](../qa/release_acceptance.md) for outstanding evidence.
 
 ## Current cover provenance
 
