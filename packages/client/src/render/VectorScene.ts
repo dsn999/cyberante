@@ -230,6 +230,10 @@ export class VectorScene {
     if (!this.renderer || !this.camera) return;
     this.width = Math.max(1, width); this.height = Math.max(1, height);
     this.camera.aspect = this.width / this.height; this.camera.updateProjectionMatrix();
+    // Cover the frustum at the grid's depth, with room for its displacement.
+    const gridDepth = this.camera.position.z - (this.grid?.mesh.position.z ?? -5);
+    const gridHeight = 2 * Math.tan(THREE.MathUtils.degToRad(this.camera.fov / 2)) * gridDepth * 1.25;
+    this.grid?.setViewportSpan(gridHeight * this.camera.aspect, gridHeight);
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
     this.renderer.setSize(this.width, this.height);
     this.renderer.getDrawingBufferSize(this.size);

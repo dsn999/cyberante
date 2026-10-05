@@ -1,0 +1,229 @@
+{
+  "schemaVersion": 1,
+  "createdUtc": "2026-10-05T14:30:51.937411+00:00",
+  "spec": "Spec-07.1",
+  "baselineCommit": "3016b2d604c739db6d3f5dc4dbebfc28802f6f28",
+  "revision": "Baseline plus changes committed with this evidence file.",
+  "browser": {
+    "headless": true,
+    "renderer": "SwiftShader",
+    "workers": 1,
+    "passedCases": 31,
+    "excludedCase": "renderer frame timing"
+  },
+  "physicalFpsCertified": false,
+  "publicDeploymentCertified": false,
+  "verification": [
+    {
+      "command": "npm run build",
+      "exitCode": 0
+    },
+    {
+      "command": "npm test",
+      "exitCode": 0,
+      "tests": 358
+    },
+    {
+      "command": "npm run sim",
+      "exitCode": 0,
+      "matches": 300
+    },
+    {
+      "command": "npm run verify:build",
+      "exitCode": 0,
+      "gzipJsBytes": 153026
+    },
+    {
+      "command": "PLAYWRIGHT_BROWSERS_PATH=/tmp/cyberante-browsers npx playwright test e2e/acceptance.spec.ts e2e/audio.spec.ts e2e/designQa.spec.ts",
+      "exitCode": 0,
+      "tests": 7
+    },
+    {
+      "command": "PLAYWRIGHT_BROWSERS_PATH=/tmp/cyberante-browsers npx playwright test e2e/integration.spec.ts",
+      "exitCode": 0,
+      "tests": 6
+    },
+    {
+      "command": "PLAYWRIGHT_BROWSERS_PATH=/tmp/cyberante-browsers npx playwright test e2e/tutorial.spec.ts e2e/ui.spec.ts e2e/renderer.spec.ts --grep-invert 'renderer frame timing'",
+      "exitCode": 0,
+      "tests": 18
+    }
+  ],
+  "fingerprints": [
+    {
+      "file": "README.md",
+      "bytes": 3612,
+      "sha256": "1520f09a16765d76028c9dd4afb5d649abc67fe698e9d4c0ce7bc7a0c34414de"
+    },
+    {
+      "file": "docs/agent_specs/spec-07-neon-vector-renderer.md",
+      "bytes": 10708,
+      "sha256": "377b130c7ef46a450b567c365f97a39dbc4eecfd9eb385b1b2bc7b8f8012bbc7"
+    },
+    {
+      "file": "docs/agent_specs/spec-07.1-full-screen-arena-ui.md",
+      "bytes": 10348,
+      "sha256": "c25dd96de3cbc7b42738bc620b2165e060c0e04e20f742763487467ca9da8954"
+    },
+    {
+      "file": "docs/agent_specs/spec-08-client-game-ui.md",
+      "bytes": 10790,
+      "sha256": "035a7013fdd4f282ec7c5c3785728ecfaa2700fc3480be8d0ec768c51f93e618"
+    },
+    {
+      "file": "docs/cyberante_design_document.md",
+      "bytes": 47372,
+      "sha256": "62da23d7c3a8db883f32aa784e3978ea5c80a700e9fa22086b339ef9f3be698d"
+    },
+    {
+      "file": "docs/implementation_strategy.md",
+      "bytes": 42055,
+      "sha256": "2cf31d2e17d11301267af36f3fe79ab444a1455d78a0565d415ccaaf66e4bd87"
+    },
+    {
+      "file": "docs/qa/design_certification.md",
+      "bytes": 21735,
+      "sha256": "8bad57ba27df2f1f6806133ca9f919ae284b7a85f2a031b21335b09e18e6d482"
+    },
+    {
+      "file": "docs/qa/ui-redesign-desktop.png",
+      "bytes": 484276,
+      "sha256": "2f91de6ffd8e7e4a48984a78e0df38c494630cdd4af229d89156fc07b5a567ab"
+    },
+    {
+      "file": "docs/qa/ui-redesign-mobile.png",
+      "bytes": 254104,
+      "sha256": "d45d92372cc565256b83b67aaac6f7e2962561f2c6951708545015e4e2df0c0d"
+    },
+    {
+      "file": "docs/qa/ui_redesign.md",
+      "bytes": 3854,
+      "sha256": "cc3742868f24a854397842892aff131d286a292863953188a49565fc9367bd57"
+    },
+    {
+      "file": "e2e/audio.spec.ts",
+      "bytes": 7777,
+      "sha256": "27c673b32db15c8e4738c542279d22356078b60ff6f1a505f70485d9e8ac52b1"
+    },
+    {
+      "file": "e2e/designQa.spec.ts",
+      "bytes": 3417,
+      "sha256": "1d1dcc55661bb0b0f24f549a4398ecb0e63df2633825f8a23edfeebb19e191e3"
+    },
+    {
+      "file": "e2e/helpers.ts",
+      "bytes": 494,
+      "sha256": "33e7116191fbd05cee019d186d5746686f19089ae06481631cd84e50e8177744"
+    },
+    {
+      "file": "e2e/integration.spec.ts",
+      "bytes": 11627,
+      "sha256": "685c046e7131d377c81ad50e4a9092d08f0111780f0b852376be09bcca647048"
+    },
+    {
+      "file": "e2e/renderer.spec.ts",
+      "bytes": 7656,
+      "sha256": "0c43bd11d91a2dc7e19a17d71fffd28f5219e105372db66ac6c8131700a5385c"
+    },
+    {
+      "file": "e2e/tutorial.spec.ts",
+      "bytes": 15142,
+      "sha256": "b76daf92e81618eca5973737728aa13b892cd23c9ce65d7bd22473d7bf0095f6"
+    },
+    {
+      "file": "e2e/ui.spec.ts",
+      "bytes": 8782,
+      "sha256": "79f00c82275bb5340e45dc6fde1d9175712c12b6636769cb2b2bd49e30ba198f"
+    },
+    {
+      "file": "package-lock.json",
+      "bytes": 99600,
+      "sha256": "4ce2e40a52aeecce99381073f206e76d71e22f06bac9a9d1c320e23543a2813f"
+    },
+    {
+      "file": "package.json",
+      "bytes": 1348,
+      "sha256": "fe418299c57955ac910a4bceeced4af4140e0f5b7330ae7490727484accd5a58"
+    },
+    {
+      "file": "packages/client/dist/assets/benchmark-CFk9R_W2.js",
+      "bytes": 4491,
+      "sha256": "d95f6999e81c5534c19a623dbb7fa0478925b57141e07330f35177e5faaed94e"
+    },
+    {
+      "file": "packages/client/dist/assets/game-C74skRBm.css",
+      "bytes": 24775,
+      "sha256": "ca47a30e1d144c1d2653a9cdf216a1a65369b73c2221de3d565a25d16fbd416d"
+    },
+    {
+      "file": "packages/client/dist/assets/game-dZh0DkMa.js",
+      "bytes": 115924,
+      "sha256": "7139c78a384d94ac66f49b4819d8857dc1689be7405421458220cbe6445324f8"
+    },
+    {
+      "file": "packages/client/dist/assets/modulepreload-polyfill-B5Qt9EMX.js",
+      "bytes": 711,
+      "sha256": "d2a32840421496e872ade591618d2fa5c33797605d1aec04301717e5a90757d0"
+    },
+    {
+      "file": "packages/client/dist/assets/three-Cy3Tryvl.js",
+      "bytes": 462167,
+      "sha256": "dd69ffc73c0271f33ab5a82bd2e91ed9fd92060f18a05a989de14b999056a71f"
+    },
+    {
+      "file": "packages/client/dist/benchmark.html",
+      "bytes": 2793,
+      "sha256": "6cec137b453a8c4e85ab78dfe40c5efedc128fd8468aa58b0f4e87096e983382"
+    },
+    {
+      "file": "packages/client/dist/index.html",
+      "bytes": 2318,
+      "sha256": "9a6c909fbca3d2b9487eea4ca96416375f5d4104198b14228b85616dc711c3a5"
+    },
+    {
+      "file": "packages/client/src/__tests__/renderer.test.ts",
+      "bytes": 10744,
+      "sha256": "396ba7c10abeade443a14dced11f8a04097e21f68ca42bf9abeb4705805ee792"
+    },
+    {
+      "file": "packages/client/src/main.ts",
+      "bytes": 19027,
+      "sha256": "9b9ad643ac0f26491d4a4e2d2473af5000c529d8d9134157067169b5a755800f"
+    },
+    {
+      "file": "packages/client/src/render/ReactiveGrid.ts",
+      "bytes": 3386,
+      "sha256": "67580fe625c6c81baed1ec07d53eda3918b2fb5d711e4797eb9a852151ce2bae"
+    },
+    {
+      "file": "packages/client/src/render/VectorScene.ts",
+      "bytes": 16374,
+      "sha256": "a6cdb96e66b320a10a7d742f9a6203315e76619a5eda0c3b73607eb153fba2e8"
+    },
+    {
+      "file": "packages/client/src/render/shaders/gridDisplacement.glsl",
+      "bytes": 733,
+      "sha256": "a270b2fb85247ce9d02925a9422af6079269058fb915d909b7ef41d382c05384"
+    },
+    {
+      "file": "packages/client/src/tutorial/TutorialManager.ts",
+      "bytes": 6696,
+      "sha256": "f60bd748c49728489b4df26b6f9a5c270b0068d1337d8a342ef268835fc74ff7"
+    },
+    {
+      "file": "packages/client/src/ui/GameBoardOverlay.ts",
+      "bytes": 30028,
+      "sha256": "47bfb14fc2591d465494f6f0f9094d6fdb0101d89dcfa1c20a0befa6e79eb532"
+    },
+    {
+      "file": "packages/client/src/ui/ui.css",
+      "bytes": 28213,
+      "sha256": "2654a18af3cdc2f7cb65b298cd48b6aec89d218df2aa17fedb2b3d5ec7e63638"
+    },
+    {
+      "file": "playwright.config.ts",
+      "bytes": 489,
+      "sha256": "3218c4cf0177c861603dec9a5b88fe5c50856136e6ac03eb79757aabe5164272"
+    }
+  ]
+}

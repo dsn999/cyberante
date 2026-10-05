@@ -1,3 +1,4 @@
+import { optionsClick } from './helpers';
 import { expect, test, type Page } from '@playwright/test';
 
 type Probe = { gl: WebGLRenderingContext | WebGL2RenderingContext | null; shaders: string[];
@@ -55,8 +56,8 @@ test('psychedelic splash compiles native shaders, animates, resizes and honors i
   await page.locator('#btn-solo').click(); await expect(page.locator('canvas')).toHaveAttribute('data-title', 'false');
   await expect(page.locator('#btn-toggle-motion')).toHaveText('MOTION: REDUCED');
   await expect(page.locator('#btn-toggle-crt')).toHaveText('CRT: OFF');
-  await page.locator('#btn-toggle-motion').click(); await expect(page.locator('canvas')).toHaveAttribute('data-reduced-motion', 'false');
-  await page.locator('#btn-exit').click(); await expect(page.locator('#btn-menu-motion')).toHaveText('MOTION: FULL');
+  await optionsClick(page, 'btn-toggle-motion'); await expect(page.locator('canvas')).toHaveAttribute('data-reduced-motion', 'false');
+  await optionsClick(page, 'btn-exit'); await expect(page.locator('#btn-menu-motion')).toHaveText('MOTION: FULL');
   expect(errors).toEqual([]);
 });
 
@@ -65,16 +66,18 @@ test('native GPU loss/restoration recovers the compositor and reuses buffers thr
   await observe(page); await page.goto('/');
   await page.locator('#btn-menu-motion').click();
   await page.locator('#btn-solo').click(); await expect(page.locator('#phase-label')).toHaveText('SHAPING');
+  await page.locator('.card-face').first().click();
   await page.locator('.nudge-up-btn').first().click(); await page.locator('.burn-btn').first().click();
   await page.locator('#game-board-overlay').evaluate(element => { element.scrollTop = 0; });
   await page.screenshot({ path: '/tmp/cyberante-spec07-arena.png' });
-  await page.locator('#btn-exit').click();
+  await optionsClick(page, 'btn-exit');
   const allocated = await page.evaluate(() => {
     const probe = (window as unknown as ProbedWindow).renderProbe; return { buffers: probe.buffers, textures: probe.textures };
   });
   for (let i = 0; i < 3; i++) {
     await page.locator('#btn-solo').click(); await expect(page.locator('#phase-label')).toHaveText('SHAPING');
-    await page.locator('.nudge-up-btn').first().click(); await page.locator('#btn-exit').click();
+    await page.locator('.card-face').first().click();
+    await page.locator('.nudge-up-btn').first().click(); await optionsClick(page, 'btn-exit');
   }
   expect(await page.evaluate(() => {
     const probe = (window as unknown as ProbedWindow).renderProbe; return { buffers: probe.buffers, textures: probe.textures };

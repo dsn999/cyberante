@@ -7,6 +7,7 @@ export class ReactiveGrid {
   private nextWave = 0;
   public readonly uniforms = {
     uTime: { value: 0 }, uBassEnergy: { value: 0 },
+    uGridScale: { value: new THREE.Vector2(1, 1) },
     uMouse: { value: new THREE.Vector2() }, uMouseActive: { value: 0 },
     uReducedMotion: { value: 0 },
     uWaves: { value: Array.from({ length: 4 }, () => new THREE.Vector4(0, 0, 0, 0)) },
@@ -34,11 +35,14 @@ export class ReactiveGrid {
     material.onBeforeCompile = shader => {
       Object.assign(shader.uniforms, this.uniforms);
       shader.vertexShader = displacement + '\n' + shader.vertexShader.replace('#include <begin_vertex>',
-        'vec3 transformed = vec3(position); transformed.z += gridDisplacement(position.xy);');
+        'vec3 transformed = vec3(position); transformed.xy *= uGridScale; transformed.z += gridDisplacement(transformed.xy);');
     };
-    material.customProgramCacheKey = () => 'reactive-grid-v1';
+    material.customProgramCacheKey = () => 'reactive-grid-v2';
     this.mesh = new THREE.LineSegments(geometry, material);
     this.mesh.position.z = -5;
+  }
+  public setViewportSpan(width: number, height: number): void {
+    this.uniforms.uGridScale.value.set(width / 50, height / 30);
   }
   public triggerShockwave(center: THREE.Vector2, intensity = 1): void {
     this.uniforms.uWaves.value[this.nextWave].set(center.x, center.y, this.time, Math.max(0, Math.min(8, intensity)));

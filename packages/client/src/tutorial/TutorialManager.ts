@@ -36,7 +36,7 @@ export class TutorialManager {
   }
   private element<T extends HTMLElement = HTMLElement>(id: string): T { return this.container.querySelector<T>(`#${id}`)!; }
   private readonly onKeyDown = (event: KeyboardEvent): void => {
-    // Escape closes the rules dialog first; a second Escape exits training.
+    // Rules and Options consume Escape before it reaches training.
     if (event.key === 'Escape' && !event.defaultPrevented && !document.querySelector('dialog[open]')) {
       event.preventDefault(); this.exit();
     }
@@ -73,10 +73,8 @@ export class TutorialManager {
   private publish(): void {
     const state = this.session.snapshot;
     this.onStateChange?.(state);
-    this.highlighted.forEach(element => element.classList.remove('tutorial-target'));
     const step = this.session.steps[state.stepIndex];
-    this.highlighted = !state.complete && !this.session.canAdvance && step.highlightSelector ? Array.from(document.querySelectorAll(step.highlightSelector)) : [];
-    this.highlighted.forEach(element => element.classList.add('tutorial-target'));
+    this.refreshHighlights();
     this.container.dataset.step = String(state.stepIndex + 1);
     this.container.dataset.complete = String(state.complete);
     this.element('tutorial-progress').textContent = `STEP ${state.stepIndex + 1} OF 4`;
@@ -89,6 +87,14 @@ export class TutorialManager {
     next.textContent = state.complete ? 'RETURN TO MAIN MENU' : this.session.canAdvance ? 'CONTINUE' : 'ACTION REQUIRED';
     this.measure();
     this.highlighted[0]?.scrollIntoView({ block: 'center', behavior: 'auto' });
+  }
+  /** Reattach guidance after the tactical board replaces its card controls. */
+  public refreshHighlights(): void {
+    this.highlighted.forEach(element => element.classList.remove('tutorial-target'));
+    const state = this.session.snapshot;
+    const selector = this.session.steps[state.stepIndex].highlightSelector;
+    this.highlighted = this.running && !state.complete && !this.session.canAdvance && selector ? Array.from(document.querySelectorAll(selector)) : [];
+    this.highlighted.forEach(element => element.classList.add('tutorial-target'));
   }
   private measure(): void {
     if (this.running) this.parent.style.setProperty('--tutorial-height', `${this.container.getBoundingClientRect().height}px`);

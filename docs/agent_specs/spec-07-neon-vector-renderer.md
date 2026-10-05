@@ -1,5 +1,8 @@
 # SPEC-07: Reactive Neon Vector Renderer & Particle Engine
 
+**Layout revision:** [Spec-07.1](spec-07.1-full-screen-arena-ui.md) defines the
+user-requested full-screen arena, shader viewport scaling and contextual HUD.
+
 ## 1. Goal & Non-Goals
 - **Goal:** Implement code-driven Three.js neon vector rendering inspired by retro-arcade vector displays and phosphor oscilloscopes, featuring a reactive warping wireframe grid, physics displacement / gravity wells, additive glowing vector particle explosions, CRT post-processing, and audio-reactive uniform coupling.
 - **Non-Goals:** Do not load raster image textures (PNG/JPG), 3D GLTF models, or sprite sheets (100% procedural vector rendering).
@@ -57,6 +60,7 @@ export class ReactiveGrid {
 
   constructor(widthSegments?: number, heightSegments?: number);
 
+  public setViewportSpan(width: number, height: number): void;
   public triggerShockwave(center: THREE.Vector2, intensity?: number): void;
   public update(time: number, bassEnergy: number, mousePos?: THREE.Vector2): void;
   public setReducedMotion(enabled: boolean): void;
@@ -86,7 +90,7 @@ export class ParticleSystem {
 - Canvas fills `#canvas-container` element with dynamic resize observer handling window dimensions and device pixel ratios ($DPR \le 2.0$).
 
 ### 4.2 Dynamic Reactive Wireframe Grid
-- **Geometry:** Grid of $40 \times 25$ segments spanning world space from $X \in [-25, 25]$, $Y \in [-15, 15]$.
+- **Geometry:** Preallocated grid of $40 \times 25$ segments with local coordinates $X \in [-25, 25]$, $Y \in [-15, 15]$. The user-approved full-screen redesign scales XY in the vertex shader to cover the camera viewport at the grid depth, with a 25% deformation margin. Resize updates one scale uniform; CPU vertex buffers remain unchanged.
 - **Material:** `LineBasicMaterial` with color `#00f3ff` (Neon Cyan) and `blending: THREE.AdditiveBlending, transparent: true, opacity: 0.65`.
 - **Vertex Displacement Physics:**
   1. **Mouse Gravity Well:** Vertices within radius $R = 8.0$ of normalized cursor position are displaced downwards along the $Z$-axis with inverse falloff:

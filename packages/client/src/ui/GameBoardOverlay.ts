@@ -37,6 +37,7 @@ export class GameBoardOverlay {
   private bannerTimer: ReturnType<typeof setTimeout> | undefined;
   private viewGeneration = 0;
   private trainingLesson: number | null = null;
+  private activeCardId: string | null = null;
 
   constructor(parent: HTMLElement, private readonly callbacks: GameBoardCallbacks) {
     this.container = document.createElement('section');
@@ -47,11 +48,15 @@ export class GameBoardOverlay {
     this.container.innerHTML = `
       <nav class="game-toolbar" aria-label="Game settings">
         <span id="match-progress">ROUND 1/3 • EXCHANGE 1</span>
+        <details id="game-options" class="game-options">
+        <summary>OPTIONS</summary><div class="options-panel panel">
         <button id="btn-toggle-rules">RULES</button>
         <button id="btn-toggle-crt" aria-pressed="true">CRT: ON</button>
         <button id="btn-toggle-motion" aria-pressed="false">MOTION: FULL</button>
         <button id="btn-toggle-mute" aria-pressed="false">AUDIO: ON</button>
         <button id="btn-exit">MAIN MENU</button>
+        <button id="btn-copy-code" hidden>COPY CODE</button><button id="btn-copy-link" hidden>COPY JOIN LINK</button>
+        </div></details>
       </nav>
       <header class="scoreboard panel">
         <div class="player-stats">
@@ -68,24 +73,28 @@ export class GameBoardOverlay {
           <span id="opponent-activity" role="status" aria-live="polite" hidden></span>
         </div>
       </header>
-      <div class="room-actions"><span id="room-code"></span><button id="btn-copy-code" hidden>COPY CODE</button><button id="btn-copy-link" hidden>COPY JOIN LINK</button><button id="btn-rematch" hidden>REMATCH</button></div>
+      <div class="room-actions"><span id="room-code"></span><button id="btn-rematch" hidden>REMATCH</button></div>
       <div id="center-banner" class="display-glow" role="status" aria-live="polite"></div>
       <div id="arena-preview" aria-hidden="true"><span class="arena-label">THE BLIND CLASH</span></div>
-      <div id="clash-reveal" class="panel" aria-label="Clash results"></div>
-      <section class="tactical-board panel" aria-label="Your cards and combat stance">
+      <details id="clash-details" class="clash-details" hidden><summary>CLASH DETAILS</summary><div id="clash-reveal" class="panel" aria-label="Clash results"></div></details>
+      <section class="tactical-board" aria-label="Your cards and combat stance">
         <h1 id="local-dock-name">YOUR HAND</h1>
+        <div class="hand-readout"><span id="assault-preview"></span><span id="aegis-preview"></span></div>
+        <details id="split-details"><summary>ADJUST SPLIT</summary>
         <div class="lanes">
-          <section class="lane" aria-label="Assault lane"><h2>ASSAULT · 3 CARDS</h2><div id="assault-preview" class="lane-preview"></div><div id="assault-slots" class="lane-slots"></div></section>
-          <section class="lane aegis" aria-label="Aegis lane"><h2>AEGIS · 2 CARDS</h2><div id="aegis-preview" class="lane-preview"></div><div id="aegis-slots" class="lane-slots"></div></section>
+          <section class="lane" aria-label="Assault lane"><h2>ASSAULT · 3 CARDS</h2><div id="assault-slots" class="lane-slots"></div></section>
+          <section class="lane aegis" aria-label="Aegis lane"><h2>AEGIS · 2 CARDS</h2><div id="aegis-slots" class="lane-slots"></div></section>
         </div>
-        <p id="selection-hint" role="status" aria-live="polite">Select a card, then a card in the opposite lane to swap. Select a lane badge to unassign.</p>
+        <button id="btn-auto-split">AUTO SPLIT</button></details>
+        <p id="selection-hint" role="status" aria-live="polite">Select a card to tune it or swap lanes.</p>
         <div id="hand-cards" aria-label="Five-card hand"></div>
         <div class="stance-grid" role="group" aria-label="Combat stance">
           <button id="stance-brace" class="stance-btn" aria-pressed="true"><strong>BRACE · 1×</strong><small>Full Aegis mitigation.</small></button>
           <button id="stance-overcharge" class="stance-btn" aria-pressed="false"><strong>OVERCHARGE · 2×</strong><small>Forfeit your Aegis mitigation.</small></button>
           <button id="stance-parry" class="stance-btn" aria-pressed="false"><strong>PARRY · ½×</strong><small>Reflect 50% against Overcharge, Pair or High Card.</small></button>
         </div>
-        <div class="commit-row"><button id="btn-auto-split">AUTO SPLIT</button><button id="btn-ready" hidden>READY FOR COMMITMENT</button><button id="btn-lock-in" class="primary" disabled>LOCK IN</button></div>
+        <p id="stance-description" role="note"></p>
+        <div class="commit-row"><button id="btn-ready" hidden>READY</button><button id="btn-lock-in" class="primary" disabled>LOCK IN</button></div>
       </section>`;
     parent.appendChild(this.container);
     this.bindEvents();
@@ -101,6 +110,20 @@ export class GameBoardOverlay {
   private canShape(): boolean { return this.canSelect() && this.phase === 'SHAPING'; }
 
   private bindEvents(): void {
+    this.element<HTMLDetailsElement>('split-details').addEventListener('toggle', () => {
+      if (this.element<HTMLDetailsElement>('split-details').open && this.trainingLesson !== 1 && this.activeCardId) {
+        this.activeCardId = null; this.selection.pendingSwap = null; this.renderSelection();
+      }
+    });
+    this.container.addEventListener('keydown', event => {
+      const options = this.element<HTMLDetailsElement>('game-options');
+      if (event.key === 'Escape' && options.open && !event.defaultPrevented) {
+        options.open = false; options.querySelector('summary')?.focus(); event.preventDefault();
+      }
+    });
+    this.container.addEventListener('pointerdown', event => {
+      if (!(event.target as Element).closest('#game-options')) this.element<HTMLDetailsElement>('game-options').open = false;
+    });
     this.element('btn-toggle-rules').addEventListener('click', () => { masterAudio.sfx.playClick(); this.callbacks.onToggleRules(); });
     this.element('btn-toggle-crt').addEventListener('click', () => {
       if (this.callbacks.onToggleCrt) this.callbacks.onToggleCrt();
@@ -159,7 +182,17 @@ export class GameBoardOverlay {
       if (!card) return;
       if (button.dataset.action === 'slot') {
         if (!this.canSelect()) return;
-        this.selection.toggle(card.id); masterAudio.sfx.playCardSelect(); this.renderSelection(); this.notifySelection();
+        if (this.trainingLesson !== 1) this.element<HTMLDetailsElement>('split-details').open = false;
+        const pending = this.selection.pendingSwap;
+        if (pending || ![...this.selection.assaultIds, ...this.selection.aegisIds].includes(card.id)) this.selection.toggle(card.id);
+        this.activeCardId = this.activeCardId === card.id && !pending ? null : card.id;
+        masterAudio.sfx.playCardSelect(); this.renderSelection(); this.notifySelection();
+      } else if (button.dataset.action === 'close') {
+        this.activeCardId = null; this.selection.pendingSwap = null; this.renderSelection();
+        this.notifySelection();
+        Array.from(this.element('hand-cards').querySelectorAll<HTMLButtonElement>('.card-face')).find(face => face.dataset.cardId === card.id)?.focus();
+      } else if (button.dataset.action === 'swap' && this.canSelect()) {
+        this.selection.toggle(card.id); this.renderSelection(); this.notifySelection();
       } else if (this.canShape()) {
         const action = button.dataset.action;
         if (action === 'up' && this.flux >= 1) { masterAudio.sfx.playPipNudge('UP'); this.callbacks.onNudgeRank(card.id, 'UP'); }
@@ -187,7 +220,11 @@ export class GameBoardOverlay {
     if (phase !== this.phase) { this.readySent = false; if (phase !== 'MATCH_OVER') this.rematchSent = false; }
     this.phase = phase;
     this.flux = playerFlux;
+    const activeIndex = this.selection.cards.findIndex(card => card.id === this.activeCardId);
     this.selection.setCards(cards);
+    if (this.activeCardId && !cards.some(card => card.id === this.activeCardId)) this.activeCardId = cards[activeIndex]?.id ?? null;
+    if (!this.activeCardId && this.trainingLesson === 2) this.activeCardId = cards.find(card => card.id === 'flux-4')?.id ?? null;
+    if (!this.activeCardId && this.trainingLesson === 3) this.activeCardId = cards.find(card => card.id === 'burn-k')?.id ?? null;
     this.text('match-progress', this.trainingLesson === null ? `ROUND ${roundNumber}/3 • EXCHANGE ${exchangeNumber}` : `TRAINING • LESSON ${this.trainingLesson}/4`);
     this.text('phase-label', phase.replaceAll('_', ' '));
     this.text('player-hp', String(playerHp)); this.text('opponent-hp', String(opponentHp));
@@ -214,6 +251,20 @@ export class GameBoardOverlay {
   public clearPendingActions(): void { this.readySent = false; this.rematchSent = false; this.updateControls(); }
 
   private updateControls(): void {
+    this.container.dataset.phase = this.phase;
+    this.container.dataset.training = String(this.trainingLesson !== null);
+    this.container.dataset.lesson = String(this.trainingLesson ?? '');
+    this.element('hand-cards').querySelectorAll<HTMLElement>('.hand-card').forEach(card => {
+      card.dataset.active = String(card.dataset.cardId === this.activeCardId);
+      const actions = card.querySelector<HTMLElement>('.card-actions');
+      if (actions) actions.hidden = card.dataset.cardId !== this.activeCardId || !this.canSelect();
+    });
+    this.container.querySelectorAll<HTMLElement>('[data-shaping-action]').forEach(button => button.hidden = this.phase !== 'SHAPING');
+    this.container.querySelector<HTMLElement>('.stance-grid')!.hidden = this.phase !== 'COMMITMENT' || this.committed;
+    this.element('stance-description').hidden = this.phase !== 'COMMITMENT' || this.committed;
+    this.text('stance-description', { BRACE: 'Full damage · keep your Aegis block.', OVERCHARGE: 'Double damage · lose your Aegis block.', PARRY: 'Half damage · reflect 50% against Overcharge or weak hands.' }[this.selectedStance]);
+    this.container.querySelector<HTMLElement>('.tactical-board')!.hidden = !['SHAPING', 'COMMITMENT'].includes(this.phase);
+    this.element('btn-lock-in').hidden = this.phase !== 'COMMITMENT';
     const disable = (selector: string, disabled: boolean) => this.container.querySelectorAll<HTMLButtonElement>(selector).forEach(button => button.disabled = disabled);
     disable('.card-face,.slot-card,.stance-btn,#btn-auto-split', !this.canSelect());
     disable('.nudge-up-btn,.nudge-down-btn', !this.canShape() || this.flux < 1);
@@ -225,7 +276,7 @@ export class GameBoardOverlay {
     this.element('btn-ready').hidden = this.trainingLesson !== null || this.phase !== 'SHAPING' || !this.callbacks.onReady;
     this.element('btn-rematch').hidden = this.phase !== 'MATCH_OVER' || !this.callbacks.onRematch;
     for (const stance of ['BRACE', 'OVERCHARGE', 'PARRY']) this.element(`stance-${stance.toLowerCase()}`).setAttribute('aria-pressed', String(this.selectedStance === stance));
-    this.text('btn-ready', this.readySent ? 'READY • WAITING' : 'READY FOR COMMITMENT');
+    this.text('btn-ready', this.readySent ? 'READY • WAITING' : 'READY');
     this.text('btn-lock-in', this.committed ? 'COMMITTED' : 'LOCK IN');
   }
 
@@ -250,28 +301,38 @@ export class GameBoardOverlay {
     renderLane('assault-slots', this.selection.assaultIds, 3); renderLane('aegis-slots', this.selection.aegisIds, 2);
     const assault = this.selection.assaultIds.map(id => this.selection.cards.find(card => card.id === id)!).filter(Boolean);
     const aegis = this.selection.aegisIds.map(id => this.selection.cards.find(card => card.id === id)!).filter(Boolean);
-    this.text('assault-preview', assault.length === 3 ? `${evaluateAssaultHand(assault as [Card, Card, Card]).description} • ${evaluateAssaultHand(assault as [Card, Card, Card]).baseDamage} DMG` : `${assault.length}/3 selected`);
-    this.text('aegis-preview', aegis.length === 2 ? `${evaluateAegisHand(aegis as [Card, Card]).description} • ${evaluateAegisHand(aegis as [Card, Card]).mitigation} BLOCK` : `${aegis.length}/2 selected`);
-    this.text('selection-hint', this.selection.pendingSwap ? 'Select a card in the opposite lane to swap, or select this card again to cancel.' : 'Select opposite-lane cards to swap; select a lane badge to unassign. Nudge: 1 Flux. Bleed: 2 Flux.');
+    this.text('assault-preview', assault.length === 3 ? `ASSAULT · ${evaluateAssaultHand(assault as [Card, Card, Card]).description} · ${evaluateAssaultHand(assault as [Card, Card, Card]).baseDamage} DMG` : `ASSAULT · ${assault.length}/3 selected`);
+    this.text('aegis-preview', aegis.length === 2 ? `AEGIS · ${evaluateAegisHand(aegis as [Card, Card]).description} · ${evaluateAegisHand(aegis as [Card, Card]).mitigation} BLOCK` : `AEGIS · ${aegis.length}/2 selected`);
+    this.text('selection-hint', this.selection.pendingSwap ? 'Choose a card in the opposite lane to swap.' : this.phase === 'COMMITMENT' ? 'Choose your stance, then lock in.' : 'Select a card to tune it or swap lanes.');
     const hand = this.element('hand-cards'); hand.replaceChildren();
     for (const card of this.selection.cards) {
       const lane = this.selection.assaultIds.includes(card.id) ? 'assault' : this.selection.aegisIds.includes(card.id) ? 'aegis' : 'unassigned';
       const node = document.createElement('article'); node.className = 'hand-card'; node.dataset.lane = lane; node.dataset.cardId = card.id;
       const face = this.cardButton(card, 'slot', '', `Select ${this.cardName(card)}, ${lane}`);
-      face.className = 'card-face'; face.setAttribute('aria-pressed', String(this.selection.pendingSwap === card.id));
+      face.className = 'card-face'; face.setAttribute('aria-pressed', String(this.activeCardId === card.id));
+      face.setAttribute('aria-expanded', String(this.activeCardId === card.id));
       for (const [className, text] of [['lane-label', lane.toUpperCase()], ['rank', this.formatRank(card.rank)], ['suit', SUIT_GLYPHS[card.suit]], ['suit-name', card.suit]]) {
         const label = document.createElement('span'); label.className = className; label.textContent = text;
         if (className === 'rank' || className === 'suit') label.style.color = SUIT_COLORS[card.suit]; face.append(label);
       }
       const actions = document.createElement('div'); actions.className = 'card-actions';
-      const up = this.cardButton(card, 'up', '+1', `Increase ${this.cardName(card)} rank, 1 Flux`); up.className = 'nudge-up-btn';
-      const down = this.cardButton(card, 'down', '−1', `Decrease ${this.cardName(card)} rank, 1 Flux`); down.className = 'nudge-down-btn';
+      actions.setAttribute('role', 'group'); actions.setAttribute('aria-label', `Actions for ${this.cardName(card)}`);
+      const caption = document.createElement('span'); caption.className = 'card-action-caption';
+      const barrier = card.rank === 14 ? 11 : Math.min(10, card.rank);
+      const powers = { SPADES: 'Veil: suppress Overcharge & reflection', CLUBS: 'Sunder: halve enemy shields', DIAMONDS: `Barrier: absorb ${barrier} damage`, HEARTS: 'Siphon: heal 50% of damage dealt' };
+      caption.textContent = this.trainingLesson === 2 ? `${this.cardName(card)} · NUDGE −1` : `${this.cardName(card)} · BURN: ${powers[card.suit]}`;
+      const close = this.cardButton(card, 'close', 'CLOSE', 'Close card actions'); close.className = 'close-card-actions';
+      const swap = this.cardButton(card, 'swap', 'SWAP LANES', `Swap ${this.cardName(card)} with a card in the opposite lane`); swap.className = 'swap-card-btn';
+      actions.append(caption, close, swap);
+      const up = this.cardButton(card, 'up', '+1 · 1F', `Increase ${this.cardName(card)} rank, 1 Flux`); up.className = 'nudge-up-btn';
+      const down = this.cardButton(card, 'down', '−1 · 1F', `Decrease ${this.cardName(card)} rank, 1 Flux`); down.className = 'nudge-down-btn';
       actions.append(up, down);
       for (const suit of SUIT_RING[card.suit]) {
-        const bleed = this.cardButton(card, 'bleed', `BLEED ${SUIT_GLYPHS[suit]}`, `Bleed ${this.cardName(card)} to ${suit.toLowerCase()}, 2 Flux`, suit);
+        const bleed = this.cardButton(card, 'bleed', `BLEED ${SUIT_GLYPHS[suit]} · 2F`, `Bleed ${this.cardName(card)} to ${suit.toLowerCase()}, 2 Flux`, suit);
         bleed.className = 'bleed-btn'; actions.append(bleed);
       }
       const burn = this.cardButton(card, 'burn', 'BURN', `Burn ${this.cardName(card)}, once per exchange`); burn.className = 'burn-btn'; actions.append(burn);
+      for (const button of [up, down, ...actions.querySelectorAll<HTMLButtonElement>('.bleed-btn'), burn]) button.dataset.shapingAction = 'true';
       node.append(face, actions); hand.append(node);
     }
     this.updateControls();
@@ -296,6 +357,8 @@ export class GameBoardOverlay {
 
   public resetHandSelection(): void {
     clearTimeout(this.bannerTimer); this.selection.reset(); this.selectedStance = 'BRACE'; this.committed = false; this.burned = false;
+    this.activeCardId = null; this.element<HTMLDetailsElement>('split-details').open = this.trainingLesson === 1;
+    this.element<HTMLDetailsElement>('clash-details').open = false; this.element('clash-details').hidden = true;
     this.readySent = false; this.rematchSent = false; this.text('center-banner', ''); this.text('clash-reveal', ''); this.renderSelection();
   }
   private notifySelection(): void { this.callbacks.onSelectionChange?.([...this.selection.assaultIds], [...this.selection.aegisIds]); }
@@ -303,7 +366,11 @@ export class GameBoardOverlay {
   public get selectedHand(): { assaultIds: string[]; aegisIds: string[]; stance: Stance } {
     return { assaultIds: [...this.selection.assaultIds], aegisIds: [...this.selection.aegisIds], stance: this.selectedStance };
   }
-  public setTrainingLesson(lesson: number | null): void { this.trainingLesson = lesson; this.updateControls(); }
+  public setTrainingLesson(lesson: number | null): void {
+    if (lesson !== this.trainingLesson) this.activeCardId = null;
+    this.trainingLesson = lesson; this.element<HTMLDetailsElement>('split-details').open = lesson === 1;
+    this.updateControls();
+  }
   public resetView(): void {
     this.viewGeneration++; this.exchangeKey = ''; this.resetHandSelection(); this.updateState('LOBBY_WAIT', 0, 20, 3, 20, []);
     this.setControls('LOBBY_WAIT', false, false); this.setNames('Operative', 'Waiting for opponent', true); this.setRoom('');
@@ -336,6 +403,7 @@ export class GameBoardOverlay {
     const format = (cards: Card[]) => cards.map(card => `${this.formatRank(card.rank)}${SUIT_GLYPHS[card.suit]}`).join(' ');
     const line = (p1: boolean, label: string) => `${label}: ASSAULT ${format(p1 ? resolution.p1Assault : resolution.p2Assault)} (${(p1 ? resolution.p1Eval3 : resolution.p2Eval3).description}) • AEGIS ${format(p1 ? resolution.p1Aegis : resolution.p2Aegis)} • ${p1 ? resolution.p1Stance : resolution.p2Stance} • ${(p1 ? resolution.p1Burn : resolution.p2Burn) ?? 'NO BURN'} • RECEIVED ${p1 ? resolution.p1NetDamageReceived : resolution.p2NetDamageReceived}`;
     this.text('clash-reveal', `${line(!selfP1, 'OPPONENT')}\n${line(selfP1, 'YOU')}`);
+    this.element('clash-details').hidden = false;
   }
   public showBanner(text: string, durationMs = 3000): void {
     clearTimeout(this.bannerTimer); this.text('center-banner', text);
@@ -350,5 +418,5 @@ export class GameBoardOverlay {
     this.text('btn-toggle-mute', masterAudio.isMuted ? 'AUDIO: MUTED' : 'AUDIO: ON'); this.element('btn-toggle-mute').setAttribute('aria-pressed', String(masterAudio.isMuted));
   }
   public show(): void { this.container.hidden = false; this.syncPreferences(); }
-  public hide(): void { this.container.hidden = true; clearTimeout(this.bannerTimer); }
+  public hide(): void { this.container.hidden = true; this.element<HTMLDetailsElement>('game-options').open = false; clearTimeout(this.bannerTimer); }
 }

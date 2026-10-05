@@ -174,3 +174,162 @@ body.reduced-motion .tutorial-target { animation: none; }
   .tutorial-card { padding: 10px; gap: 6px; }
   body.training-active #game-board-overlay { scroll-padding-top: 80px; }
 }
+
+/* The arena fills the viewport. HUD controls float at its edges. */
+#game-board-overlay {
+  display: block; overflow: hidden; padding: 0; pointer-events: none;
+  --arena-top: 142px; --arena-bottom: 202px;
+}
+#game-board-overlay button, #game-board-overlay summary, #game-board-overlay details[open] { pointer-events: auto; }
+#game-board-overlay .game-toolbar {
+  position: absolute; top: max(12px, env(safe-area-inset-top)); left: max(20px, env(safe-area-inset-left)); right: max(20px, env(safe-area-inset-right));
+  padding: 0; background: transparent; flex-wrap: nowrap; gap: 12px; border-radius: 0;
+}
+#game-board-overlay .game-toolbar #match-progress { flex-basis: auto; font-size: 11px; letter-spacing: .08em; text-shadow: 0 2px 8px #000; }
+summary { cursor: pointer; list-style: none; min-height: 44px; min-width: 44px; display: flex; align-items: center; justify-content: center; font: 11px var(--font-mono); letter-spacing: .08em; }
+summary::-webkit-details-marker { display: none; }
+.game-options { position: relative; margin-left: auto; }
+.game-options > summary { border: 1px solid #00f3ff55; padding: 8px 14px; border-radius: 20px; background: #061020bb; color: var(--cyan); }
+.options-panel { position: absolute; top: calc(100% + 8px); right: 0; width: 220px; display: grid; gap: 8px; z-index: 50; box-shadow: 0 16px 48px #000a; }
+#game-board-overlay .game-toolbar .options-panel button { flex: none; font: 12px var(--font-mono); }
+#game-board-overlay .scoreboard {
+  position: absolute; top: max(66px, calc(env(safe-area-inset-top) + 54px)); left: max(24px, env(safe-area-inset-left)); right: max(24px, env(safe-area-inset-right));
+  padding: 0; background: transparent; border: 0; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); gap: 24px;
+  text-shadow: 0 2px 8px #000; z-index: 2;
+}
+#game-board-overlay .player-stats { max-width: 280px; gap: 4px; }
+#game-board-overlay .player-stats.opponent { justify-self: end; width: 100%; }
+#game-board-overlay .player-stats .name { font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#game-board-overlay .player-stats progress { height: 6px; }
+#game-board-overlay .stats-values { font-size: 11px; gap: 10px; }
+#game-board-overlay .phase-clock { min-width: 110px; grid-row: auto; grid-column: auto; }
+#game-board-overlay #timer-display { font-size: 26px; }
+#game-board-overlay #phase-label { font-size: 10px; letter-spacing: .08em; }
+#opponent-activity, #player-barrier-badge { font: 10px var(--font-mono); }
+#game-board-overlay #arena-preview { position: absolute; inset: var(--arena-top) 4vw var(--arena-bottom); min-height: 0; }
+#game-board-overlay .arena-label { top: 50%; left: 50%; transform: translate(-50%, -50%); opacity: .45; white-space: nowrap; font-size: 9px; }
+#game-board-overlay #center-banner { position: absolute; top: 47%; left: 10%; right: 10%; min-height: 0; pointer-events: none; z-index: 2; text-shadow: 0 0 12px #000, 0 0 20px #00f3ff66; }
+#game-board-overlay .room-actions { position: absolute; bottom: max(20px, env(safe-area-inset-bottom)); left: 50%; transform: translateX(-50%); justify-content: center; width: max-content; max-width: calc(100% - 32px); }
+#game-board-overlay[data-phase=SHAPING] .room-actions, #game-board-overlay[data-phase=COMMITMENT] .room-actions { display: none; }
+#game-board-overlay .tactical-board {
+  position: absolute; bottom: max(16px, env(safe-area-inset-bottom)); left: 50%; transform: translateX(-50%);
+  width: min(880px, calc(100% - 40px)); padding: 12px 16px; gap: 8px;
+  border: 1px solid #00f3ff35; border-radius: 16px;
+  background: linear-gradient(180deg, #05111dc4, #071321ed); box-shadow: 0 12px 50px #0006; pointer-events: auto;
+}
+#game-board-overlay #local-dock-name { display: none; }
+.hand-readout { display: flex; justify-content: space-between; gap: 12px; font: 10px/1.5 var(--font-mono); color: #cad5e6; }
+.hand-readout > span { max-width: 50%; }
+.hand-readout #assault-preview { color: #ff9abb; }
+.hand-readout #aegis-preview { text-align: right; color: #91f8ff; }
+#split-details { position: absolute; right: 18px; bottom: 13px; z-index: 5; }
+#split-details > summary { border-radius: 8px; padding: 8px; color: var(--muted); font-size: 10px; }
+#split-details[open] { background: #081525f5; border: 1px solid #00f3ff55; border-radius: 12px; padding: 10px; width: min(360px, calc(100vw - 44px)); box-shadow: 0 -12px 40px #0008; }
+#split-details[open] > summary { justify-content: flex-end; color: var(--cyan); }
+#split-details .lanes { grid-template-columns: 3fr 2fr; gap: 10px; }
+#split-details .lane h2 { font-size: 10px; }
+#split-details #btn-auto-split { width: 100%; margin-top: 10px; }
+#game-board-overlay #selection-hint { margin: 0; min-height: 0; font: 10px/1.4 var(--font-mono); color: var(--muted); }
+#game-board-overlay #hand-cards { position: relative; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; }
+#game-board-overlay .hand-card { padding: 0; border: 1px solid #62708280; border-radius: 8px; background: transparent; gap: 0; box-shadow: none; }
+#game-board-overlay .hand-card[data-lane=assault] { border-bottom: 2px solid var(--rose); }
+#game-board-overlay .hand-card[data-lane=aegis] { border-bottom: 2px solid var(--cyan); }
+#game-board-overlay .card-face { min-height: 60px; padding: 6px; grid-template-columns: auto auto; gap: 2px 6px; }
+#game-board-overlay .card-face .rank { font-size: 22px; justify-self: end; }
+#game-board-overlay .card-face .suit { font-size: 22px; justify-self: start; }
+#game-board-overlay .card-face .lane-label { grid-row: 2; grid-column: 1 / -1; font-size: 8px; letter-spacing: .03em; }
+#game-board-overlay .card-face .suit-name { display: none; }
+#game-board-overlay .card-face[aria-pressed=true] { outline: 2px solid var(--amber); background: #ffb70012; border-radius: 7px; }
+#game-board-overlay .card-actions {
+  position: absolute; bottom: calc(100% + 12px); left: 0; right: 0; z-index: 6;
+  padding: 12px; background: #081525f5; border: 1px solid #ffb70088; border-radius: 12px;
+  box-shadow: 0 -12px 36px #0008; display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px;
+}
+.card-action-caption { grid-column: 1 / -2; align-self: center; font: 11px/1.4 var(--font-mono); color: var(--amber); }
+#game-board-overlay .card-actions .close-card-actions { grid-column: -2 / -1; font-size: 10px; }
+#game-board-overlay .card-actions .swap-card-btn { grid-column: 1 / 2; }
+#game-board-overlay .card-actions .burn-btn { grid-column: auto; }
+#game-board-overlay .card-actions button { padding: 8px 4px; min-width: 44px; font-size: 11px; }
+#game-board-overlay .stance-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+#game-board-overlay .stance-btn { padding: 8px; display: flex; justify-content: center; align-items: center; min-height: 44px; font: 11px var(--font-mono); }
+#game-board-overlay .stance-btn small { display: none; }
+#game-board-overlay #stance-description { margin: 0; font: 10px/1.4 var(--font-mono); color: var(--muted); }
+#game-board-overlay[data-phase=COMMITMENT] { --arena-bottom: 265px; }
+#game-board-overlay .commit-row { padding-right: 112px; }
+#game-board-overlay .commit-row button { flex: 0 1 auto; min-width: 110px; min-height: 44px; font: 12px var(--font-mono); }
+#game-board-overlay .clash-details { position: absolute; bottom: 72px; left: 50%; transform: translateX(-50%); width: min(650px, calc(100% - 32px)); }
+.clash-details > summary { width: max-content; margin: auto; padding: 8px 12px; color: var(--muted); background: #061020cc; border: 1px solid #00f3ff33; border-radius: 20px; }
+#game-board-overlay #clash-reveal { max-height: 25dvh; overflow-y: auto; font-size: 11px; background: #081525ee; margin-top: 8px; }
+#game-board-overlay[data-phase=CLASH_REVEAL], #game-board-overlay[data-phase=ROUND_RESOLVE], #game-board-overlay[data-phase=MATCH_OVER] { --arena-bottom: 110px; }
+#game-board-overlay[data-phase=LOBBY_WAIT] { --arena-bottom: 80px; }
+@media (max-width: 767px) {
+  #game-board-overlay { --arena-top: 145px; --arena-bottom: 200px; }
+  #game-board-overlay .game-toolbar { left: 12px; right: 12px; }
+  #game-board-overlay .game-toolbar #match-progress { font-size: 9px; letter-spacing: 0; }
+  #game-board-overlay .scoreboard { left: 12px; right: 12px; gap: 8px; }
+  #game-board-overlay .player-stats .name { font-size: 10px; }
+  #game-board-overlay .stats-values { font-size: 9px; gap: 4px; }
+  #game-board-overlay .phase-clock { min-width: 70px; }
+  #game-board-overlay #phase-label { font-size: 8px; }
+  #game-board-overlay #timer-display { font-size: 22px; }
+  #opponent-activity { font-size: 8px; }
+  #game-board-overlay .tactical-board { width: calc(100% - 24px); padding: 10px; gap: 6px; }
+  #game-board-overlay #hand-cards { gap: 5px; }
+  #game-board-overlay .card-face { padding: 4px 2px; min-height: 54px; gap: 0 2px; }
+  #game-board-overlay .card-face .rank, #game-board-overlay .card-face .suit { font-size: 19px; }
+  #game-board-overlay .card-face .lane-label { font-size: 7px; letter-spacing: 0; }
+  #game-board-overlay .card-actions { grid-template-columns: repeat(3, minmax(0, 1fr)); padding: 10px; gap: 6px; }
+  .card-action-caption { grid-column: 1 / 3; }
+  #game-board-overlay .card-actions .close-card-actions { grid-column: 3; }
+  #game-board-overlay .card-actions .swap-card-btn { grid-column: auto; }
+  #game-board-overlay .stance-btn { font-size: 9px; padding: 6px 2px; }
+  .hand-readout { font-size: 8px; gap: 6px; }
+  #split-details { right: 8px; bottom: 10px; }
+  #game-board-overlay #selection-hint { font-size: 9px; }
+}
+/* Lessons retain their instruction sheet while sharing the same arena HUD. */
+body.training-active #game-board-overlay { padding: 0; scroll-padding: 0; --arena-bottom: calc(var(--tutorial-height, 250px) + 195px); }
+body.training-active #game-board-overlay .scoreboard { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+body.training-active #game-board-overlay .tactical-board { bottom: calc(var(--tutorial-height, 250px) + 24px + env(safe-area-inset-bottom)); }
+body.training-active #game-board-overlay .room-actions { display: none; }
+body.training-active #game-board-overlay .clash-details { bottom: calc(var(--tutorial-height, 250px) + 24px); }
+body.training-active #game-board-overlay[data-phase=CLASH_REVEAL] { --arena-bottom: calc(var(--tutorial-height, 250px) + 46px); }
+body.training-active #game-board-overlay .card-actions { bottom: calc(100% + 4px); padding: 8px; }
+@media (max-height: 500px) {
+  #game-board-overlay { --arena-top: 116px; --arena-bottom: 168px; }
+  #game-board-overlay .scoreboard { top: 54px; }
+  #game-board-overlay .game-toolbar { top: 6px; }
+  #game-board-overlay .tactical-board { bottom: 8px; padding: 6px 10px; gap: 3px; }
+  #game-board-overlay .card-face { min-height: 44px; }
+  #game-board-overlay #selection-hint { display: none; }
+  body.training-active #game-board-overlay .tactical-board { width: calc(60% - 24px); left: 12px; transform: none; bottom: 12px; max-height: calc(100dvh - 120px); overflow-y: auto; }
+  body.training-active #tutorial-overlay { width: calc(40% - 12px); left: auto; right: 12px; transform: none; max-height: calc(100dvh - 24px); }
+  body.training-active #game-board-overlay { --arena-bottom: 50px; }
+  body.training-active #game-board-overlay .clash-details { left: 12px; transform: none; bottom: 12px; width: calc(60% - 24px); }
+}
+/* Training presents its one required action instead of the full shaping palette. */
+#game-board-overlay[data-lesson="1"] #split-details { position: static; grid-row: 4; width: auto; padding: 0; border: 0; background: transparent; box-shadow: none; }
+#game-board-overlay[data-lesson="1"] #split-details > summary,
+#game-board-overlay[data-lesson="1"] #split-details .lanes,
+#game-board-overlay[data-lesson="1"] .card-actions { display: none; }
+#game-board-overlay[data-lesson="1"] #btn-auto-split { margin: 0; }
+#game-board-overlay[data-lesson="2"] #split-details,
+#game-board-overlay[data-lesson="3"] #split-details { display: none; }
+#game-board-overlay[data-lesson="2"] .card-actions button:not(.nudge-down-btn):not(.close-card-actions),
+#game-board-overlay[data-lesson="3"] .card-actions button:not(.burn-btn):not(.close-card-actions) { display: none; }
+#game-board-overlay[data-lesson="2"] .card-actions, #game-board-overlay[data-lesson="3"] .card-actions { grid-template-columns: 1fr auto auto; align-items: center; }
+#game-board-overlay[data-lesson="2"] .card-action-caption, #game-board-overlay[data-lesson="3"] .card-action-caption { grid-column: 1; }
+#game-board-overlay[data-lesson="2"] .card-actions .close-card-actions, #game-board-overlay[data-lesson="3"] .card-actions .close-card-actions { grid-column: 3; grid-row: 1; }
+#game-board-overlay[data-lesson="2"] .card-actions .nudge-down-btn, #game-board-overlay[data-lesson="3"] .card-actions .burn-btn { grid-column: 2; grid-row: 1; min-width: 52px; }
+@media (max-height: 500px) and (min-width: 600px) {
+  #game-board-overlay, #game-board-overlay[data-phase=COMMITMENT] { --arena-top: 120px; --arena-bottom: 24px; }
+  #game-board-overlay #arena-preview { right: 342px; left: 20px; }
+  #game-board-overlay .tactical-board { left: auto; right: max(12px, env(safe-area-inset-right)); transform: none; width: 310px; }
+  #game-board-overlay #center-banner { left: 20px; right: 350px; }
+  #game-board-overlay .stance-btn { font-size: 9px; }
+  body.training-active #game-board-overlay #arena-preview { right: 44%; }
+  body.training-active #game-board-overlay .tactical-board { right: auto; left: 12px; width: calc(56% - 24px); }
+  body.training-active #game-board-overlay[data-lesson="2"] .tactical-board,
+  body.training-active #game-board-overlay[data-lesson="3"] .tactical-board { padding-top: 88px; }
+  body.training-active #tutorial-overlay { width: calc(44% - 12px); }
+}

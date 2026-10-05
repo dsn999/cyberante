@@ -1,3 +1,4 @@
+import { optionsClick } from './helpers';
 import { expect, test, type Page } from '@playwright/test';
 import { SUIT_RING, type Suit } from '@cyberante/shared';
 
@@ -17,11 +18,17 @@ test('keyboard lane swaps, partial selections, both bleed directions and authori
   const assaultId = await assault.getAttribute('data-card-id'); const aegisId = await aegis.getAttribute('data-card-id');
   await assault.focus(); await page.keyboard.press('Enter');
   await expect(assault).toHaveAttribute('aria-pressed', 'true');
+  await page.locator(`.hand-card[data-card-id="${assaultId}"] .swap-card-btn`).click();
   await aegis.focus(); await page.keyboard.press('Space');
   await expect(page.locator(`.hand-card[data-card-id="${assaultId}"]`)).toHaveAttribute('data-lane', 'aegis');
   await expect(page.locator(`.hand-card[data-card-id="${aegisId}"]`)).toHaveAttribute('data-lane', 'assault');
-  const badge = page.locator('#assault-slots button').first(); const removedId = await badge.getAttribute('data-card-id');
+  // Keep the first card assigned so opening its tray does not fill the deliberate gap.
+  const tuningId = await page.locator('.card-face').first().getAttribute('data-card-id');
+  const badge = page.locator(`#assault-slots button:not([data-card-id="${tuningId}"])`).first(); const removedId = await badge.getAttribute('data-card-id');
+  await page.locator('#split-details > summary').click();
   await badge.click(); await expect(page.locator('#assault-slots button')).toHaveCount(2);
+  await page.locator('#split-details > summary').click();
+  await page.locator('.card-face').first().click();
   // A shaping tick must not auto-fill a deliberately incomplete partition.
   await page.locator('.nudge-up-btn').first().click();
   await expect(page.locator('#assault-slots button')).toHaveCount(2);
@@ -61,18 +68,21 @@ for (const viewport of [{ width: 320, height: 568 }, { width: 390, height: 844 }
       await solo(page);
       const dimensions = await page.locator('#game-board-overlay').evaluate(board => ({ width: board.clientWidth, scrollWidth: board.scrollWidth }));
       expect(dimensions.scrollWidth).toBeLessThanOrEqual(dimensions.width);
-      const sizes = await page.locator('#game-board-overlay button').evaluateAll(buttons => buttons.filter(button => !(button as HTMLElement).hidden && button.getBoundingClientRect().width > 0).map(button => { const rect = button.getBoundingClientRect(); return { width: rect.width, height: rect.height }; }));
+      const sizes = await page.locator('#game-board-overlay button').evaluateAll(buttons => buttons.filter(button => button.checkVisibility() && !button.closest('details:not([open])')).map(button => { const rect = button.getBoundingClientRect(); return { width: rect.width, height: rect.height }; }));
+      expect(sizes).toHaveLength(6); // Five cards and Ready; secondary controls are disclosed on demand.
+      await expect(page.locator('.stance-grid')).toBeHidden();
       for (const size of sizes) { expect(size.width).toBeGreaterThanOrEqual(44); expect(size.height).toBeGreaterThanOrEqual(44); }
       await page.locator('.card-face').first().tap();
       await expect(page.locator('.card-face[aria-pressed="true"]')).toHaveCount(1);
-      await page.locator('#btn-toggle-rules').tap();
+      await expect(page.locator('.card-actions:visible')).toHaveCount(1);
+      await optionsClick(page, 'btn-toggle-rules', true);
       await expect(page.locator('#rules-modal')).toBeVisible();
       await expect(page.locator('#close-rules-btn')).toBeFocused();
       await page.clock.fastForward(1000);
       await page.keyboard.press('Escape'); await expect(page.locator('#rules-modal')).toBeHidden();
       await expect(page.locator('#timer-display')).toHaveText('14.0s');
       await expect(page.locator('#btn-toggle-rules')).toBeFocused();
-      await page.locator('#btn-exit').tap(); await expect(page.locator('#main-menu-overlay')).toBeVisible();
+      await optionsClick(page, 'btn-exit', true); await expect(page.locator('#main-menu-overlay')).toBeVisible();
       const menuWidth = await page.locator('#main-menu-overlay').evaluate(menu => ({ width: menu.clientWidth, scrollWidth: menu.scrollWidth }));
       expect(menuWidth.scrollWidth).toBeLessThanOrEqual(menuWidth.width);
     } finally { await context.close(); }
@@ -83,15 +93,15 @@ test('CRT is independent of motion, mute stays synchronized, and modal focus is 
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.goto('/'); await page.locator('#btn-mute').click();
   await page.locator('#btn-solo').click(); await expect(page.locator('#btn-toggle-mute')).toHaveText('AUDIO: MUTED');
-  await page.locator('#btn-toggle-crt').click(); await expect(page.locator('body')).toHaveClass(/clean-display/);
+  await optionsClick(page, 'btn-toggle-crt'); await expect(page.locator('body')).toHaveClass(/clean-display/);
   expect(await page.evaluate(() => matchMedia('(prefers-reduced-motion: reduce)').matches)).toBe(true);
   expect(await page.locator('body').evaluate(body => getComputedStyle(body, '::after').display)).toBe('none');
-  await page.locator('#btn-toggle-mute').click(); await expect(page.locator('#btn-toggle-mute')).toHaveText('AUDIO: ON');
-  await page.locator('#btn-toggle-rules').click(); await expect(page.locator('#close-rules-btn')).toBeFocused();
+  await optionsClick(page, 'btn-toggle-mute'); await expect(page.locator('#btn-toggle-mute')).toHaveText('AUDIO: ON');
+  await optionsClick(page, 'btn-toggle-rules'); await expect(page.locator('#close-rules-btn')).toBeFocused();
   await page.keyboard.press('Tab');
   expect(await page.evaluate(() => document.activeElement?.closest('dialog')?.id)).toBe('rules-modal');
   await page.keyboard.press('Escape'); await expect(page.locator('#btn-toggle-rules')).toBeFocused();
-  await page.locator('#btn-exit').click(); await expect(page.locator('#btn-mute')).toHaveText('AUDIO: ON');
+  await optionsClick(page, 'btn-exit'); await expect(page.locator('#btn-mute')).toHaveText('AUDIO: ON');
 });
 
 test('menu validates names and room codes and exposes host and join actions', async ({ page }) => {

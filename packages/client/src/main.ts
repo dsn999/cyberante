@@ -71,6 +71,7 @@ export class CyberanteGame {
       onCommitHand: (assault, aegis, stance) => this.handleCommit(assault, aegis, stance),
       onSelectionChange: () => {
         if (this.mode === 'tutorial' && this.tutorial.currentStepIndex === 0) this.tutorial.onUserAction('COMMIT_HAND');
+        else if (this.mode === 'tutorial') this.tutorial.refreshHighlights();
       },
       onStanceSelect: stance => {
         if (this.mode === 'tutorial') this.tutorial.onUserAction('SELECT_STANCE', { stance });

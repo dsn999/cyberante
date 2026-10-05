@@ -1,3 +1,4 @@
+import { optionsClick } from './helpers';
 import { expect, test } from '@playwright/test';
 import { mkdir, writeFile } from 'node:fs/promises';
 
@@ -19,7 +20,7 @@ test('solo opponent signals shaping and lock-in without exposing private cards, 
   await expect(page.locator('#phase-label')).toHaveText('COMMITMENT');
   await expect(page.locator('#opponent-activity')).toHaveText('FLUX 2/3 • LOCKED IN');
   await expect(page.locator('#clash-reveal')).toBeEmpty();
-  await page.locator('#btn-exit').click(); await expect(page.locator('#opponent-activity')).toBeHidden();
+  await optionsClick(page, 'btn-exit'); await expect(page.locator('#opponent-activity')).toBeHidden();
   await page.locator('#btn-solo').click(); await expect(page.locator('#opponent-activity')).toHaveText('FLUX 3/3');
 });
 

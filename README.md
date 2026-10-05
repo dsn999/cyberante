@@ -31,7 +31,7 @@
 cyberante/
 ├── docs/
 │   ├── cyberante_design_document.md   # Master Architectural Blueprint
-│   └── agent_specs/                   # 10 Granular Specs for OpenAI Codex
+│   └── agent_specs/                   # 10 base specs + Spec-07.1 visual revision
 ├── packages/
 │   ├── shared/                        # Zero-dependency TypeScript models & math
 │   ├── server/                        # Authoritative Node/Bun WebSocket Server

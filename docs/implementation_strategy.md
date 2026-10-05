@@ -6,14 +6,19 @@ This strategy records audit findings and dispatch progress. Specs 01–09 and
 the Spec-10A playable milestone are implemented and verified; Spec-10B remains
 outstanding.
 
+The subsequent user-requested visual redesign is governed by
+[Spec-07.1](agent_specs/spec-07.1-full-screen-arena-ui.md), extending Spec-07 and
+revising Spec-08's composition. Its verification is tracked separately in
+[the UI redesign notes](qa/ui_redesign.md).
+
 ## Architectural authority
 
 Use [the master design](cyberante_design_document.md) for the product architecture,
 [the numbered specs](agent_specs/) for target APIs and detailed behavior, and
 [AGENTS.md](../AGENTS.md) for the implementation workflow. The subsidiary specs
 are in this repository's `docs/agent_specs/`, rather than a home-directory path.
-The root `cyberante_design_document.md` and the copy under `docs/` are currently
-byte-identical. Treat the `docs/` copy as canonical, as AGENTS.md directs.
+The root `cyberante_design_document.md` is a historical copy. Treat the updated
+`docs/` copy as canonical, as AGENTS.md directs.
 
 The architecture is already appropriate: dependency-free shared game logic;
 Node WebSocket authority and in-memory rooms; vanilla TypeScript browser UI;

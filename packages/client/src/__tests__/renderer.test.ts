@@ -23,12 +23,15 @@ describe('Spec-07 subdivided GPU grid', () => {
     const grid = new ReactiveGrid(8, 6); resources.push(grid);
     const shader = { uniforms: {}, vertexShader: '#include <begin_vertex>', fragmentShader: '' } as THREE.WebGLProgramParametersWithUniforms;
     grid.mesh.material.onBeforeCompile(shader, {} as THREE.WebGLRenderer);
-    expect(shader.vertexShader).toContain('gridDisplacement(position.xy)');
+    expect(shader.vertexShader).toContain('transformed.xy *= uGridScale');
+    expect(shader.vertexShader).toContain('gridDisplacement(transformed.xy)');
     expect(shader.vertexShader).toContain('d2 < 64.0'); expect(shader.vertexShader).toContain('-= 9.0 / (d2 + 1.0)');
     expect(shader.vertexShader).toContain('exp(-2.5 * age)'); expect(shader.vertexShader).toContain('18.0 * age');
     expect(shader.vertexShader).toContain('clamp(z, -0.1, 0.1)');
     const positions = grid.mesh.geometry.attributes.position; const original = new Float32Array(positions.array);
     const version = (positions as THREE.BufferAttribute).version;
+    grid.setViewportSpan(100, 60);
+    expect(shader.uniforms.uGridScale.value).toEqual(new THREE.Vector2(2, 2));
     for (let time = 0; time < 3; time += 0.01) grid.update(time, 0.7, new THREE.Vector2(2, 3));
     expect(positions.array).toEqual(original); expect((positions as THREE.BufferAttribute).version).toBe(version);
     expect(shader.uniforms.uBassEnergy.value).toBe(0.7); expect(shader.uniforms.uMouse.value).toEqual(new THREE.Vector2(2, 3));

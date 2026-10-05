@@ -23,6 +23,10 @@ The reviewed baseline is `f64b0b231669a53f0ef2c7a035a85fe728a629df` plus the QA
 changes committed with this report. [Build fingerprints](evidence.json) identify
 the tested production artifacts. The report is not a claim about later builds.
 
+The subsequent user-requested full-screen UI redesign has separate
+[verification notes](ui_redesign.md). This report and its fingerprints remain
+the historical QA record for the release above.
+
 ## Evidence and limits
 
 | Verification | Current result | What it establishes |

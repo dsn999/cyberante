@@ -1,3 +1,4 @@
+import { optionsClick } from './helpers';
 import { expect, test, type Page } from '@playwright/test';
 
 const step = async (page: Page, number: number): Promise<void> => { await expect(page.locator('#tutorial-overlay')).toHaveAttribute('data-step', String(number)); };
@@ -22,15 +23,20 @@ for (const viewport of [{ width: 1280, height: 900 }, { width: 390, height: 844 
       expect(await page.locator('.hand-card .rank').allTextContents()).toEqual(['A', 'K', 'Q', '10', '4']);
       await page.locator('.card-face').first().click(); await step(page, 1); await expect(page.locator('#assault-slots button')).toHaveCount(1);
       await page.locator('#btn-auto-split').click(); await step(page, 2);
+      await expect(page.locator('#split-details')).toBeHidden();
       expect(await page.locator('.hand-card .rank').allTextContents()).toEqual(['A', '2', '4', '8', '8']);
-      await card(page, 'flux-4').locator('.nudge-up-btn').click(); await step(page, 2); await expect(card(page, 'flux-4').locator('.rank')).toHaveText('4'); await expect(page.locator('#player-flux')).toHaveText('3/3');
+      await card(page, 'flux-2').locator('.card-face').click();
+      await card(page, 'flux-2').locator('.nudge-down-btn').click(); await step(page, 2); await expect(card(page, 'flux-4').locator('.rank')).toHaveText('4'); await expect(page.locator('#player-flux')).toHaveText('3/3');
+      await card(page, 'flux-4').locator('.card-face').click();
       await expect(page.locator('#tut-next-btn')).toBeDisabled(); await expect(card(page, 'flux-4').locator('.nudge-down-btn')).toHaveClass(/tutorial-target/);
       await card(page, 'flux-4').locator('.nudge-down-btn').focus(); await page.keyboard.press('Enter');
       await step(page, 2); await expect(card(page, 'flux-4').locator('.rank')).toHaveText('3'); await expect(page.locator('#player-flux')).toHaveText('2/3');
       await expect(page.locator('#assault-preview')).toContainText('18 DMG'); await expect(page.locator('#tutorial-feedback')).toContainText('A–2–3');
       await page.locator('#tut-next-btn').click(); await step(page, 3);
       expect(await page.locator('.hand-card .rank').allTextContents()).toEqual(['K', '7', '8', '9', '10']);
+      await card(page, 'burn-7').locator('.card-face').click();
       await card(page, 'burn-7').locator('.burn-btn').click(); await expect(page.locator('#player-barrier-badge')).toBeHidden(); await expect(card(page, 'burn-k')).toBeVisible();
+      await card(page, 'burn-k').locator('.card-face').click();
       await card(page, 'burn-k').locator('.burn-btn').click(); await step(page, 3); await expect(page.locator('#player-barrier-val')).toHaveText('10');
       await expect(card(page, 'replacement-9').locator('.rank')).toHaveText('9'); await expect(page.locator('.burn-btn').first()).toBeDisabled();
       await page.locator('#tut-next-btn').click(); await step(page, 4); await expect(page.locator('#phase-label')).toHaveText('COMMITMENT');
@@ -70,15 +76,16 @@ test('manual split participation, back/replay and skip/Escape from every lesson 
     await expect(page.locator('#main-menu-overlay')).toBeVisible(); await expect(page.locator('#tutorial-overlay')).toBeHidden(); await expect(page.locator('.tutorial-target')).toHaveCount(0);
   }
   await page.locator('#btn-solo').click(); await expect(page.locator('#game-board-overlay')).toBeVisible(); await expect(page.locator('#match-progress')).toContainText('ROUND');
-  await page.locator('#btn-exit').click(); await page.locator('#btn-tutorial').click(); await step(page, 1);
+  await optionsClick(page, 'btn-exit'); await page.locator('#btn-tutorial').click(); await step(page, 1);
   await expect(page.locator('#assault-slots button')).toHaveCount(0); await expect(page.locator('#player-barrier-badge')).toBeHidden();
 });
 
 test('rules remain available during training and Escape closes only the top dialog', async ({ page }) => {
   await start(page); await advanceToBurn(page);
-  await page.locator('#btn-toggle-rules').click(); await expect(page.locator('#rules-modal')).toBeVisible(); await expect(page.locator('#close-rules-btn')).toBeFocused();
+  await optionsClick(page, 'btn-toggle-rules'); await expect(page.locator('#rules-modal')).toBeVisible(); await expect(page.locator('#close-rules-btn')).toBeFocused();
   await page.keyboard.press('Escape'); await expect(page.locator('#rules-modal')).toBeHidden(); await step(page, 3); await expect(page.locator('#tutorial-overlay')).toBeVisible();
   await expect(page.locator('#btn-toggle-rules')).toBeFocused();
+  await page.keyboard.press('Escape'); await expect(page.locator('#game-options')).not.toHaveAttribute('open', '');
   await page.keyboard.press('Escape'); await expect(page.locator('#main-menu-overlay')).toBeVisible();
 });
 
@@ -90,12 +97,12 @@ test('complete reference tables and solo commitments survive rules while the clo
   await page.keyboard.press('Escape'); await expect(page.locator('#btn-menu-rules')).toBeFocused();
   await page.locator('#btn-solo').click(); await page.clock.fastForward(2000);
   const assault = await page.locator('#assault-slots button').evaluateAll(buttons => buttons.map(button => (button as HTMLElement).dataset.cardId));
-  await page.locator('#stance-overcharge').click(); await page.locator('#btn-ready').click(); await page.clock.fastForward(1500);
-  await page.locator('#btn-toggle-rules').click(); await page.clock.fastForward(1000); await page.keyboard.press('Escape');
+  await page.locator('#btn-ready').click(); await page.clock.fastForward(1500); await page.locator('#stance-overcharge').click();
+  await optionsClick(page, 'btn-toggle-rules'); await page.clock.fastForward(1000); await page.keyboard.press('Escape');
   expect(await page.locator('#assault-slots button').evaluateAll(buttons => buttons.map(button => (button as HTMLElement).dataset.cardId))).toEqual(assault);
   await expect(page.locator('#stance-overcharge')).toHaveAttribute('aria-pressed', 'true'); await expect(page.locator('#timer-display')).toHaveText('9.0s');
   await page.locator('#btn-lock-in').click(); await expect(page.locator('#btn-lock-in')).toBeDisabled();
-  await page.locator('#btn-toggle-rules').click(); await page.clock.fastForward(2000); await page.keyboard.press('Escape');
+  await optionsClick(page, 'btn-toggle-rules'); await page.clock.fastForward(2000); await page.keyboard.press('Escape');
   await expect(page.locator('#clash-reveal')).toContainText('OVERCHARGE'); await expect(page.locator('#btn-lock-in')).toBeDisabled();
 });
 
@@ -107,16 +114,16 @@ for (const viewport of [{ width: 320, height: 568 }, { width: 844, height: 390 }
       const inspect = async (): Promise<void> => {
         const geometry = await page.locator('#tutorial-overlay').evaluate(overlay => {
           const rect = overlay.getBoundingClientRect();
-          return { top: rect.top, bottom: rect.bottom, width: overlay.clientWidth, scrollWidth: overlay.scrollWidth, copyHeight: overlay.querySelector('.tutorial-copy')!.getBoundingClientRect().height, buttons: Array.from(overlay.querySelectorAll('button')).map(button => ({ top: button.getBoundingClientRect().top, bottom: button.getBoundingClientRect().bottom, width: button.getBoundingClientRect().width, height: button.getBoundingClientRect().height })) };
+          return { left: rect.left, top: rect.top, bottom: rect.bottom, width: overlay.clientWidth, scrollWidth: overlay.scrollWidth, copyHeight: overlay.querySelector('.tutorial-copy')!.getBoundingClientRect().height, buttons: Array.from(overlay.querySelectorAll('button')).map(button => ({ top: button.getBoundingClientRect().top, bottom: button.getBoundingClientRect().bottom, width: button.getBoundingClientRect().width, height: button.getBoundingClientRect().height })) };
         });
         expect(geometry.scrollWidth).toBeLessThanOrEqual(geometry.width);
         geometry.buttons.forEach(button => { expect(button.top).toBeGreaterThanOrEqual(geometry.top); expect(button.bottom).toBeLessThanOrEqual(geometry.bottom + 1); expect(button.width).toBeGreaterThanOrEqual(44); expect(button.height).toBeGreaterThanOrEqual(44); });
         expect(geometry.bottom).toBeLessThanOrEqual(viewport.height);
         expect(geometry.copyHeight).toBeGreaterThanOrEqual(44);
-        const targetCenter = await page.locator('.tutorial-target').first().evaluate(target => { const bounds = target.getBoundingClientRect(); return bounds.top + bounds.height / 2; });
+        const target = await page.locator('.tutorial-target').first().evaluate(target => { const bounds = target.getBoundingClientRect(); return { top: bounds.top, bottom: bounds.bottom, right: bounds.right, centerY: bounds.top + bounds.height / 2 }; });
         const toolbarBottom = await page.locator('.game-toolbar').evaluate(toolbar => toolbar.getBoundingClientRect().bottom);
-        expect(targetCenter).toBeLessThan(geometry.top);
-        expect(targetCenter).toBeGreaterThan(toolbarBottom);
+        expect(target.bottom <= geometry.top || target.right <= geometry.left).toBe(true);
+        expect(target.centerY).toBeGreaterThan(toolbarBottom);
       };
       await inspect();
       await page.locator('.tutorial-copy').evaluate(copy => { copy.scrollTop = copy.scrollHeight; }); await inspect();
@@ -131,9 +138,9 @@ for (const viewport of [{ width: 320, height: 568 }, { width: 844, height: 390 }
 test('rules are available in the online lobby without changing room membership', async ({ page }) => {
   await page.goto('/'); await page.locator('#btn-host').click(); await expect(page.locator('#room-code')).toHaveText(/^ROOM [A-Z0-9]{4}$/);
   const code = await page.locator('#room-code').textContent();
-  await page.locator('#btn-toggle-rules').click(); await expect(page.locator('#rules-modal')).toBeVisible();
+  await optionsClick(page, 'btn-toggle-rules'); await expect(page.locator('#rules-modal')).toBeVisible();
   await page.keyboard.press('Escape'); await expect(page.locator('#room-code')).toHaveText(code!); await expect(page.locator('#phase-label')).toHaveText('LOBBY WAIT');
-  await expect(page.locator('#btn-toggle-rules')).toBeFocused(); await page.locator('#btn-exit').click(); await expect(page.locator('#main-menu-overlay')).toBeVisible();
+  await expect(page.locator('#btn-toggle-rules')).toBeFocused(); await optionsClick(page, 'btn-exit'); await expect(page.locator('#main-menu-overlay')).toBeVisible();
 });
 
 test('reduced motion disables training pulses while keyboard controls stay interactive', async ({ page }) => {

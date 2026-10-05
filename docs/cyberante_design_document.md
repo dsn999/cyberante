@@ -162,6 +162,7 @@ All visuals are rendered purely in code via Three.js and custom GLSL vertex/frag
 ```
 
 ### 3.1 The Reactive Neon Vector Grid
+*   **Full-Screen Arena:** The reactive wireframe covers the viewport at every aspect ratio. Cards and clash effects occupy the central visual area; a compact floating edge HUD provides state and contextual actions, following [Spec-07.1: Full-Screen Vector Arena & Contextual Game HUD](agent_specs/spec-07.1-full-screen-arena-ui.md).
 *   **Dynamic Wireframe Matrix:** The arena background consists of a high-density, mathematical grid rendered in intense neon cyan (`#00f3ff`) and deep blue (`#001a33`).
 *   **Mouse Gravity Well:** Within an 8-unit radius of the cursor, grid vertices displace downwards along $Z$ with inverse-square falloff, as specified in Spec-07:
     $$\Delta Z_{\text{mouse}} = \frac{-G \cdot \text{strength}}{\|\vec{P}_{xy} - \vec{C}_{\text{mouse}}\|^2 + 1.0}$$
@@ -258,7 +259,7 @@ The game is structured around three primary entry points accessible from a sleek
     2.  *Lesson 2: Flux Transmutations* — Prompts player to spend 1 Flux to nudge a $4$ to a $3$, completing an A–2–3 Straight Flush, as specified in Spec-09.
     3.  *Lesson 3: Burn-to-Cast* — Teaches burning a Diamond card for a defensive barrier before entering combat.
     4.  *Lesson 4: Stance Clash* — Requires an Overcharge commitment against a Parry training drone and resolves the shared combat engine's real damage, barrier and reflection rules.
-*   **In-Game Quick Reference Card:** A collapsible floating HUD button `[ ? RULES ]` allows players to inspect hand rankings, stance matchups, and burn abilities at any time during an active match.
+*   **In-Game Quick Reference Card:** The **Options → Rules** control allows players to inspect hand rankings, stance matchups, and burn abilities at any time during an active match.
 
 ---
 

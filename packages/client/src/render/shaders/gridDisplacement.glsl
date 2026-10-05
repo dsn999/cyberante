@@ -1,4 +1,5 @@
 uniform float uTime;
+uniform vec2 uGridScale;
 uniform float uBassEnergy;
 uniform vec2 uMouse;
 uniform float uMouseActive;

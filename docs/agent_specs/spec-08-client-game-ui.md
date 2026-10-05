@@ -1,5 +1,8 @@
 # SPEC-08: Client Game UI & Tactical Overlay
 
+**Layout revision:** [Spec-07.1](spec-07.1-full-screen-arena-ui.md) governs the
+full-screen arena and contextual HUD composition reflected in Section 4.
+
 ## 1. Goal & Non-Goals
 - **Goal:** Implement responsive, high-contrast, accessibility-aware DOM overlays for split-lane card slotting (3 Assault, 2 Aegis), Auto-Split helper, Flux transmutation actions (Nudge UP/DOWN, Bleed adjacent suit, Burn-to-Cast), Stance toggles (Brace, Overcharge, Parry), real-time countdown HUD, and match status banners.
 - **Non-Goals:** Do not handle 3D vector canvas rendering (Spec 07) or Web Audio synthesis scheduling (Spec 06).
@@ -91,49 +94,31 @@ export class MainMenuOverlay {
 ## 4. Detailed Behavior & Tactical Overlay Layout
 
 ### 4.1 HUD Hierarchy & Screen Composition
-The UI overlay is styled using pure modern CSS with cybernetic design tokens (`Orbitron`, `Rajdhani`, `Share Tech Mono` fonts, neon cyan `#00f3ff`, amber gold `#ffb700`, rose crimson `#ff0055`, and dark glassmorphic backdrops):
+The user-approved October 2026 redesign makes the procedural vector arena the primary visual surface. The canvas and reactive wireframe cover the viewport; the HUD floats at the edges without an opaque central board.
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│ [?] RULES  │  ROUND 1/3 • EXCHANGE 2  │  [CRT] [MUTE]       │
-│ PLAYER HP: [████████████░░░░] 16   VS   OPPONENT: [████████] 12│
-│ PHASE: SHAPING [ 00:12 ]           BARRIER: [ 10 SHIELD ]   │
-├─────────────────────────────────────────────────────────────┤
-│                                                             │
-│                      [ BANNER DISPLAY ]                     │
-│                                                             │
-├─────────────────────────────────────────────────────────────┤
-│ ASSAULT LANE (3 Cards) [ EVAL: PAIR • 5 DMG ]               │
-│ ┌─────────┐ ┌─────────┐ ┌─────────┐                         │
-│ │ ♠ A     │ │ ♠ K     │ │ ♠ Q     │                         │
-│ └─────────┘ └─────────┘ └─────────┘                         │
-│                                                             │
-│ AEGIS LANE (2 Cards)   [ EVAL: SUITED • 4 MIT ]             │
-│ ┌─────────┐ ┌─────────┐                                     │
-│ │ ♦ 10    │ │ ♦ 4     │                                     │
-│ └─────────┘ └─────────┘                                     │
-├─────────────────────────────────────────────────────────────┤
-│ [ AUTO SPLIT ]   FLUX: 3/3   [ +1 ] [ -1 ] [ BLEED ] [ BURN ]│
-│ STANCE: [ BRACE (1.0x) ] [ OVERCHARGE (2.0x) ] [ PARRY (0.5x)]│
-│                 [ LOCK IN COMMITMENT ]                      │
-└─────────────────────────────────────────────────────────────┘
-```
+- **Top edge:** Round/exchange, names, Guard, Flux, wins, phase and countdown. A single **Options** disclosure contains Rules, CRT, motion, audio, exit and online sharing.
+- **Bottom dock:** Five compact card selectors with explicit Assault/Aegis labels and live damage/block previews. **Adjust Split** exposes the lane slots and Auto Split helper.
+- **Shaping:** Ready is the primary action. Selecting one card exposes its Nudge, adjacent Bleed, Burn and Swap Lanes controls. Flux costs and the selected card's burn effect are visible in this contextual tray.
+- **Commitment:** Shaping controls disappear. Three stance choices, an explanation of the selected stance and Lock In are displayed.
+- **Clash/resolve:** The tactical dock disappears so the vector effects dominate. Full combat text is available under Clash Details.
+- **Short landscape screens:** The tactical dock moves to the right edge, leaving the left arena open.
+- **Training:** The real controls remain available above/beside the instruction sheet; the Flux/Burn lessons show their required action in the selected card tray.
 
 ### 4.2 Split-Lane Slotting Mechanics
-1. **Interactive Assignment:** Cards in the player's 5-card hand can be clicked to toggle assignment between:
+1. **Interactive Assignment:** Select a card to inspect it. Choose **Swap Lanes**, then select a card in the opposite lane. Clicking an unassigned card assigns it to an available slot. The **Adjust Split** disclosure exposes removable slot badges for:
    - **Assault Lane (Top 3 Slots):** Feeds into the 3-card poker evaluation for offensive damage.
    - **Aegis Lane (Bottom 2 Slots):** Feeds into the 2-card mitigation evaluation for defense.
 2. **Auto-Split Helper:** Clicking `[ AUTO SPLIT ]` executes an instant local evaluation of all 10 possible combinations, placing cards into the highest utility partition.
 3. **Live Hand Evaluation Badges:** Real-time client-side preview badges display predicted hand tiers (e.g. `PAIR • 5 DMG`, `FLUSH • 8 DMG`, `SUITED • 4 MIT`).
 
 ### 4.3 Card Transmutation Controls (Shaping Phase)
-Each card in hand features intuitive micro-controls:
+Only the selected card exposes the shaping controls:
 - **`[ +1 ]` / `[ -1 ]` Pip Nudge:** Increments or decrements card rank with Ace wrapping ($14 \leftrightarrow 2$). Costs 1 Flux.
 - **`[ BLEED ]` Chromatic Bleed:** Cycles card suit along the cyclic `SUIT_RING`. Costs 2 Flux.
 - **`[ BURN ]` Burn-to-Cast:** Burns the card to trigger its suit passive power (Diamond Barrier, Spade Veil, Heart Siphon, Club Sunder), immediately replacing it from the deck. Disabled once per exchange.
 
 ### 4.4 Stance Selection & Commitment Lock-In
-- **Stance Matrix Buttons:** Three mutually exclusive toggle buttons:
+- **Stance Matrix Buttons:** Three mutually exclusive toggle buttons, visible during Commitment:
   - `BRACE (1.0x)`: Standard baseline stance. Reliable absorption.
   - `OVERCHARGE (2.0x)`: Double damage dealt, forfeits own Aegis mitigation (0 Block, zero defense).
   - `PARRY (0.5x REFLECT)`: Half damage dealt, reflects 50% incoming damage if opponent Overcharges or attacks with a weak hand (Pair or High Card).
@@ -197,19 +182,17 @@ Requirements:
 - [x] Accessibility features: high-contrast suit glyphs, CRT toggle, mobile responsiveness.
 - [x] Clean compilation under `npm --workspace=packages/client run build`.
 
-### Verification evidence (2026-10-04)
+### Verification evidence
 
 `handSelection.test.ts` covers all ten partitions, valid lane swaps, cancellation,
 incomplete manual selections, immutable rank updates, burn replacements and fresh
-exchanges. `e2e/ui.spec.ts` covers actual keyboard/touch input, authoritative
-disabled states, both Bleed neighbors, final-three-second commitment indication,
-focus preservation, modal focus/escape, mute synchronization and menu validation.
-Measured 320/390/767/1280px layouts have no horizontal overflow and all visible
-game buttons are at least 44×44px. Vertical scrolling keeps all cards accessible
-on narrow screens; settings remain in a sticky toolbar.
+exchanges. `e2e/ui.spec.ts` follows the visible card/Options disclosures and checks
+keyboard/touch input, authoritative disabled states, Bleed neighbors, countdown
+urgency, focus preservation, rules, preferences and menu validation. Its responsive
+checks enforce six visible shaping buttons (five cards and Ready), one contextual
+card-action tray, no horizontal overflow and 44×44px minimum button targets.
 
-The existing integration suite now checks rules access in every match phase and
-uses distinct Host/Join actions. All 13 browser cases pass, alongside 234
-unit/integration tests and the unchanged 300-match simulator. Client compilation
-and the full build/test/sim gate pass. UI scanlines/glow switch independently of
-the motion preference; Spec-07 supplies the renderer compositor implementation.
+The 2026-10-05 redesign verification and its scope are recorded in
+[`docs/qa/ui_redesign.md`](../qa/ui_redesign.md). Tutorial guidance is refreshed
+when card controls are replaced; portrait and short landscape instruction sheets
+leave their required controls unobstructed.
