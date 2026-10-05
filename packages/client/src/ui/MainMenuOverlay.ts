@@ -17,7 +17,8 @@ export class MainMenuOverlay {
     this.container = document.createElement('section');
     this.container.id = 'main-menu-overlay'; this.container.className = 'screen';
     this.container.setAttribute('aria-label', 'Main menu');
-    this.container.innerHTML = `<div class="menu-content">
+    this.container.innerHTML = `<a class="splash-source" href="https://github.com/dsn999/cyberante" target="_blank" rel="noopener noreferrer" aria-label="View CYBERANTE on GitHub (opens in a new tab)">GITHUB ↗</a>
+    <div class="menu-content">
       <header class="splash-hero">
         <p class="splash-kicker"><span class="status-light" aria-hidden="true"></span> ENTER THE CHROMATIC ARENA</p>
         <h1 class="menu-title" aria-label="CYBERANTE"><span>CYBER</span><span>ANTE<span class="title-dot" aria-hidden="true">.</span></span></h1>

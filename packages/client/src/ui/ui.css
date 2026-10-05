@@ -17,6 +17,8 @@ body::after { content: ''; position: fixed; inset: 0; pointer-events: none; z-in
 body.clean-display::after { display: none; }
 body.clean-display .display-glow, body.clean-display .hand-card { text-shadow: none; box-shadow: none; }
 #main-menu-overlay { z-index: 20; background: radial-gradient(circle, #0b1329cc, #030712f5); }
+.splash-source { display: flex; align-items: center; justify-content: center; width: fit-content; min-height: 44px; margin-left: auto; padding: 8px 12px; border: 1px solid var(--line); border-radius: 6px; background: #080e21e8; color: var(--muted); font: 11px var(--font-mono); letter-spacing: .1em; text-decoration: none; touch-action: manipulation; }
+.splash-source:hover { color: var(--cyan); border-color: var(--cyan); }
 .menu-content { width: min(100%, 480px); margin: max(16px, 4vh) auto; display: grid; gap: 18px; }
 .menu-title { font: 900 clamp(26px, 7vw, 48px) var(--font-display); letter-spacing: .12em; color: var(--cyan); }
 .menu-subtitle { color: var(--muted); font: 14px var(--font-mono); line-height: 1.6; }
