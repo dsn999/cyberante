@@ -56,6 +56,11 @@ describe('Spec-02 evaluation scores and boundaries', () => {
   it('describes an Ace-low straight flush without calling it Ace-high', () => {
     expect(evaluateAssaultHand(assault([14, 2, 3], true)).description).toBe('Straight Flush (A-2-3)');
   });
+  it('describes Jack pairs and preserves their kicker score', () => {
+    expect(evaluateAssaultHand(assault([11, 2, 11]))).toMatchObject({
+      tier: 'PAIR', description: 'Pair of Jacks', score: 20178, baseDamage: 5,
+    });
+  });
 
   const defenseCases: Array<[HandTier2, [Rank, Rank], boolean, number, number]> = [
     ['PAIR', [9, 9], false, 8, 2009],

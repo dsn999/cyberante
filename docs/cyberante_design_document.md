@@ -6,6 +6,16 @@
 **Development Methodology:** Spec-Driven Agentic Implementation (Typed Stubs + OpenAI Codex)  
 **Document Role:** System Architecture Blueprint (Architect: AI / Project Manager: User)
 
+**QA status (2026-10-04):** Software verification passes. Full certification
+remains pending physical-device performance evidence and public deployment.
+The user approved retaining the detailed implementation specs and reconciling
+this blueprint to their refinements. See the [requirement-by-requirement QA report](qa/design_certification.md).
+
+**Contract precedence:** The ten detailed specs define implementation behavior.
+This blueprint summarizes their contracts. Contest scoring statements are
+design intent; eligibility and official submission rules require separate
+confirmation. No universal cold-load or tutorial-completion time is guaranteed.
+
 ---
 
 ## 1. Executive Summary & Contest Alignment
@@ -78,11 +88,11 @@ Players manipulate hand entropy by expending their 3 Flux points:
 
 #### B. Burn-to-Cast (Tactical Discard)
 A player may discard a single card from their hand to activate an immediate tactical power, instantly drawing one replacement card from the deck (maximum 1 burn per exchange):
-*   **Burn Spade:** *Static Veil* — Obfuscates 1 of your Assault cards during the clash and disables the opponent's active stance multiplier.
+*   **Burn Spade:** *Static Veil* — Suppresses the opponent's Overcharge damage bonus and Parry reflection. Overcharge still forfeits its user's Aegis; Parry retains its half-damage multiplier. Both hands are fully revealed during clash, as specified in Specs 02/03/09.
 *   **Burn Diamond:** *Hard Barrier* — Adds a flat absorption barrier equal to the card's numerical pip value to the Aegis Line:
     $$\text{Barrier} = \text{Pip}(\text{Card}) \quad (\text{Face cards} = 10, \, A = 11)$$
 *   **Burn Heart:** *Siphon Seed* — If your Assault hand successfully deals unmitigated damage, convert $50\%$ of damage dealt directly into Round Guard recovery.
-*   **Burn Club:** *Sunder* — Instantly negates the opponent's active Aegis shield mitigation by $50\%$.
+*   **Burn Club:** *Sunder* — Shreds the opponent's effective Aegis mitigation and active Barrier by $50\%$, flooring each component separately, as specified in Spec-02.
 
 #### C. Split-Lane Commitment
 Players partition their 5 cards into two operational lines:
@@ -135,7 +145,7 @@ All visuals are rendered purely in code via Three.js and custom GLSL vertex/frag
        ▼                                               ▼
 ┌───────────────────────────────┐     ┌───────────────────────────────┐
 │ Reactive Vector Grid          │     │ Vector Particle & FX Pipeline │
-│ • 2D/3D Infinite Wireframe    │     │ • Geometric Sparks (Triangles)│
+│ • 2D/3D Infinite Wireframe    │     │ • Geometric Sparks (Diamonds) │
 │ • Gravitational Point Warping │     │ • Additive Glow / Bloom Blends│
 │ • Shockwave Impulse Ripple    │     │ • Dynamic Velocity & Decay    │
 └──────────────┬────────────────┘     └───────────────┬───────────────┘
@@ -145,7 +155,7 @@ All visuals are rendered purely in code via Three.js and custom GLSL vertex/frag
                                        ▼
 ┌─────────────────────────────────────────────────────────────┐
 │ Screen-Space Post-Processing Compositor (GLSL)              │
-│ • UnrealBloomPass (Vibrant Neon Glow & Edge Phosphor)       │
+│ • GLSL Threshold Bloom (Neon Glow & Edge Phosphor)         │
 │ • Dynamic Chromatic Aberration (RGB Channel Split on Damage)│
 │ • Procedural CRT Scanlines & Subtle Barrel Curvature        │
 └─────────────────────────────────────────────────────────────┘
@@ -153,17 +163,18 @@ All visuals are rendered purely in code via Three.js and custom GLSL vertex/frag
 
 ### 3.1 The Reactive Neon Vector Grid
 *   **Dynamic Wireframe Matrix:** The arena background consists of a high-density, mathematical grid rendered in intense neon cyan (`#00f3ff`) and deep blue (`#001a33`).
-*   **Gravity Wells & Attractor Points:** Card hovering, Flux transmutation clicks, and stance selections act as local gravity nodes, pulling the grid vertices inward toward the point of interaction:
-    $$\vec{D}_{\text{gravity}}(\vec{P}) = \frac{\vec{C}_{\text{node}} - \vec{P}}{\|\vec{C}_{\text{node}} - \vec{P}\|^2 + \epsilon} \cdot K_{\text{pull}}$$
+*   **Mouse Gravity Well:** Within an 8-unit radius of the cursor, grid vertices displace downwards along $Z$ with inverse-square falloff, as specified in Spec-07:
+    $$\Delta Z_{\text{mouse}} = \frac{-G \cdot \text{strength}}{\|\vec{P}_{xy} - \vec{C}_{\text{mouse}}\|^2 + 1.0}$$
+    Flux clicks and stance selections trigger particle/shockwave feedback at their interaction points. Bass energy modulates grid displacement.
 *   **Clash Shockwave Warp:** During the Clash reveal, an exponential shockwave ripples across the grid from the center of the arena:
     $$Z(r, t) = A_{\max} \cdot e^{-\lambda t} \cdot \sin(k \cdot r - \omega t)$$
 
 ### 3.2 Procedural Vector Cards & Explosive Particles
-*   **Procedural Vector Cards:** Cards are constructed using `LineSegmentsGeometry` and high-contrast glowing edges (cyan for player, hot magenta `#ff0055` for opponent/AI, bright amber `#ffb700` for Flux). Pip icons and rank glyphs are rendered via procedural mathematical vector paths.
-*   **Vector Particle Bursts:** On card burn, damage impact, or round victory, a burst of 100–300 geometric vector particles (glowing lines, diamonds, and triangles) erupt outward with randomized velocities, decaying luminescence, and additive blending (`THREE.AdditiveBlending`).
+*   **Procedural Vector Cards:** Cards use preallocated `BufferGeometry` with `THREE.LineSegments`. Local faces use canonical suit colors: Spades cyan, Clubs green, Diamonds amber and Hearts rose. Opponent/AI faces use hot magenta `#ff0055`. Pip icons and rank glyphs use mathematical vector paths.
+*   **Vector Particle Bursts:** Spec-07 uses a 1,000-vertex pooled `THREE.Points` geometry with additive `PointsMaterial`, procedurally shaped into diamond sparks. Burns emit 100 particles, clashes 250 and local round/match victories 300 suit-colored confetti particles, with random velocities and decaying luminescence. Reduced motion reduces emissions by 75%.
 
 ### 3.3 Post-Processing & CRT Compositor
-*   **Neon Bloom Pass:** High-luminance threshold bloom captures all vector line edges, creating an authentic 1980s vector arcade phosphor glow.
+*   **Neon Bloom Pass:** A custom GLSL compositor samples high-luminance neighbors around vector edges to produce phosphor glow, following Spec-07's shader-pass contract.
 *   **Dynamic Chromatic Aberration:** Radial RGB channel separation intensifies proportionately with incoming damage:
     $$\Delta R = (u, v) + \vec{d} \cdot I_{\text{damage}}, \quad \Delta B = (u, v) - \vec{d} \cdot I_{\text{damage}}$$
 *   **Scanline & Vignette Shaders:** Subtle sine-wave scanline raster lines and soft edge vignetting complete the arcade aesthetic without obscuring UI readability.
@@ -172,7 +183,7 @@ All visuals are rendered purely in code via Three.js and custom GLSL vertex/frag
 
 ## 4. Procedural Audio Architecture (Web Audio API)
 
-To satisfy the zero-install, zero-download constraint while creating an electrifying atmosphere, `CYBERANTE` features a fully procedural, code-driven Web Audio synthesis engine. No `.mp3`, `.ogg`, or `.wav` files are loaded.
+To satisfy the zero-install, zero-external-media constraint while creating an electrifying atmosphere, `CYBERANTE` features a fully procedural, code-driven Web Audio synthesis engine. No `.mp3`, `.ogg`, or `.wav` files are loaded.
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -183,7 +194,7 @@ To satisfy the zero-install, zero-download constraint while creating an electrif
        ▼                                               ▼
 ┌───────────────────────────────┐     ┌───────────────────────────────┐
 │ Procedural Music Synthesizer  │     │ Procedural SFX Synthesizer    │
-│ • Dual-Oscillator Bassline    │     │ • Flux Chime (Arpeggiated)   │
+│ • Phase-Specific Synth Voices │     │ • Directional Flux Chirps    │
 │ • Arpeggiated Cyber-Sequencer │     │ • Burn Burst (Filtered Noise) │
 │ • Dynamic BPM (Pacing Shift)  │     │ • Sub-Bass Stance Impact      │
 │ • Low-Pass Filter Modulation  │     │ • Laser Clash & Glitch Zap    │
@@ -193,13 +204,13 @@ To satisfy the zero-install, zero-download constraint while creating an electrif
                                        │
                                        ▼
 ┌─────────────────────────────────────────────────────────────┐
-│ Master Audio Bus -> Dynamics Compressor -> Stereo Audio Out │
+│ Master Gain -> AnalyserNode (FFT) -> Audio Destination      │
 │ • Real-time Audio Reactive FFT Data fed back to GLSL Shaders│
 └─────────────────────────────────────────────────────────────┘
 ```
 
 ### 4.1 Generative Synthwave Music Engine
-*   **Architecture:** Two polyphonic oscillator nodes (Sawtooth + Square) running through a 24dB resonant low-pass filter (`BiquadFilterNode`) and feedback delay.
+*   **Architecture:** Spec-06 defines phase-specific, bounded oscillator voices with gain envelopes and a shared resonant low-pass `BiquadFilterNode`. Shaping uses triangle arpeggios and sawtooth bass; Commitment uses square arpeggios and sawtooth bass; ambient/pad voices use triangles and Clash uses a sine bass drop. Music and SFX buses feed master gain (maximum 0.3), then FFT analyser and audio destination. No delay or compressor is required by this contract.
 *   **Adaptive Musical Phases:**
     *   *Waiting / Deal Phase:* Low-frequency ambient drone in D-minor ($85\text{ BPM}$) with a gentle filter sweep.
     *   *Shaping Phase:* An 8-step driving synthesizer arpeggio begins ($115\text{ BPM}$), building player focus.
@@ -208,12 +219,12 @@ To satisfy the zero-install, zero-download constraint while creating an electrif
 *   **Audio-Visual Reactivity:** An `AnalyserNode` extracts real-time FFT frequency buckets (Bass, Mid, High), feeding them into the Three.js uniforms to drive the reactive vector grid warp and neon pulse in exact tempo with the music.
 
 ### 4.2 Interactive Sound Effects Palette
-*   **UI Hover / Click:** Fast sine-wave chirp ($880\text{ Hz} \rightarrow 1760\text{ Hz}$ over $40\text{ ms}$).
-*   **Flux Pip Nudge:** Dual square-wave blip with upward or downward pitch bend matching the rank increment/decrement.
-*   **Suit Bleed:** Smooth resonant bandpass filter sweep across a rich triangle harmonic chord.
+*   **UI Click:** Sine-wave chirp ($800\text{ Hz} \rightarrow 200\text{ Hz}$ over $40\text{ ms}$), as specified in Spec-06.
+*   **Flux Pip Nudge:** Triangle chirp from 440 Hz to 660 Hz (up) or 330 Hz (down) over 80 ms.
+*   **Suit Bleed:** Dual detuned triangle voices at 440/444 Hz through a resonant bandpass sweep over 150 ms.
 *   **Burn-to-Cast Discard:** White-noise buffer burst passed through a fast-decay low-pass filter, creating a tactile "cybernetic burn" pop.
-*   **Stance Lock-in:** Deep sine sub-drop ($120\text{ Hz} \rightarrow 40\text{ Hz}$) with slight overdrive distortion.
-*   **Clash Reveal & Laser Damage:** Frequency-modulated (FM) laser zap followed by an explosion burst whose duration and intensity scale directly with damage dealt.
+*   **Stance Selection:** Brace uses a low square-wave thud; Overcharge a rising 220→880 Hz sawtooth surge; Parry a 1400 Hz ring-modulated metallic chime.
+*   **Clash Reveal & Laser Damage:** Dual-oscillator FM laser pitch drop followed by a distorted 65→30 Hz sub-bass impact. `playDamageImpact(isLethal)` selects a 0.3-second ordinary or 0.6-second lethal impact. Match victory/defeat use distinct ascending/descending fanfares.
 
 ---
 
@@ -234,7 +245,7 @@ The game is structured around three primary entry points accessible from a sleek
 
 ### 5.1 Mode 1: Online Multiplayer (WebSockets)
 *   **Matchmaking:** Players can create a private room (generating a 4-character room code) or join via a shareable direct URL (`?room=CYBR`).
-*   **Authoritative Server Loop:** Full authoritative state machine running on Node.js/Bun, managing simultaneous lock-in countdowns and validating moves.
+*   **Authoritative Server Loop:** Full authoritative state machine running on Node.js 20 or newer, managing simultaneous lock-in countdowns and validating moves. Bun is not part of the verified runtime contract.
 
 ### 5.2 Mode 2: Solo Mode vs. Local Classical AI
 *   **Purpose:** Critical contest safeguard! Allows judges to experience complete, high-stakes Best-of-3 gameplay instantly without requiring a second human player online.
@@ -244,9 +255,9 @@ The game is structured around three primary entry points accessible from a sleek
 ### 5.3 Mode 3: Interactive Step-by-Step Tutorial
 *   **Interactive Guided Walkthrough:** Direct, hands-on tutorial selectable from the main screen that walks new players through core mechanics across 4 progressive steps:
     1.  *Lesson 1: The Hand & The Split* — Explains 3-Card Assault vs. 2-Card Aegis scoring.
-    2.  *Lesson 2: Flux Transmutations* — Prompts player to spend 1 Flux to nudge a $6$ to a $7$, completing an open-ended Straight.
+    2.  *Lesson 2: Flux Transmutations* — Prompts player to spend 1 Flux to nudge a $4$ to a $3$, completing an A–2–3 Straight Flush, as specified in Spec-09.
     3.  *Lesson 3: Burn-to-Cast* — Teaches burning a Diamond card for a defensive barrier before entering combat.
-    4.  *Lesson 4: Stance Clash* — Explains Brace vs. Overcharge vs. Parry, followed by a simulated live clash against a passive training drone.
+    4.  *Lesson 4: Stance Clash* — Requires an Overcharge commitment against a Parry training drone and resolves the shared combat engine's real damage, barrier and reflection rules.
 *   **In-Game Quick Reference Card:** A collapsible floating HUD button `[ ? RULES ]` allows players to inspect hand rankings, stance matchups, and burn abilities at any time during an active match.
 
 ---
@@ -290,7 +301,7 @@ The AI evaluates its 5-card hand across a weighted utility scoring matrix:
 
 ### 6.2 Bot Personalities / Archetypes
 Players can choose or randomly face three classical AI personalities:
-1.  **Cipher-0 (Balanced / Tactical):** Calculates standard expected utility. Preserves Aegis defense if player has high Guard; saves Flux for completing Straights and Flushes.
+1.  **Cipher-0 (Balanced / Tactical):** Uses Spec-05's balanced utility weights. Searches the initially selected Assault partition for at most one rank nudge that upgrades the tier and improves utility by at least 3. Uses prioritized burns and HP-dependent stance selection; it does not schedule Suit Bleed.
 2.  **Vektor-Aggro (Aggressive / Overcharge):** Heavily weights Assault line power over Aegis defense. Frequently executes Overcharge stances and burns Club cards (*Sunder*) to destroy player defenses.
 3.  **Aegis-Wall (Defensive / Counter):** Maximizes Aegis mitigation (pairs and suited cards). Burns Diamond cards (*Barrier*) and frequently deploys *Parry* to punish aggressive human stances.
 
@@ -310,7 +321,7 @@ Players can choose or randomly face three classical AI personalities:
                                  │ (Only in Online Mode)
                                  │
 ┌────────────────────────────────▼────────────────────────────────┐
-│               Authoritative Game Server (Node/Bun)              │
+│                 Authoritative Game Server (Node.js)              │
 │   • Room Lifecycle Manager     • Deterministic CSPRNG Deck      │
 │   • 15s/10s Phase Timers       • Anti-Cheat Masking Engine      │
 │   • 30s Disconnect Grace       • Automated Headless Test Suites │
@@ -318,7 +329,7 @@ Players can choose or randomly face three classical AI personalities:
 ```
 
 ### 7.1 Anti-Cheat & Authority Guarantees
-*   **Card Masking:** Server holds all private card state. During Shaping and Commitment phases, clients receive full data for their own 5 cards, while opponent cards are sent as masked hashes (`{ id: "hidden", suit: "UNKNOWN", rank: 0 }`).
+*   **Card Privacy:** Server holds all private card state. During Deal, Shaping and Commitment, `STATE_TICK.selfCards` contains only the receiving player's hand. Opponent cards, selected lanes and stance are omitted entirely until `CLASH_REVEAL`, when `ROUND_OUTCOME` reveals both hands, as specified in Specs 01/04.
 *   **Simultaneous Lock-In:** Clients submit their 3-card/2-card split and chosen stance blinds. If a client disconnects or times out before the 10-second Commitment window closes, the server deterministically auto-locks the optimal ten-partition split (highest Assault score, then Aegis score, then first partition) and defaults to *Brace* stance.
 *   **Disconnect Lifecycle:** Unexpected socket loss reserves the seat through its own 30-second grace deadline, even if both players disconnect; normal phase timers continue. Resume requires a crypto token, a disconnected seat and an unexpired deadline. Deliberate `CMD_LEAVE_ROOM` forfeits immediately. Grace expiry cancels phase timers and reports the winner in `STATE_TICK`; delete the room once every participant has departed or exhausted grace.
 
@@ -422,7 +433,7 @@ The codebase is organized as a clean, modular TypeScript monorepo with explicit 
 cyberante/
 ├── .github/
 │   └── workflows/
-│       └── ci.yml                     # Headless automated testing & linting
+│       └── ci.yml                     # Strict builds, tests, coverage & bundle audits
 ├── docs/
 │   ├── cyberante_design_document.md   # Master Architectural Blueprint
 │   └── agent_specs/                   # Numbered Implementation Specs for OpenAI Codex
@@ -446,7 +457,7 @@ cyberante/
 │   │       ├── combatCalculator.ts    # Stance, mitigation, barrier, and parry formulas
 │   │       └── constants.ts           # Timers, base damage formulas, costs
 │   │
-│   ├── server/                        # Authoritative Node/Bun WebSocket Server
+│   ├── server/                        # Authoritative Node.js WebSocket Server
 │   │   ├── package.json
 │   │   ├── tsconfig.json
 │   │   └── src/
@@ -538,7 +549,7 @@ To ensure rapid, defect-free execution without hallucination or architectural dr
     *   *Invariants:* Strictly non-LLM; deterministic ten-partition utility calculation, one-step Pip Nudge and prioritized tactical burns. Spec-10 owns the 1–2s human thinking pauses in the solo controller.
 *   **`spec-06-procedural-audio-engine.md` (Web Audio API Synthesizer):**
     *   *Scope:* Implement `packages/client/src/audio/AudioEngine.ts`, `ProceduralMusic.ts`, and `SoundEffects.ts`.
-    *   *Invariants:* Zero audio file downloads; procedural dual-oscillator synthwave arpeggiator; responsive SFX triggers; dynamic audio-reactive FFT node.
+    *   *Invariants:* Zero audio file downloads; procedural phase-specific synthwave arpeggiator; responsive SFX triggers; dynamic audio-reactive FFT node, following Spec-06.
 *   **`spec-07-neon-vector-renderer.md` (Three.js Reactive Neon Vector Engine):**
     *   *Scope:* Implement `VectorScene.ts`, `ReactiveGrid.ts`, `ProceduralCard.ts`, `ParticleSystem.ts`, and GLSL shaders.
     *   *Invariants:* Zero image texture imports; dynamic wireframe grid distortion under gravity points; neon bloom post-processing; additive vector particle sparks.
@@ -559,7 +570,7 @@ When dispatching tasks to OpenAI Codex, prompts must follow the strict four-part
 1. **Target Files:** Specify the exact file path(s) to create or edit.
 2. **Contract Invariants:** Reference `packages/shared/src/types.ts` as immutable ground truth.
 3. **Behavioral Bounds:** Do not add external raster/audio dependencies; follow strict error handling.
-4. **Verification Command:** The exact test command (e.g., `npm test -- evaluator.test.ts`) that must pass with zero errors.
+4. **Verification Command:** The exact test command (e.g., `npx vitest run packages/server/src/__tests__/evaluator.test.ts`) that must pass with zero errors.
 ```
 
 ---
@@ -573,8 +584,8 @@ A rigorous cross-examination of the Handshake AI Skills Studio × OpenAI Multipl
 | Identified Risk / Weakness | Impact on Contest Judging | Architectural Mitigation in CYBERANTE |
 | :--- | :--- | :--- |
 | **"The Empty Lobby Problem"** | Contest judges often test entries alone without an active multiplayer partner. If matchmaking requires two humans, the judge gets stuck on a loading screen and fails the entry. | **Solo Mode vs. Local Classical AI**: A judge can immediately click "Play Solo" from the main screen to experience full, responsive Best-of-3 gameplay against a tailored bot. |
-| **Steep Learning Curve for Poker-Combat** | Unfamiliarity with split-lane commitment or Flux transmutations could cause judges to score low on "Polish & Thoughtfulness" (1/5: *Rough, confusing, limited usability*). | **Interactive Main Menu Tutorial & Rules Overlay**: A guided 4-step interactive tutorial introduces every mechanic in 60 seconds, plus an in-game HUD cheat sheet. |
-| **External Asset Latency / 404 Failures** | Slow Wi-Fi or hosted server latency during asset loading creates jank or failed demo presentations. | **100% Procedural Generation**: Zero audio files and zero image textures. All graphics (Three.js vectors) and audio (Web Audio API) are synthesized on-the-fly in code, loading instantly ($< 300\text{ ms}$). |
+| **Steep Learning Curve for Poker-Combat** | Unfamiliarity with split-lane commitment or Flux transmutations could cause judges to score low on "Polish & Thoughtfulness" (1/5: *Rough, confusing, limited usability*). | **Interactive Main Menu Tutorial & Rules Overlay**: Four user-paced, action-gated lessons teach split lanes, a Pip Nudge, a Diamond burn and a stance clash. The rules overlay covers the remaining mechanics. Completion time depends on the player, as permitted by Spec-09. |
+| **External Asset Latency / 404 Failures** | Slow Wi-Fi or hosted server latency during asset loading creates jank or failed demo presentations. | **100% Procedural Generation**: Zero audio files and zero image textures. All graphics and audio are generated in code. Spec-10 enforces less than 250,000 gzip bytes across all emitted JavaScript; cold-load timing depends on network/device conditions and is not inferred from bundle size. |
 | **Flaky Network / Disconnect Timeouts** | Latency spikes or browser tab switching during live multiplayer matches could freeze the game room. | **Authoritative Auto-Lock Timeouts**: If a player's connection drops during the 10-second commitment window, the server automatically computes the optimal ten-partition split (highest Assault score, then Aegis score, then first partition) and defaults to *Brace*, ensuring matches never hang. |
 | **OpenAI Attribution Clarity** | The contest explicitly mandates: *"built with OpenAI: Create a Multiplayer Game mission in Handshake."* Earlier draft referenced non-OpenAI tooling. | **OpenAI Codex Spec-Driven Pipeline**: All references updated to OpenAI Codex. Implementation artifacts, prompt specifications, and git history explicitly document OpenAI Codex's role as the agentic coder implementation expert. |
 
@@ -582,6 +593,6 @@ A rigorous cross-examination of the Handshake AI Skills Studio × OpenAI Multipl
 As specified in Page 1 of the Contest Official Rules, entries must provide four specific components prior to the October 30, 2026 deadline:
 
 *   [x] **a. Project Title:** `CYBERANTE: Procedural Vector Poker-Combat Matrix`
-*   [ ] **b. Project Cover Image:** High-impact vector screenshot showcasing the glowing neon vector grid, blooming cards, and particle explosion shockwave (generated via WebGL canvas capture).
-*   [ ] **c. Project Description:** Concise, compelling summary highlighting the fusion of poker strategy, fighting-game stances, zero-asset WebGL/WebAudio procedural generation, and full Solo/Multiplayer capabilities built with OpenAI Codex.
-*   [ ] **d. Project Link/URL:** Publicly accessible, zero-install web deployment URL (e.g., hosted on Fly.io / Cloudflare Pages) playable immediately on any modern browser.
+*   [x] **b. Project Cover Image:** [Prepared WebGL clash capture](submission/cover.png) showcasing the neon vector grid, revealed cards and particle shockwave. Local artifact; not yet submitted.
+*   [x] **c. Project Description:** [Prepared description](submission/description.md) highlighting poker strategy, fighting-game stances, procedural WebGL/WebAudio, Solo/Multiplayer and OpenAI Codex. Local artifact; not yet submitted.
+*   [ ] **d. Project Link/URL:** Publicly accessible, zero-install game URL served by a Node.js host with HTTPS and WebSocket support. Verify gameplay through the public URL on the required desktop/mobile device classes before submission.

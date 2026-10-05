@@ -11,6 +11,11 @@ checklists remain open until recordings have been reviewed.
 
 ## Recommended route
 
+Use a separate physical computer and phone, with an external tester if needed.
+This route does not require the affected laptop to open the game, install GPU
+libraries or run Playwright. Its RTX GPU would not establish the integrated-GPU
+result even if a native Windows run succeeded.
+
 Have a tester use the production game in a normal native Chrome browser on:
 
 | Required evidence | Suitable device |
@@ -28,6 +33,22 @@ The production Node server can run in WSL or elsewhere: it serves HTTP/WebSocket
 traffic and does not render the game. Use a URL reachable by both test devices.
 Hosting or device procurement is a separate execution step; neither was
 performed when this protocol was prepared.
+
+For a tester with a repository checkout on a separate computer, the existing
+production setup is sufficient:
+
+```bash
+npm ci
+npm run build
+npm run verify:build
+npm start
+```
+
+Open `http://localhost:8080/` on that computer. The phone needs a reachable game
+URL, supplied by that computer's networking setup or a deployed Node server;
+`localhost` on the phone refers to the phone itself. There is no need to start
+the native benchmark, install Playwright browsers or run concurrent renderers.
+See [production operation](deployment.md) for server and deployment settings.
 
 Use the normal game URL (`/`). The current `/benchmark.html` and CLI measurement
 call `gl.finish()` per frame. This alternative does not use that measurement
@@ -85,3 +106,19 @@ Only close a hardware checkbox when its trace and metadata establish the target
 on the qualifying device. Store the reviewed evidence and build identifier with
 the acceptance record. This route preserves both physical-device obligations
 and avoids further native rendering experiments through WSL.
+
+## Evidence handoff
+
+Give the tester this protocol and the exact build identifier. Ask for one bundle
+per qualifying device, using the [capture record](performance_capture_record.md):
+
+- Completed device, GPU and settings record.
+- Exported frame traces for splash, match/clashes/victory and the warm repeat.
+- Scenario timestamps so each effect can be located in the trace.
+- Graphics diagnostics confirming the active hardware renderer.
+- Notes about dropped frames, context loss or any interruption.
+
+The tester collects evidence; review determines whether it satisfies the
+contract. Keep the two Spec-10B hardware checkboxes open until both bundles pass
+review. Missing devices or traces leave acceptance pending, rather than
+substituting software timing, an RTX result or browser emulation.

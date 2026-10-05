@@ -29,7 +29,7 @@ export class VectorScene {
   public init(container: HTMLElement): void;
   public triggerShockwave(x: number, y: number, intensity?: number): void;
   public triggerSparks(x: number, y: number, colorHex?: number): void;
-  public triggerClashExplosion(p1Stance: Stance, p2Stance: Stance, intensity: number): void;
+  public triggerClashExplosion(p1Stance: Stance, p2Stance: Stance, intensity: number, incomingDamage?: number): void;
   public setAudioEnergy(bass: number, mid: number, high: number): void;
 
   public toggleReducedMotion(): boolean;
@@ -40,6 +40,13 @@ export class VectorScene {
   public destroy(): void;
 }
 ```
+
+The controller passes local-player stance first and opponent stance second.
+Optional `incomingDamage` sets chromatic intensity from damage received by the
+local player; zero incoming damage adds no damage-driven aberration. Existing
+three-argument calls retain intensity-driven behavior. Round-win and match-win
+celebrations use the same pooled `triggerVictoryConfetti()` effect, deduplicated
+by exchange and match respectively.
 
 ### 3.2 ReactiveGrid Class (`packages/client/src/render/ReactiveGrid.ts`)
 ```typescript
@@ -164,7 +171,7 @@ Requirements:
 ### Verification evidence and acceptance staging (2026-10-04)
 
 - Exact client build command and the repository build/test/sim gates pass.
-- 23 renderer unit tests cover subdivided GPU grid uniforms, elapsed-time pooled
+- 29 renderer unit tests cover subdivided GPU grid uniforms, elapsed-time pooled
   particles, all ranks/suits, face masking, the compositor, settings, projection,
   resizing, context/visibility recovery and complete resource destruction.
 - Native Chromium acceptance checks shader compilation, changing splash pixels,
@@ -178,4 +185,4 @@ Requirements:
   `scripts/rendererBenchmark.mjs` reports GPU identity, viewport, framebuffer size,
   FPS and mean/p95 intervals with actual WebGL work completion.
 - See [the implementation strategy](../implementation_strategy.md#spec-07-implementation-evidence-2026-10-04)
-  for dispatch evidence and the native benchmark command.
+  for dispatch evidence and the software diagnostic command.

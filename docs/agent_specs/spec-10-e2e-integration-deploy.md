@@ -172,11 +172,15 @@ Specs 08, 06, 07 and 09. Its remaining acceptance items are recorded below.
   outside the repository; both termination signals close unfinished HTTP
   requests, sockets and room timers with exit code 0.
 - [x] Production entry points and all emitted chunks audited in CI: no media,
-  raw TypeScript or source maps; 151,674 gzip JavaScript bytes, below 250,000.
-- [x] Build, 346 unit/integration tests, and 300 seeded simulation matches pass.
-- [x] All 30 production browser cases pass with one SwiftShader worker, including
+  raw TypeScript or source maps; 151,849 gzip JavaScript bytes, below 250,000.
+- [x] Build, 358 unit/integration tests, and 300 seeded simulation matches pass.
+- [x] All 32 production browser cases pass with one SwiftShader worker, including
   offline Bo3, online recovery/rematch, audio/renderer behavior, tutorial and
   keyboard/touch controls at emulated desktop/mobile sizes.
+- [x] Master-design QA adds measured 100% evaluator/combat source coverage,
+  public-state bot activity, local-seat clash effects and round-win confetti.
+  The [full QA report](../qa/design_certification.md) records the user-approved
+  master/spec reconciliation and the remaining physical FPS/public URL evidence.
 - [x] Browser diagnostic page captures the real splash/arena/clash and exports
   device/settings/frame metadata, labels software rendering and cancels cleanly
   when hidden. CLI rejects native GPU-forcing options before browser launch.

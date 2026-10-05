@@ -109,6 +109,15 @@ describe('Spec-07 scene, compositor and resource lifecycle', () => {
     const center = scene.screenToWorld(600, 300).clone(); expect(center.x).toBeCloseTo(0); expect(center.y).toBeCloseTo(0); expect(center.z).toBeCloseTo(0);
     const right = scene.screenToWorld(1200, 300); expect(right.x).toBeGreaterThan(30);
   });
+  it.each([[0, 0], [10, 0.25], [20, 0.5], [100, 1], [-10, 0]])('scales aberration with local incoming damage %s independently of outgoing clash strength', (incoming, expected) => {
+    scene.triggerClashExplosion('BRACE', 'OVERCHARGE', 4, incoming);
+    scene.update(1);
+    const postScene = renderer().render.mock.calls[1][0] as THREE.Scene;
+    const uniforms = (postScene.children[0] as THREE.Mesh<THREE.PlaneGeometry, THREE.ShaderMaterial>).material.uniforms;
+    expect(uniforms.uDamageIntensity.value).toBe(expected);
+    scene.toggleReducedMotion(); scene.triggerClashExplosion('BRACE', 'OVERCHARGE', 4, incoming);
+    scene.update(2); expect(uniforms.uDamageIntensity.value).toBe(0);
+  });
   it('celebrates a match victory with pooled suit-colored confetti respecting reduced motion', () => {
     scene.triggerVictoryConfetti(); expect(scene.getDiagnostics().particles).toBe(300);
     scene.toggleReducedMotion(); scene.triggerVictoryConfetti(); expect(scene.getDiagnostics().particles).toBe(72);

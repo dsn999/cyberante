@@ -21,7 +21,7 @@ import {
   SUIT_COLORS,
 } from '@cyberante/shared';
 
-class CyberanteGame {
+export class CyberanteGame {
   private scene: VectorScene;
   private mainMenu: MainMenuOverlay;
   private gameBoard: GameBoardOverlay;
@@ -308,6 +308,7 @@ class CyberanteGame {
           msg.roundNumber, msg.exchangeNumber, self.roundWins, opponent?.roundWins ?? 0,
           self.activeBarrier);
         this.gameBoard.setControls(msg.phase, self.hasCommitted, self.hasBurnedCard);
+        this.gameBoard.setOpponentActivity(opponent ?? null);
         this.gameBoard.setRematchAvailable(this.mode === 'solo' || Boolean(opponent?.connected));
         if (msg.phase === 'MATCH_OVER') {
           this.gameBoard.showBanner(msg.matchWinnerId === this.selfPlayerId ? 'MATCH VICTORY!' : 'MATCH DEFEAT!', 0);
@@ -337,8 +338,14 @@ class CyberanteGame {
     const clashKey = `${resolution.roundNumber}:${resolution.exchangeNumber}`;
     if (this.clashKey !== clashKey) {
       this.clashKey = clashKey;
-      this.scene.triggerClashExplosion(resolution.p1Stance, resolution.p2Stance,
-        Math.max(resolution.p1NetDamageReceived, resolution.p2NetDamageReceived) / 10 + 0.5);
+      const ownStance = isSelfP1 ? resolution.p1Stance : resolution.p2Stance;
+      const opponentStance = isSelfP1 ? resolution.p2Stance : resolution.p1Stance;
+      const incomingDamage = isSelfP1 ? resolution.p1NetDamageReceived : resolution.p2NetDamageReceived;
+      this.scene.triggerClashExplosion(ownStance, opponentStance,
+        Math.max(resolution.p1NetDamageReceived, resolution.p2NetDamageReceived) / 10 + 0.5, incomingDamage);
+      if (resolution.isRoundOver && !resolution.matchWinnerId && resolution.roundWinnerId === this.selfPlayerId) {
+        this.scene.triggerVictoryConfetti();
+      }
       masterAudio.sfx.playClashLaser();
       if (Math.max(resolution.p1NetDamageReceived, resolution.p2NetDamageReceived) > 0) {
         masterAudio.sfx.playDamageImpact(resolution.p1HpRemaining <= 0 || resolution.p2HpRemaining <= 0);

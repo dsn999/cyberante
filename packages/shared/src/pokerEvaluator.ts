@@ -27,7 +27,7 @@ export function evaluateAssaultHand(cards: [Card, Card, Card]): HandEvaluation3 
   const isThreeOfAKind = (r0 === r1) && (r1 === r2);
 
   // Check pair
-  const isPair = (r0 === r1) || (r1 === r2) || (r0 === r2);
+  const isPair = (r0 === r1) || (r1 === r2);
 
   let tier: HandTier3 = 'HIGH_CARD';
   let baseDamage: number = GAME_CONSTANTS.DAMAGE_HIGH_CARD;
@@ -57,8 +57,9 @@ export function evaluateAssaultHand(cards: [Card, Card, Card]): HandEvaluation3 
   } else if (isPair) {
     tier = 'PAIR';
     baseDamage = GAME_CONSTANTS.DAMAGE_PAIR;
-    const pairRank = (r0 === r1 || r0 === r2) ? r0 : r1;
-    const kicker = (r0 === r1) ? r2 : (r1 === r2 ? r0 : r1);
+    // Sorted ranks make the matching pair adjacent; trips were handled above.
+    const pairRank = r0 === r1 ? r0 : r1;
+    const kicker = r0 === r1 ? r2 : r0;
     score = 20000 + pairRank * 16 + kicker;
     description = `Pair of ${rankName(pairRank)}s`;
   } else {

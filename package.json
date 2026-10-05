@@ -20,7 +20,8 @@
     "sim": "npm --workspace=packages/server run sim",
     "test:e2e": "npm run build && playwright test",
     "verify:build": "node scripts/verifyBuild.mjs",
-    "benchmark": "node scripts/rendererBenchmark.mjs"
+    "benchmark": "node scripts/rendererBenchmark.mjs",
+    "test:math:coverage": "vitest run --config vitest.math.config.mts && node scripts/verifyMathCoverage.mjs"
   },
   "keywords": [
     "poker",

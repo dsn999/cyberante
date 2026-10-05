@@ -1,5 +1,5 @@
 import {
-  type Card, type GamePhase, type Stance, type Suit, type Rank, type RoundResolution,
+  type Card, type GamePhase, type Stance, type Suit, type Rank, type RoundResolution, type PlayerPublicState,
   SUIT_GLYPHS, SUIT_COLORS, SUIT_RING, GAME_CONSTANTS, evaluateAssaultHand, evaluateAegisHand,
 } from '@cyberante/shared';
 import { masterAudio } from '../audio/AudioEngine';
@@ -65,6 +65,7 @@ export class GameBoardOverlay {
           <span id="opponent-name" class="name">Waiting for opponent</span>
           <progress id="opponent-hp-bar" value="20" max="20" aria-label="Opponent Guard HP"></progress>
           <div class="stats-values"><span>GUARD <strong id="opponent-hp">20</strong></span><span>WINS <strong id="opponent-wins">0</strong></span></div>
+          <span id="opponent-activity" role="status" aria-live="polite" hidden></span>
         </div>
       </header>
       <div class="room-actions"><span id="room-code"></span><button id="btn-copy-code" hidden>COPY CODE</button><button id="btn-copy-link" hidden>COPY JOIN LINK</button><button id="btn-rematch" hidden>REMATCH</button></div>
@@ -306,6 +307,13 @@ export class GameBoardOverlay {
   public resetView(): void {
     this.viewGeneration++; this.exchangeKey = ''; this.resetHandSelection(); this.updateState('LOBBY_WAIT', 0, 20, 3, 20, []);
     this.setControls('LOBBY_WAIT', false, false); this.setNames('Operative', 'Waiting for opponent', true); this.setRoom('');
+    this.setOpponentActivity(null);
+  }
+  public setOpponentActivity(state: Pick<PlayerPublicState, 'fluxRemaining' | 'hasBurnedCard' | 'hasCommitted'> | null): void {
+    const indicator = this.element('opponent-activity');
+    indicator.hidden = !state;
+    const value = state ? `FLUX ${state.fluxRemaining}/${GAME_CONSTANTS.STARTING_FLUX}${state.hasBurnedCard ? ' • BURN CAST' : ''}${state.hasCommitted ? ' • LOCKED IN' : ''}` : '';
+    if (indicator.textContent !== value) indicator.textContent = value;
   }
   public setNames(self: string, opponent: string, connected: boolean): void {
     this.text('player-name', self); this.text('local-dock-name', `${self} • YOUR HAND`); this.text('opponent-name', `${opponent}${connected ? '' : ' • reconnecting'}`);

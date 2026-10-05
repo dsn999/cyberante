@@ -150,12 +150,12 @@ export class VectorScene {
     this.burstOrigin.set(x, y, 0); this.particles?.burst(this.burstOrigin, 100, colorHex);
     this.triggerShockwave(x, y, 1.5);
   }
-  public triggerClashExplosion(p1Stance: Stance, p2Stance: Stance, intensity: number): void {
+  public triggerClashExplosion(p1Stance: Stance, p2Stance: Stance, intensity: number, incomingDamage?: number): void {
     const strength = Math.max(0.5, Math.min(4, intensity));
     this.burstOrigin.set(-1.5, 0, 0); this.particles?.burst(this.burstOrigin, 125, 0x00f3ff, p1Stance === 'OVERCHARGE' ? 1.8 : 1.3);
     this.burstOrigin.set(1.5, 0, 0); this.particles?.burst(this.burstOrigin, 125, 0xff0055, p2Stance === 'OVERCHARGE' ? 1.8 : 1.3);
     this.triggerShockwave(0, 0, strength * 2);
-    this.damage = this.reduced ? 0 : strength / 4;
+    this.damage = this.reduced ? 0 : Math.max(0, Math.min(1, incomingDamage === undefined ? strength / 4 : incomingDamage / 40));
   }
   public triggerVictoryConfetti(): void {
     this.burstOrigin.set(-5, 3, 0); this.particles?.burst(this.burstOrigin, 75, 0x00f3ff, 1.2);

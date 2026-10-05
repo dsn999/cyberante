@@ -1,0 +1,410 @@
+{
+  "recordedAt": "2026-10-05T00:30:53.003Z",
+  "baselineCommit": "f64b0b231669a53f0ef2c7a035a85fe728a629df",
+  "scope": "Baseline plus the QA changes committed with this record; observed local command results, not remote CI or physical-device certification.",
+  "node": "v24.21.0",
+  "gates": {
+    "build": {
+      "exitCode": 0
+    },
+    "unitIntegration": {
+      "exitCode": 0,
+      "serverSharedTests": 230,
+      "clientTests": 128,
+      "totalTests": 358
+    },
+    "simulation": {
+      "exitCode": 0,
+      "matches": 300,
+      "mirrorP1Wins": 93,
+      "mirrorP2Wins": 107,
+      "mirrorExchangesPerRound": 2.2,
+      "aggroWins": 50,
+      "wallWins": 50,
+      "aggroWallExchangesPerRound": 2.14
+    },
+    "mathCoverage": {
+      "exitCode": 0,
+      "tests": 68,
+      "sourceFiles": [
+        {
+          "file": "packages/shared/src/pokerEvaluator.ts",
+          "sha256": "c77a471ff645e82b8d31968e4964d19b1f8c415b25ff8716302e3930aae933f0",
+          "coverage": {
+            "lines": {
+              "total": 100,
+              "covered": 100,
+              "skipped": 0,
+              "pct": 100
+            },
+            "functions": {
+              "total": 3,
+              "covered": 3,
+              "skipped": 0,
+              "pct": 100
+            },
+            "statements": {
+              "total": 100,
+              "covered": 100,
+              "skipped": 0,
+              "pct": 100
+            },
+            "branches": {
+              "total": 45,
+              "covered": 45,
+              "skipped": 0,
+              "pct": 100
+            }
+          }
+        },
+        {
+          "file": "packages/shared/src/combatCalculator.ts",
+          "sha256": "b2e5a5bff910edc6d7d1ec619d9c5d0f41f83579b22f11a760314542244868f4",
+          "coverage": {
+            "lines": {
+              "total": 142,
+              "covered": 142,
+              "skipped": 0,
+              "pct": 100
+            },
+            "functions": {
+              "total": 3,
+              "covered": 3,
+              "skipped": 0,
+              "pct": 100
+            },
+            "statements": {
+              "total": 142,
+              "covered": 142,
+              "skipped": 0,
+              "pct": 100
+            },
+            "branches": {
+              "total": 55,
+              "covered": 55,
+              "skipped": 0,
+              "pct": 100
+            }
+          }
+        }
+      ]
+    },
+    "bundleAudit": {
+      "exitCode": 0,
+      "gzipBytes": 151849,
+      "limitBytes": 250000,
+      "gzipLevel": 9
+    },
+    "browser": {
+      "exitCode": 0,
+      "tests": 32,
+      "workers": 1,
+      "rendering": "SwiftShader",
+      "durationReported": "3.5 minutes"
+    },
+    "productionAudit": {
+      "exitCode": 0,
+      "reportedAdvisories": 0
+    },
+    "fullDependencyAudit": {
+      "exitCode": 1,
+      "advisories": {
+        "moderate": 3,
+        "high": 1,
+        "critical": 2,
+        "total": 6
+      },
+      "scope": "Development toolchain"
+    },
+    "exactSpecCommands": [
+      {
+        "command": "npx vitest run packages/server/src/__tests__/evaluator.test.ts packages/server/src/__tests__/combat.test.ts",
+        "exitCode": 0,
+        "tests": 68
+      },
+      {
+        "command": "npx vitest run packages/server/src/__tests__/deckFlux.test.ts",
+        "exitCode": 0,
+        "tests": 25
+      },
+      {
+        "command": "npx vitest run packages/server/src/__tests__/roomLifecycle.test.ts",
+        "exitCode": 0,
+        "tests": 23
+      }
+    ]
+  },
+  "softwareRendererDiagnostic": {
+    "gpu": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+    "viewport": "960x600",
+    "dpr": 1,
+    "frames": 120,
+    "fps": 43.92,
+    "meanMs": 22.77,
+    "p95Ms": 36,
+    "certifiesPhysicalPerformance": false
+  },
+  "productionArtifacts": [
+    {
+      "file": "packages/client/dist/assets/benchmark-CFk9R_W2.js",
+      "bytes": 4491,
+      "sha256": "d95f6999e81c5534c19a623dbb7fa0478925b57141e07330f35177e5faaed94e",
+      "gzipBytes": 2183
+    },
+    {
+      "file": "packages/client/dist/assets/game-C54vyhMx.css",
+      "bytes": 12564,
+      "sha256": "77e37561661f25fed810693c571dbf89e1de5d3b757192d8f4666d651e0aa8d7"
+    },
+    {
+      "file": "packages/client/dist/assets/game-DmCCQ0_n.js",
+      "bytes": 111108,
+      "sha256": "d24e75fa2bbdf0b029d45d22429b18e9708790950e1abbf67fa76ff29a11d1f9",
+      "gzipBytes": 33675
+    },
+    {
+      "file": "packages/client/dist/assets/modulepreload-polyfill-B5Qt9EMX.js",
+      "bytes": 711,
+      "sha256": "d2a32840421496e872ade591618d2fa5c33797605d1aec04301717e5a90757d0",
+      "gzipBytes": 399
+    },
+    {
+      "file": "packages/client/dist/assets/three-Cy3Tryvl.js",
+      "bytes": 462167,
+      "sha256": "dd69ffc73c0271f33ab5a82bd2e91ed9fd92060f18a05a989de14b999056a71f",
+      "gzipBytes": 115592
+    },
+    {
+      "file": "packages/client/dist/benchmark.html",
+      "bytes": 2793,
+      "sha256": "6cec137b453a8c4e85ab78dfe40c5efedc128fd8468aa58b0f4e87096e983382"
+    },
+    {
+      "file": "packages/client/dist/index.html",
+      "bytes": 2318,
+      "sha256": "6b8b896813b264b2b8addfc929d1c6a1109bf93c04028b72b7c72583ac1d9e15"
+    }
+  ],
+  "cover": {
+    "file": "docs/submission/cover.png",
+    "sha256": "02721c1528613f79e55857c1308728e92a4cc00033f46f5728e9dfc02ea53b84",
+    "width": 1440,
+    "height": 900,
+    "rendering": "SwiftShader",
+    "scenario": "Real tutorial Overcharge/Parry clash; cover-only canvas framing"
+  },
+  "unresolved": [
+    "Physical integrated-GPU 60 FPS evidence",
+    "Physical mobile-GPU 60 FPS evidence",
+    "Public production deployment and URL verification"
+  ],
+  "masterReconciliation": {
+    "decision": "User chose to keep detailed specs and reconcile the master design to their refinements.",
+    "implemented": true,
+    "physicalFpsTargetChanged": false,
+    "timingClaims": "Removed universal <300ms load and 60-second teaching guarantees in favor of detailed-spec bundle and user-paced tutorial contracts."
+  },
+  "separateFollowUps": [
+    "External contest rule verification",
+    "Development-toolchain advisory remediation",
+    "Broader browser/runtime/device coverage beyond the verified Chromium/Node environment"
+  ],
+  "reviewedSources": [
+    {
+      "file": "docs/agent_specs/spec-01-shared-contracts.md",
+      "sha256": "2323c33463ac12bde49564ae9542e5dadbb8ab07248d997fc8b62453407a071b"
+    },
+    {
+      "file": "docs/agent_specs/spec-02-poker-evaluator.md",
+      "sha256": "aa9b5b2a9616b46607c7ab25147a67b512e05a84bf9f454a28cec9d7c2211c10"
+    },
+    {
+      "file": "docs/agent_specs/spec-03-deck-flux-engine.md",
+      "sha256": "22bcd503807785b5a74ee5ee2c02a184310e20470b32521c3e22f93519dcd3f7"
+    },
+    {
+      "file": "docs/agent_specs/spec-04-authoritative-server.md",
+      "sha256": "254259d21e9a067f25531df176d8cde8d8c9dd26800f38d7d12cb7a83bd547f0"
+    },
+    {
+      "file": "docs/agent_specs/spec-05-classical-bot-ai.md",
+      "sha256": "5b2e1d486f87f77884b983c6d087114d7abe43f01dfddb56e5ee0c31b7f64ed2"
+    },
+    {
+      "file": "docs/agent_specs/spec-06-procedural-audio-engine.md",
+      "sha256": "52140562afe42615d5f20b06e6c029dba19e38ed9589c5654cbd06c28861d97a"
+    },
+    {
+      "file": "docs/agent_specs/spec-07-neon-vector-renderer.md",
+      "sha256": "245ac654d9ca8a04e94cdbd8491a4e3b1e6d55791c781623996352be9a8ff233"
+    },
+    {
+      "file": "docs/agent_specs/spec-08-client-game-ui.md",
+      "sha256": "a2bbd0bb780e3aaeabc2e70737609d5f358f2c83e39f61596a82bf8a0918851c"
+    },
+    {
+      "file": "docs/agent_specs/spec-09-interactive-tutorial.md",
+      "sha256": "c2b014bb8cbaf7d021bf1d6b002a24e4a75beb2cace3b3d51e1d47c838fa2297"
+    },
+    {
+      "file": "docs/agent_specs/spec-10-e2e-integration-deploy.md",
+      "sha256": "c1c14a0bcc13ed078493285918ad4c2e8173ffbbdd98dd72c2e132f5492713fa"
+    },
+    {
+      "file": "docs/cyberante_design_document.md",
+      "sha256": "f293c1181bcfbef32fdeedb7069133225a9ac885167eec4a8e3f4a6d497a44d5"
+    },
+    {
+      "file": "packages/client/src/ai/BotProfiles.ts",
+      "sha256": "009d023a942bee65b925636a59ed829261095640903c60d0649d744c376b213b"
+    },
+    {
+      "file": "packages/client/src/ai/ClassicalBotAI.ts",
+      "sha256": "09477b28a144b672d6e7eff6f3ff0e719abea1a8c2379b90b865898a8b08b21c"
+    },
+    {
+      "file": "packages/client/src/audio/AudioEngine.ts",
+      "sha256": "db3158a9c43e9228a85df2407ab1fc18c82eaf82ce6c87b7fc886c189432fcd1"
+    },
+    {
+      "file": "packages/client/src/audio/ProceduralMusic.ts",
+      "sha256": "498acaaf4b9411a4311c1a06eaee06f6d5ac783a934f22e6774cc3e8be16cedd"
+    },
+    {
+      "file": "packages/client/src/audio/SoundEffects.ts",
+      "sha256": "38e0410027a66678bd8e17ccb16d5be18f82465035d1d535cf3115e9e297c7bd"
+    },
+    {
+      "file": "packages/client/src/audio/VoicePool.ts",
+      "sha256": "57e74bc835959b987d515949094aa100f74ca45d3234df88f2def0c9bac5e63b"
+    },
+    {
+      "file": "packages/client/src/benchmark.ts",
+      "sha256": "05fe9c79afd7ff18624ee63fbf9757800883e538b324fd0fd684d246ab662d3c"
+    },
+    {
+      "file": "packages/client/src/game/SoloMatchSession.ts",
+      "sha256": "44956230d0ccba546f6de3c888d4c0c25be01b2e1df5b90f713b6f327b2834fa"
+    },
+    {
+      "file": "packages/client/src/main.ts",
+      "sha256": "3c21a61783deb9cc3f7587836486ee9e5164176631d0ac233e9c62ddf619470a"
+    },
+    {
+      "file": "packages/client/src/net/NetworkClient.ts",
+      "sha256": "254a8b0bc46eb26cf240d573901f937319ebb6bc9b6498361738de972bd2a7a9"
+    },
+    {
+      "file": "packages/client/src/render/ParticleSystem.ts",
+      "sha256": "22e1d19aeabd7fde44ec6bb8969f820bd536dbbd1d1c3a299429e5606ad41f1d"
+    },
+    {
+      "file": "packages/client/src/render/ProceduralCard.ts",
+      "sha256": "e16978b035ad54bda2975822e07a90547fcb4c8b31ebad72a9448dd3ee5bd78a"
+    },
+    {
+      "file": "packages/client/src/render/ReactiveGrid.ts",
+      "sha256": "6650a2c3b1b8b94764c00859bb2e84665327b25713f37b9201928c97cb8727bf"
+    },
+    {
+      "file": "packages/client/src/render/VectorScene.ts",
+      "sha256": "aaf58a3aa909d68616e57e31896a8b227bdcd5960de63bf8f1e9339aa2134ac4"
+    },
+    {
+      "file": "packages/client/src/render/shaders.d.ts",
+      "sha256": "1ba362a47115469a11c97b1003d7c16a78aa8f2a2f9a8d487c5c899a07dd2eb6"
+    },
+    {
+      "file": "packages/client/src/render/shaders/gridDisplacement.glsl",
+      "sha256": "025cb77b01a88b93a1b7a5d3e44ff22cf23fee46118c88dcaf52f5ee6a5d09ae"
+    },
+    {
+      "file": "packages/client/src/render/shaders/postCrtBloom.glsl",
+      "sha256": "72abda74219e95cf8ac32b04c45fc6109a1a8caa23eb38a5c29c556c1bf6ad78"
+    },
+    {
+      "file": "packages/client/src/tutorial/TutorialManager.ts",
+      "sha256": "d3bf3003f07c0b067c90653ab504f669f0e55cc7769ad2e353e1b63b6ffe416d"
+    },
+    {
+      "file": "packages/client/src/tutorial/TutorialSession.ts",
+      "sha256": "27f3b85cb53494e92bf65a8c21836218dc5b4cee4f6a92963df1c9078a79d17c"
+    },
+    {
+      "file": "packages/client/src/ui/GameBoardOverlay.ts",
+      "sha256": "d81fb56b6fddfa4d078ca18cf2a924d8bf8d4f72267f40d1824f84a900907e24"
+    },
+    {
+      "file": "packages/client/src/ui/HandSelection.ts",
+      "sha256": "e7ab51b2e744dd1cfce5cbe2e1a841724fc59e81bf772e341cbc3009593669f7"
+    },
+    {
+      "file": "packages/client/src/ui/MainMenuOverlay.ts",
+      "sha256": "1fbf460b3c631f1d61b43079b3ffb2ced95a725c17b7c3dacb0b781ce52b9275"
+    },
+    {
+      "file": "packages/client/src/ui/RulesModal.ts",
+      "sha256": "51f9c9acb6aef4960aa5a477af4e237cb56cf4bf5276ddda04aa93d79ab62ae1"
+    },
+    {
+      "file": "packages/client/src/ui/ui.css",
+      "sha256": "29d06e6043bd7addf654be37ca90c6196ca8d5949ea817fe4e541fd2a32d16a9"
+    },
+    {
+      "file": "packages/server/src/Deck.ts",
+      "sha256": "c30b4fc9afb21a84a07269a194f57c2335511f51abb2de798ba616c480732e75"
+    },
+    {
+      "file": "packages/server/src/Room.ts",
+      "sha256": "0f54125a5026f91d6209cd90e01e066b84e6f9562e7d2f29752922faa6ca20f8"
+    },
+    {
+      "file": "packages/server/src/RoomManager.ts",
+      "sha256": "cfeeedc0e997b7bb41ee2dd495182acb931c5b8e415e23ee36d9093346f656bd"
+    },
+    {
+      "file": "packages/server/src/index.ts",
+      "sha256": "caa1720269271d9f78e879a1957b8840e1a30ec72948af2442039670b593864e"
+    },
+    {
+      "file": "packages/server/src/messageValidation.ts",
+      "sha256": "6db79ac1c309d6e3830e13a6818230e6717ba63a690573e1853658143a87e258"
+    },
+    {
+      "file": "packages/shared/src/MatchEngine.ts",
+      "sha256": "73811bd6b052621a3a5c9208d7e6439f63653d30dd45d2ccb2502b29b09006f2"
+    },
+    {
+      "file": "packages/shared/src/ai/BotProfiles.ts",
+      "sha256": "c56de38c3950e2ded15a2080d55db500751f0baef5fc3049fcd78515ece69026"
+    },
+    {
+      "file": "packages/shared/src/ai/ClassicalBotAI.ts",
+      "sha256": "d0b29f48f04e001eb5bd99e521358d8424be3276baf127fd97c5b1ec2b8fa9fe"
+    },
+    {
+      "file": "packages/shared/src/combatCalculator.ts",
+      "sha256": "b2e5a5bff910edc6d7d1ec619d9c5d0f41f83579b22f11a760314542244868f4"
+    },
+    {
+      "file": "packages/shared/src/constants.ts",
+      "sha256": "3a89064d522f2b8f752826698bc9523dd6dc01c589167d59d9b36451bcc8eb43"
+    },
+    {
+      "file": "packages/shared/src/fluxEngine.ts",
+      "sha256": "405fec371d74b6f251810e8052f50c2a6b5fe5af7fd1f746c22ef4ee7493565f"
+    },
+    {
+      "file": "packages/shared/src/index.ts",
+      "sha256": "8e81cc7fc6f693d204c26cf04fb96085422e6cbf2fcd993ff47ce586693dfafc"
+    },
+    {
+      "file": "packages/shared/src/pokerEvaluator.ts",
+      "sha256": "c77a471ff645e82b8d31968e4964d19b1f8c415b25ff8716302e3930aae933f0"
+    },
+    {
+      "file": "packages/shared/src/types.ts",
+      "sha256": "df5fa6eeabdfef67883ebbe1e78885ff2364c58e86f7791a7f63b28c9350a6c8"
+    }
+  ]
+}
