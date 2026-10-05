@@ -94,11 +94,33 @@ when collecting final release evidence.
 
 ## Updates
 
-Upload a new committed archive and extract it into a fresh release directory,
-then deliberately replace the application files. Avoid overlaying an archive
-on an old tree, which can retain removed files. Rebuild using the same Compose
-project name and preserve the Caddy volumes. Schedule updates between matches:
-rooms and reconnect credentials are in memory, and server replacement ends them.
+From the local repository, upload the committed release:
+
+```bash
+git archive --format=tar.gz --output=/tmp/cyberante-deploy.tar.gz HEAD
+scp /tmp/cyberante-deploy.tar.gz root@143.198.161.195:/tmp/cyberante-deploy.tar.gz
+ssh root@143.198.161.195
+```
+
+Then in the Droplet's SSH session:
+
+```bash
+cyberante_release_dir=/opt/cyberante-releases/$(date -u +%Y%m%dT%H%M%SZ)
+mkdir -p "$cyberante_release_dir"
+tar -xzf /tmp/cyberante-deploy.tar.gz -C "$cyberante_release_dir"
+cd "$cyberante_release_dir"
+docker compose -f deploy/holactie/compose.yaml up -d --build
+docker compose -f deploy/holactie/compose.yaml ps
+curl -fsS https://holactie.com/cyberante/health
+curl -fsS https://holactie.com/cyberante/THIRD_PARTY_NOTICES.txt
+```
+
+The explicit Compose project name `cyberante` updates the existing deployment
+and preserves the Caddy volumes even from the new release directory. The old
+source directory remains available for rollback. A fresh directory avoids
+retaining removed files. Schedule updates between matches: rooms and reconnect
+credentials are in memory, and server replacement ends them. After startup,
+verify normal multiplayer in browsers as well as the two HTTP endpoints.
 
 Never run `docker compose down -v` during routine updates: it deletes the
 persistent certificate volumes.
