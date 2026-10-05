@@ -12,8 +12,8 @@ evidence before certification.
 | Public production game URL | `https://holactie.com/cyberante/` — user confirmed working end to end |
 | Hosting provider | DigitalOcean Droplet, `143.198.161.195` (user supplied) |
 | Deployment configuration | Prepared in `bf484a6`; actual deployed revision not independently recorded |
-| Integrated-GPU computer trace bundle | `INTEGRATED_GPU_TRACE_PENDING` |
-| Physical phone/tablet trace bundle | `MOBILE_GPU_TRACE_PENDING` |
+| Desktop performance | User accepted Windows Chrome multiplayer play; GPU type and numeric FPS not recorded |
+| Tablet performance | User accepted physical iPad Safari multiplayer play; numeric FPS not recorded |
 | Full master-design certification | Pending external acceptance evidence |
 
 ## Open gates
@@ -22,19 +22,34 @@ evidence before certification.
 - [ ] Public HTTPS game URL identifies the deployed build and passes external
   two-player WebSocket/gameplay/recovery checks with a recorded checklist.
   The broad end-to-end confirmation does not itemize recovery behavior.
-- [ ] Qualifying integrated-GPU computer recordings establish sustained 60 FPS
-  during splash, complete match/clashes/victory and warm repeats.
-- [ ] Qualifying physical phone/tablet recordings establish the same target.
+- [x] Desktop observed performance accepted by the user in Windows Chrome.
+- [x] Tablet observed performance accepted by the user on a physical iPad using Safari.
+- [x] User explicitly replaced mandatory numeric FPS evidence with subjective
+  acceptance of the real multiplayer session. 60 FPS remains an engineering
+  target; no sustained numeric result or universal device compatibility is claimed.
 
 The master §10.2 URL deliverable is now available on user-reported evidence.
-Keep Spec-10B hardware items and the detailed release-evidence gate open.
+Spec-10B performance items are closed under the user-approved revised contract.
+The detailed release-evidence gate remains open.
 
-Use the [deployment guide](../deployment.md) and
-[physical capture protocol](../performance_acceptance.md) to replace them with
-reviewable evidence. Device metadata and trace review belong in completed copies
-of the [capture record](../performance_capture_record.md). No further native WSL
-GPU experiment is part of this acceptance route.
+Use the [deployment guide](../deployment.md) for release operation. The
+[physical capture protocol](../performance_acceptance.md) and
+[capture record](../performance_capture_record.md) remain available for optional
+quantitative diagnostics. No further native WSL GPU experiment is part of this route.
 
 The [Droplet setup guide](../holactie_deployment.md) and committed Compose/Caddy
 configuration describe the deployment. The user performed the remote setup;
 no agent-run remote installation or contest submission is claimed.
+
+## Performance decision provenance
+
+On 2026-10-05 the user reported playing in Chrome on Windows, with the other
+multiplayer participant on an iPad using Safari, and explicitly accepted the
+observed performance. This is the acceptance authority for the revised gate.
+Device models, GPU identity, browser versions, numeric frame rates and warm-repeat
+conditions were not supplied. The report supports these two browser/platform
+combinations; compatibility with every modern device is not established.
+
+The earlier certification reports and JSON records are historical. Their missing
+FPS-evidence statements describe the contract before this decision; they are not
+rewritten as measured passes.

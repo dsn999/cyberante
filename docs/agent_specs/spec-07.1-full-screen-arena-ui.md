@@ -146,8 +146,9 @@ to its replacement at the same hand index. Every new exchange clears selection.
 Do not change balance constants, server protocols or hidden-hand rules to simplify
 the UI. Do not replace procedural geometry with imported media. Do not claim
 physical-device FPS from software rendering or reopen the disruptive WSL native
-GPU path. The original 60 FPS target remains in Spec-10B with its existing
-external physical-device capture process.
+GPU path. The 60 FPS engineering target remains in Spec-10B. Its 2026-10-05
+user-approved revision accepts reported Windows Chrome/iPad Safari gameplay
+performance in place of mandatory external frame traces.
 
 ## 7. Acceptance Checks
 
@@ -181,7 +182,7 @@ PLAYWRIGHT_BROWSERS_PATH=/tmp/cyberante-browsers npx playwright test e2e/tutoria
 
 Use the repository's headless SwiftShader configuration with one browser worker.
 The excluded diagnostic timing case does not establish this visual revision's
-acceptance; physical performance acceptance remains independently outstanding.
+acceptance; release performance acceptance follows the separate Spec-10B revision.
 
 ## 9. Codex Dispatch Prompt
 
@@ -202,5 +203,6 @@ and record concrete evidence without physical performance claims.
 - [x] Build, unit/integration, simulation, bundle and browser gates pass.
 - [x] Verification evidence recorded in `docs/qa/ui_redesign.md`.
 
-This revision's completion does not complete the separate Spec-10B physical
-performance and public-deployment acceptance gates.
+This revision's completion does not itself complete separate Spec-10B release
+acceptance. The user subsequently accepted public Windows Chrome/iPad Safari
+performance; see the current release acceptance record for remaining evidence.

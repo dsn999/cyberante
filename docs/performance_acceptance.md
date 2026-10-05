@@ -1,6 +1,15 @@
 # Spec-10B alternative performance acceptance
 
-## Contract and status
+## Current status — 2026-10-05
+
+The user accepted real multiplayer performance in Windows Chrome and physical
+iPad Safari. Under the revised Spec-10B contract, quantitative frame traces
+are optional diagnostics. The protocol below preserves the original measurement
+method; its references to mandatory/open hardware gates describe the earlier
+contract. This acceptance establishes no measured FPS or universal compatibility.
+See [current release acceptance](qa/release_acceptance.md).
+
+## Original contract and status
 
 Spec-07 requires sustained 60 FPS on standard modern integrated/mobile GPUs.
 The user retained that acceptance in Spec-10B. The measurement tool is not

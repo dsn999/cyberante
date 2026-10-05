@@ -6,8 +6,11 @@
 **Development Methodology:** Spec-Driven Agentic Implementation (Typed Stubs + OpenAI Codex)  
 **Document Role:** System Architecture Blueprint (Architect: AI / Project Manager: User)
 
-**QA status (2026-10-05):** Software verification passes for Spec-07.1. Full certification
-remains pending physical-device performance evidence and public deployment.
+**QA status (2026-10-05):** Spec-07.1 software verification passes. The user
+confirmed public multiplayer between Windows Chrome and iPad Safari and accepted
+its performance under revised Spec-10B. Full certification still requires
+current release/build and deployment/recovery evidence; numeric physical FPS
+traces are no longer a release gate.
 The user approved retaining the detailed implementation specs and reconciling
 this blueprint to their refinements. See the [current certification audit](qa/design_certification_2026-10-05.md)
 and the [earlier requirement-by-requirement matrix](qa/design_certification.md).
@@ -597,4 +600,4 @@ Page 1 of the [repository's contest-rules PDF](<../[AI Skills Studio Challenge] 
 *   [x] **a. Project Title:** `CYBERANTE: Procedural Vector Poker-Combat Matrix`
 *   [x] **b. Project Cover Image:** [Prepared WebGL clash capture](submission/cover.png) showcasing the neon vector grid, revealed cards and particle shockwave. Local artifact; not yet submitted.
 *   [x] **c. Project Description:** [Prepared description](submission/description.md) highlighting poker strategy, fighting-game stances, procedural WebGL/WebAudio, Solo/Multiplayer and OpenAI Codex. Local artifact; not yet submitted.
-*   [x] **d. Project Link/URL:** [Public game](https://holactie.com/cyberante/) on the user's DigitalOcean Droplet. The user confirmed successful end-to-end operation on 2026-10-05. This supplies the URL deliverable; physical-device performance and detailed deployment/recovery evidence remain open in [release acceptance](qa/release_acceptance.md). No contest submission is implied.
+*   [x] **d. Project Link/URL:** [Public game](https://holactie.com/cyberante/) on the user's DigitalOcean Droplet. The user confirmed successful end-to-end operation on 2026-10-05. This supplies the URL deliverable; performance is user accepted, while detailed deployment/recovery evidence remains open in [release acceptance](qa/release_acceptance.md). No contest submission is implied.

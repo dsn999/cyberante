@@ -186,14 +186,15 @@ Specs 08, 06, 07 and 09. Its remaining acceptance items are recorded below.
   when hidden. CLI rejects native GPU-forcing options before browser launch.
 - [x] Node build/start, PORT, health, HTTPS/WebSocket proxy and in-memory room
   operation documented in `docs/deployment.md`.
-- [ ] Physical integrated-GPU computer demonstrates the unchanged 60 FPS target.
-- [ ] Physical phone/tablet demonstrates the unchanged 60 FPS target.
+- [x] Desktop performance accepted by the user after public multiplayer play in Windows Chrome (2026-10-05 revised acceptance; GPU type and numeric FPS not measured).
+- [x] Mobile performance accepted by the user after the other player used a physical iPad running Safari (2026-10-05 revised acceptance; numeric FPS not measured).
 
 Physical performance acceptance was explicitly retained in Spec-10B by the user.
 A forced native GPU experiment through WSL preceded a laptop freeze and hard
 shutdown. That CLI path was removed; subsequent automated checks use SwiftShader
 software rendering with one worker. Software FPS does not prove physical-device
-acceptance. Spec-10B remains incomplete while the two hardware items are open;
+acceptance. The original trace requirement is superseded by the user-approved
+2026-10-05 revision below;
 no further native GPU experiments through WSL are part of this workflow.
 
 ### Current release audit (2026-10-05)
@@ -213,3 +214,18 @@ no hosting or contest submission is implied by this audit.
 The user requested `PUBLIC_GAME_URL_PENDING` while hosting is being secured.
 [Release acceptance](../qa/release_acceptance.md) tracks this placeholder and the
 missing device evidence. All corresponding acceptance items remain open.
+
+### User-approved performance acceptance revision (2026-10-05)
+
+The user reported successful public multiplayer between Windows Chrome and a
+physical iPad running Safari and explicitly accepted observed performance. This
+replaces the two mandatory quantitative physical FPS gates with user acceptance
+of those desktop/tablet sessions. Integrated-GPU recordings, sustained 60 FPS
+measurements and trace bundles are no longer required to close this release
+performance gate. The 60 FPS engineering target remains; no numeric result is
+inferred.
+
+This does not establish compatibility with every modern device/browser or
+unreported reconnect, thermal or warm-repeat results. Earlier dated audits
+describe the evidence and contract then in force; the
+[current acceptance record](../qa/release_acceptance.md) governs revised status.

@@ -74,7 +74,9 @@ maps, raw TypeScript and missing or unbundled production script entries.
 
 ## Performance evidence
 
-Physical 60 FPS acceptance on an integrated GPU and a phone/tablet remains open.
+The user accepted observed public multiplayer performance in Windows Chrome
+and physical iPad Safari on 2026-10-05. Spec-10B no longer requires numeric
+frame traces for this release; 60 FPS remains an unmeasured engineering target.
 Software-rendered browser results establish functional behavior, not that target.
 
 The [alternative acceptance protocol](performance_acceptance.md) uses exported

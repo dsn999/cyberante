@@ -127,7 +127,7 @@ export class ParticleSystem {
 1. **Zero External Assets:** 100% procedural vector geometry. No external image textures or 3D model files may be referenced.
 2. **Memory Leaks:** Do not allocate new geometries or materials inside `update()` or `render()`. All buffers are preallocated.
 3. **Context Loss Recovery:** Listen for `webglcontextlost` and `webglcontextrestored` events on canvas, preventing app crash if GPU driver resets.
-4. **Performance Target:** Sustained 60 FPS on standard modern integrated GPUs (Intel Iris Xe, Apple Silicon, Snapdragon Mobile).
+4. **Performance Target:** Aim for sustained 60 FPS on standard modern integrated GPUs (Intel Iris Xe, Apple Silicon, Snapdragon Mobile). The user-approved 2026-10-05 Spec-10B revision accepts satisfactory real play in Windows Chrome and physical iPad Safari in place of mandatory numeric FPS recordings. Subjective acceptance does not establish measured 60 FPS.
 
 ## 6. Forbidden Boundaries & Anti-Patterns
 - Strictly FORBIDDEN from importing `.png`, `.jpg`, `.webp`, `.svg`, or `.gltf` model files.
@@ -190,3 +190,10 @@ Requirements:
   FPS and mean/p95 intervals with actual WebGL work completion.
 - See [the implementation strategy](../implementation_strategy.md#spec-07-implementation-evidence-2026-10-04)
   for dispatch evidence and the software diagnostic command.
+
+### Performance acceptance revision (2026-10-05)
+
+The user accepted performance after public multiplayer play between Windows
+Chrome and a physical iPad running Safari. This supersedes the earlier mandatory
+integrated/mobile 60 FPS trace requirement. The 60 FPS figure remains an
+engineering target, not a measured result. See [release acceptance](../qa/release_acceptance.md).
