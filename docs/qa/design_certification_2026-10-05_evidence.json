@@ -1,0 +1,645 @@
+{
+  "auditDate": "2026-10-05",
+  "reviewedRuntimeCommit": "6e25db81c84386eab74009cb9199e04b57926534",
+  "scope": "Current software QA; full master-design certification pending external acceptance",
+  "productionChangesDuringAudit": false,
+  "checks": [
+    {
+      "command": "npm run build && npm test && npm run sim && npm run verify:build",
+      "exitCode": 0,
+      "tests": 358,
+      "serverSharedTests": 230,
+      "clientTests": 128,
+      "simulationMatches": 300,
+      "gzipJavaScriptBytes": 153026
+    },
+    {
+      "command": "npm run test:math:coverage",
+      "exitCode": 0,
+      "tests": 68,
+      "coverageSummary": {
+        "total": {
+          "lines": {
+            "total": 242,
+            "covered": 242,
+            "skipped": 0,
+            "pct": 100
+          },
+          "statements": {
+            "total": 242,
+            "covered": 242,
+            "skipped": 0,
+            "pct": 100
+          },
+          "functions": {
+            "total": 6,
+            "covered": 6,
+            "skipped": 0,
+            "pct": 100
+          },
+          "branches": {
+            "total": 100,
+            "covered": 100,
+            "skipped": 0,
+            "pct": 100
+          },
+          "branchesTrue": {
+            "total": 0,
+            "covered": 0,
+            "skipped": 0,
+            "pct": "Unknown"
+          }
+        },
+        "/home/giroux698/Developer/CyberAnte/packages/shared/src/combatCalculator.ts": {
+          "lines": {
+            "total": 142,
+            "covered": 142,
+            "skipped": 0,
+            "pct": 100
+          },
+          "functions": {
+            "total": 3,
+            "covered": 3,
+            "skipped": 0,
+            "pct": 100
+          },
+          "statements": {
+            "total": 142,
+            "covered": 142,
+            "skipped": 0,
+            "pct": 100
+          },
+          "branches": {
+            "total": 55,
+            "covered": 55,
+            "skipped": 0,
+            "pct": 100
+          }
+        },
+        "/home/giroux698/Developer/CyberAnte/packages/shared/src/pokerEvaluator.ts": {
+          "lines": {
+            "total": 100,
+            "covered": 100,
+            "skipped": 0,
+            "pct": 100
+          },
+          "functions": {
+            "total": 3,
+            "covered": 3,
+            "skipped": 0,
+            "pct": 100
+          },
+          "statements": {
+            "total": 100,
+            "covered": 100,
+            "skipped": 0,
+            "pct": 100
+          },
+          "branches": {
+            "total": 45,
+            "covered": 45,
+            "skipped": 0,
+            "pct": 100
+          }
+        }
+      }
+    },
+    {
+      "command": "PLAYWRIGHT_BROWSERS_PATH=/tmp/cyberante-browsers npx playwright test e2e/designQa.spec.ts --grep 'captures the submission cover'",
+      "exitCode": 0,
+      "tests": 1
+    }
+  ],
+  "retainedBrowserEvidence": {
+    "record": "docs/qa/ui_redesign_evidence.json",
+    "passingCases": 31,
+    "rerunAllDuringThisAudit": false,
+    "basis": "Unchanged production source and emitted artifact hashes; three completed serial single-worker SwiftShader batches recorded in the release evidence",
+    "physicalPerformanceEstablished": false
+  },
+  "sourceContinuity": [
+    {
+      "file": "docs/agent_specs/spec-01-shared-contracts.md",
+      "previousSha256": "2323c33463ac12bde49564ae9542e5dadbb8ab07248d997fc8b62453407a071b",
+      "currentSha256": "2323c33463ac12bde49564ae9542e5dadbb8ab07248d997fc8b62453407a071b",
+      "unchanged": true
+    },
+    {
+      "file": "docs/agent_specs/spec-02-poker-evaluator.md",
+      "previousSha256": "aa9b5b2a9616b46607c7ab25147a67b512e05a84bf9f454a28cec9d7c2211c10",
+      "currentSha256": "aa9b5b2a9616b46607c7ab25147a67b512e05a84bf9f454a28cec9d7c2211c10",
+      "unchanged": true
+    },
+    {
+      "file": "docs/agent_specs/spec-03-deck-flux-engine.md",
+      "previousSha256": "22bcd503807785b5a74ee5ee2c02a184310e20470b32521c3e22f93519dcd3f7",
+      "currentSha256": "22bcd503807785b5a74ee5ee2c02a184310e20470b32521c3e22f93519dcd3f7",
+      "unchanged": true
+    },
+    {
+      "file": "docs/agent_specs/spec-04-authoritative-server.md",
+      "previousSha256": "254259d21e9a067f25531df176d8cde8d8c9dd26800f38d7d12cb7a83bd547f0",
+      "currentSha256": "254259d21e9a067f25531df176d8cde8d8c9dd26800f38d7d12cb7a83bd547f0",
+      "unchanged": true
+    },
+    {
+      "file": "docs/agent_specs/spec-05-classical-bot-ai.md",
+      "previousSha256": "5b2e1d486f87f77884b983c6d087114d7abe43f01dfddb56e5ee0c31b7f64ed2",
+      "currentSha256": "5b2e1d486f87f77884b983c6d087114d7abe43f01dfddb56e5ee0c31b7f64ed2",
+      "unchanged": true
+    },
+    {
+      "file": "docs/agent_specs/spec-06-procedural-audio-engine.md",
+      "previousSha256": "52140562afe42615d5f20b06e6c029dba19e38ed9589c5654cbd06c28861d97a",
+      "currentSha256": "52140562afe42615d5f20b06e6c029dba19e38ed9589c5654cbd06c28861d97a",
+      "unchanged": true
+    },
+    {
+      "file": "docs/agent_specs/spec-07-neon-vector-renderer.md",
+      "previousSha256": "245ac654d9ca8a04e94cdbd8491a4e3b1e6d55791c781623996352be9a8ff233",
+      "currentSha256": "377b130c7ef46a450b567c365f97a39dbc4eecfd9eb385b1b2bc7b8f8012bbc7",
+      "unchanged": false
+    },
+    {
+      "file": "docs/agent_specs/spec-08-client-game-ui.md",
+      "previousSha256": "a2bbd0bb780e3aaeabc2e70737609d5f358f2c83e39f61596a82bf8a0918851c",
+      "currentSha256": "035a7013fdd4f282ec7c5c3785728ecfaa2700fc3480be8d0ec768c51f93e618",
+      "unchanged": false
+    },
+    {
+      "file": "docs/agent_specs/spec-09-interactive-tutorial.md",
+      "previousSha256": "c2b014bb8cbaf7d021bf1d6b002a24e4a75beb2cace3b3d51e1d47c838fa2297",
+      "currentSha256": "c2b014bb8cbaf7d021bf1d6b002a24e4a75beb2cace3b3d51e1d47c838fa2297",
+      "unchanged": true
+    },
+    {
+      "file": "docs/agent_specs/spec-10-e2e-integration-deploy.md",
+      "previousSha256": "c1c14a0bcc13ed078493285918ad4c2e8173ffbbdd98dd72c2e132f5492713fa",
+      "currentSha256": "72d0a77d700cb8ce4c23d14184e8c85879e599ef09b6c0b1f0e32a4cf4a73a83",
+      "unchanged": false
+    },
+    {
+      "file": "docs/cyberante_design_document.md",
+      "previousSha256": "f293c1181bcfbef32fdeedb7069133225a9ac885167eec4a8e3f4a6d497a44d5",
+      "currentSha256": "4526d58e23f0cfc9b43593d017c4edbe5cef78a2f7f3c82027bfcabe3fa4681e",
+      "unchanged": false
+    },
+    {
+      "file": "packages/client/src/ai/BotProfiles.ts",
+      "previousSha256": "009d023a942bee65b925636a59ed829261095640903c60d0649d744c376b213b",
+      "currentSha256": "009d023a942bee65b925636a59ed829261095640903c60d0649d744c376b213b",
+      "unchanged": true
+    },
+    {
+      "file": "packages/client/src/ai/ClassicalBotAI.ts",
+      "previousSha256": "09477b28a144b672d6e7eff6f3ff0e719abea1a8c2379b90b865898a8b08b21c",
+      "currentSha256": "09477b28a144b672d6e7eff6f3ff0e719abea1a8c2379b90b865898a8b08b21c",
+      "unchanged": true
+    },
+    {
+      "file": "packages/client/src/audio/AudioEngine.ts",
+      "previousSha256": "db3158a9c43e9228a85df2407ab1fc18c82eaf82ce6c87b7fc886c189432fcd1",
+      "currentSha256": "db3158a9c43e9228a85df2407ab1fc18c82eaf82ce6c87b7fc886c189432fcd1",
+      "unchanged": true
+    },
+    {
+      "file": "packages/client/src/audio/ProceduralMusic.ts",
+      "previousSha256": "498acaaf4b9411a4311c1a06eaee06f6d5ac783a934f22e6774cc3e8be16cedd",
+      "currentSha256": "498acaaf4b9411a4311c1a06eaee06f6d5ac783a934f22e6774cc3e8be16cedd",
+      "unchanged": true
+    },
+    {
+      "file": "packages/client/src/audio/SoundEffects.ts",
+      "previousSha256": "38e0410027a66678bd8e17ccb16d5be18f82465035d1d535cf3115e9e297c7bd",
+      "currentSha256": "38e0410027a66678bd8e17ccb16d5be18f82465035d1d535cf3115e9e297c7bd",
+      "unchanged": true
+    },
+    {
+      "file": "packages/client/src/audio/VoicePool.ts",
+      "previousSha256": "57e74bc835959b987d515949094aa100f74ca45d3234df88f2def0c9bac5e63b",
+      "currentSha256": "57e74bc835959b987d515949094aa100f74ca45d3234df88f2def0c9bac5e63b",
+      "unchanged": true
+    },
+    {
+      "file": "packages/client/src/benchmark.ts",
+      "previousSha256": "05fe9c79afd7ff18624ee63fbf9757800883e538b324fd0fd684d246ab662d3c",
+      "currentSha256": "05fe9c79afd7ff18624ee63fbf9757800883e538b324fd0fd684d246ab662d3c",
+      "unchanged": true
+    },
+    {
+      "file": "packages/client/src/game/SoloMatchSession.ts",
+      "previousSha256": "44956230d0ccba546f6de3c888d4c0c25be01b2e1df5b90f713b6f327b2834fa",
+      "currentSha256": "44956230d0ccba546f6de3c888d4c0c25be01b2e1df5b90f713b6f327b2834fa",
+      "unchanged": true
+    },
+    {
+      "file": "packages/client/src/main.ts",
+      "previousSha256": "3c21a61783deb9cc3f7587836486ee9e5164176631d0ac233e9c62ddf619470a",
+      "currentSha256": "9b9ad643ac0f26491d4a4e2d2473af5000c529d8d9134157067169b5a755800f",
+      "unchanged": false
+    },
+    {
+      "file": "packages/client/src/net/NetworkClient.ts",
+      "previousSha256": "254a8b0bc46eb26cf240d573901f937319ebb6bc9b6498361738de972bd2a7a9",
+      "currentSha256": "254a8b0bc46eb26cf240d573901f937319ebb6bc9b6498361738de972bd2a7a9",
+      "unchanged": true
+    },
+    {
+      "file": "packages/client/src/render/ParticleSystem.ts",
+      "previousSha256": "22e1d19aeabd7fde44ec6bb8969f820bd536dbbd1d1c3a299429e5606ad41f1d",
+      "currentSha256": "22e1d19aeabd7fde44ec6bb8969f820bd536dbbd1d1c3a299429e5606ad41f1d",
+      "unchanged": true
+    },
+    {
+      "file": "packages/client/src/render/ProceduralCard.ts",
+      "previousSha256": "e16978b035ad54bda2975822e07a90547fcb4c8b31ebad72a9448dd3ee5bd78a",
+      "currentSha256": "e16978b035ad54bda2975822e07a90547fcb4c8b31ebad72a9448dd3ee5bd78a",
+      "unchanged": true
+    },
+    {
+      "file": "packages/client/src/render/ReactiveGrid.ts",
+      "previousSha256": "6650a2c3b1b8b94764c00859bb2e84665327b25713f37b9201928c97cb8727bf",
+      "currentSha256": "67580fe625c6c81baed1ec07d53eda3918b2fb5d711e4797eb9a852151ce2bae",
+      "unchanged": false
+    },
+    {
+      "file": "packages/client/src/render/VectorScene.ts",
+      "previousSha256": "aaf58a3aa909d68616e57e31896a8b227bdcd5960de63bf8f1e9339aa2134ac4",
+      "currentSha256": "a6cdb96e66b320a10a7d742f9a6203315e76619a5eda0c3b73607eb153fba2e8",
+      "unchanged": false
+    },
+    {
+      "file": "packages/client/src/render/shaders.d.ts",
+      "previousSha256": "1ba362a47115469a11c97b1003d7c16a78aa8f2a2f9a8d487c5c899a07dd2eb6",
+      "currentSha256": "1ba362a47115469a11c97b1003d7c16a78aa8f2a2f9a8d487c5c899a07dd2eb6",
+      "unchanged": true
+    },
+    {
+      "file": "packages/client/src/render/shaders/gridDisplacement.glsl",
+      "previousSha256": "025cb77b01a88b93a1b7a5d3e44ff22cf23fee46118c88dcaf52f5ee6a5d09ae",
+      "currentSha256": "a270b2fb85247ce9d02925a9422af6079269058fb915d909b7ef41d382c05384",
+      "unchanged": false
+    },
+    {
+      "file": "packages/client/src/render/shaders/postCrtBloom.glsl",
+      "previousSha256": "72abda74219e95cf8ac32b04c45fc6109a1a8caa23eb38a5c29c556c1bf6ad78",
+      "currentSha256": "72abda74219e95cf8ac32b04c45fc6109a1a8caa23eb38a5c29c556c1bf6ad78",
+      "unchanged": true
+    },
+    {
+      "file": "packages/client/src/tutorial/TutorialManager.ts",
+      "previousSha256": "d3bf3003f07c0b067c90653ab504f669f0e55cc7769ad2e353e1b63b6ffe416d",
+      "currentSha256": "f60bd748c49728489b4df26b6f9a5c270b0068d1337d8a342ef268835fc74ff7",
+      "unchanged": false
+    },
+    {
+      "file": "packages/client/src/tutorial/TutorialSession.ts",
+      "previousSha256": "27f3b85cb53494e92bf65a8c21836218dc5b4cee4f6a92963df1c9078a79d17c",
+      "currentSha256": "27f3b85cb53494e92bf65a8c21836218dc5b4cee4f6a92963df1c9078a79d17c",
+      "unchanged": true
+    },
+    {
+      "file": "packages/client/src/ui/GameBoardOverlay.ts",
+      "previousSha256": "d81fb56b6fddfa4d078ca18cf2a924d8bf8d4f72267f40d1824f84a900907e24",
+      "currentSha256": "47bfb14fc2591d465494f6f0f9094d6fdb0101d89dcfa1c20a0befa6e79eb532",
+      "unchanged": false
+    },
+    {
+      "file": "packages/client/src/ui/HandSelection.ts",
+      "previousSha256": "e7ab51b2e744dd1cfce5cbe2e1a841724fc59e81bf772e341cbc3009593669f7",
+      "currentSha256": "e7ab51b2e744dd1cfce5cbe2e1a841724fc59e81bf772e341cbc3009593669f7",
+      "unchanged": true
+    },
+    {
+      "file": "packages/client/src/ui/MainMenuOverlay.ts",
+      "previousSha256": "1fbf460b3c631f1d61b43079b3ffb2ced95a725c17b7c3dacb0b781ce52b9275",
+      "currentSha256": "1fbf460b3c631f1d61b43079b3ffb2ced95a725c17b7c3dacb0b781ce52b9275",
+      "unchanged": true
+    },
+    {
+      "file": "packages/client/src/ui/RulesModal.ts",
+      "previousSha256": "51f9c9acb6aef4960aa5a477af4e237cb56cf4bf5276ddda04aa93d79ab62ae1",
+      "currentSha256": "51f9c9acb6aef4960aa5a477af4e237cb56cf4bf5276ddda04aa93d79ab62ae1",
+      "unchanged": true
+    },
+    {
+      "file": "packages/client/src/ui/ui.css",
+      "previousSha256": "29d06e6043bd7addf654be37ca90c6196ca8d5949ea817fe4e541fd2a32d16a9",
+      "currentSha256": "2654a18af3cdc2f7cb65b298cd48b6aec89d218df2aa17fedb2b3d5ec7e63638",
+      "unchanged": false
+    },
+    {
+      "file": "packages/server/src/Deck.ts",
+      "previousSha256": "c30b4fc9afb21a84a07269a194f57c2335511f51abb2de798ba616c480732e75",
+      "currentSha256": "c30b4fc9afb21a84a07269a194f57c2335511f51abb2de798ba616c480732e75",
+      "unchanged": true
+    },
+    {
+      "file": "packages/server/src/Room.ts",
+      "previousSha256": "0f54125a5026f91d6209cd90e01e066b84e6f9562e7d2f29752922faa6ca20f8",
+      "currentSha256": "0f54125a5026f91d6209cd90e01e066b84e6f9562e7d2f29752922faa6ca20f8",
+      "unchanged": true
+    },
+    {
+      "file": "packages/server/src/RoomManager.ts",
+      "previousSha256": "cfeeedc0e997b7bb41ee2dd495182acb931c5b8e415e23ee36d9093346f656bd",
+      "currentSha256": "cfeeedc0e997b7bb41ee2dd495182acb931c5b8e415e23ee36d9093346f656bd",
+      "unchanged": true
+    },
+    {
+      "file": "packages/server/src/index.ts",
+      "previousSha256": "caa1720269271d9f78e879a1957b8840e1a30ec72948af2442039670b593864e",
+      "currentSha256": "caa1720269271d9f78e879a1957b8840e1a30ec72948af2442039670b593864e",
+      "unchanged": true
+    },
+    {
+      "file": "packages/server/src/messageValidation.ts",
+      "previousSha256": "6db79ac1c309d6e3830e13a6818230e6717ba63a690573e1853658143a87e258",
+      "currentSha256": "6db79ac1c309d6e3830e13a6818230e6717ba63a690573e1853658143a87e258",
+      "unchanged": true
+    },
+    {
+      "file": "packages/shared/src/MatchEngine.ts",
+      "previousSha256": "73811bd6b052621a3a5c9208d7e6439f63653d30dd45d2ccb2502b29b09006f2",
+      "currentSha256": "73811bd6b052621a3a5c9208d7e6439f63653d30dd45d2ccb2502b29b09006f2",
+      "unchanged": true
+    },
+    {
+      "file": "packages/shared/src/ai/BotProfiles.ts",
+      "previousSha256": "c56de38c3950e2ded15a2080d55db500751f0baef5fc3049fcd78515ece69026",
+      "currentSha256": "c56de38c3950e2ded15a2080d55db500751f0baef5fc3049fcd78515ece69026",
+      "unchanged": true
+    },
+    {
+      "file": "packages/shared/src/ai/ClassicalBotAI.ts",
+      "previousSha256": "d0b29f48f04e001eb5bd99e521358d8424be3276baf127fd97c5b1ec2b8fa9fe",
+      "currentSha256": "d0b29f48f04e001eb5bd99e521358d8424be3276baf127fd97c5b1ec2b8fa9fe",
+      "unchanged": true
+    },
+    {
+      "file": "packages/shared/src/combatCalculator.ts",
+      "previousSha256": "b2e5a5bff910edc6d7d1ec619d9c5d0f41f83579b22f11a760314542244868f4",
+      "currentSha256": "b2e5a5bff910edc6d7d1ec619d9c5d0f41f83579b22f11a760314542244868f4",
+      "unchanged": true
+    },
+    {
+      "file": "packages/shared/src/constants.ts",
+      "previousSha256": "3a89064d522f2b8f752826698bc9523dd6dc01c589167d59d9b36451bcc8eb43",
+      "currentSha256": "3a89064d522f2b8f752826698bc9523dd6dc01c589167d59d9b36451bcc8eb43",
+      "unchanged": true
+    },
+    {
+      "file": "packages/shared/src/fluxEngine.ts",
+      "previousSha256": "405fec371d74b6f251810e8052f50c2a6b5fe5af7fd1f746c22ef4ee7493565f",
+      "currentSha256": "405fec371d74b6f251810e8052f50c2a6b5fe5af7fd1f746c22ef4ee7493565f",
+      "unchanged": true
+    },
+    {
+      "file": "packages/shared/src/index.ts",
+      "previousSha256": "8e81cc7fc6f693d204c26cf04fb96085422e6cbf2fcd993ff47ce586693dfafc",
+      "currentSha256": "8e81cc7fc6f693d204c26cf04fb96085422e6cbf2fcd993ff47ce586693dfafc",
+      "unchanged": true
+    },
+    {
+      "file": "packages/shared/src/pokerEvaluator.ts",
+      "previousSha256": "c77a471ff645e82b8d31968e4964d19b1f8c415b25ff8716302e3930aae933f0",
+      "currentSha256": "c77a471ff645e82b8d31968e4964d19b1f8c415b25ff8716302e3930aae933f0",
+      "unchanged": true
+    },
+    {
+      "file": "packages/shared/src/types.ts",
+      "previousSha256": "df5fa6eeabdfef67883ebbe1e78885ff2364c58e86f7791a7f63b28c9350a6c8",
+      "currentSha256": "df5fa6eeabdfef67883ebbe1e78885ff2364c58e86f7791a7f63b28c9350a6c8",
+      "unchanged": true
+    }
+  ],
+  "submissionCover": {
+    "file": "docs/submission/cover.png",
+    "width": 1440,
+    "height": 900,
+    "sha256": "581c215e13a9cac565c59de67b1f7db034c7be4025e84af35e7121db5283e892",
+    "visuallyInspected": true
+  },
+  "storedRules": {
+    "file": "[AI Skills Studio Challenge] Contest Official Rules.pdf",
+    "sha256": "a91fa6ad6aab3ebbae5dcb392aee9531acc6b1f3f40b1e0eded21539fbf314a2",
+    "decodedPages": 7,
+    "unmappedGlyphs": 0,
+    "scope": "Supplied repository PDF only; no current organizer, eligibility or submission verification"
+  },
+  "releaseAcceptance": {
+    "userDecision": "Use a placeholder; hosting not secured",
+    "publicGameUrl": "PUBLIC_GAME_URL_PENDING",
+    "hostingProvider": "HOSTING_PROVIDER_PENDING",
+    "integratedGpuTrace": "INTEGRATED_GPU_TRACE_PENDING",
+    "mobileGpuTrace": "MOBILE_GPU_TRACE_PENDING",
+    "fullCertification": false
+  },
+  "fingerprints": [
+    {
+      "file": "README.md",
+      "bytes": 3612,
+      "sha256": "1520f09a16765d76028c9dd4afb5d649abc67fe698e9d4c0ce7bc7a0c34414de"
+    },
+    {
+      "file": "[AI Skills Studio Challenge] Contest Official Rules.pdf",
+      "bytes": 120965,
+      "sha256": "a91fa6ad6aab3ebbae5dcb392aee9531acc6b1f3f40b1e0eded21539fbf314a2"
+    },
+    {
+      "file": "docs/agent_specs/spec-07-neon-vector-renderer.md",
+      "bytes": 10708,
+      "sha256": "377b130c7ef46a450b567c365f97a39dbc4eecfd9eb385b1b2bc7b8f8012bbc7"
+    },
+    {
+      "file": "docs/agent_specs/spec-07.1-full-screen-arena-ui.md",
+      "bytes": 10348,
+      "sha256": "c25dd96de3cbc7b42738bc620b2165e060c0e04e20f742763487467ca9da8954"
+    },
+    {
+      "file": "docs/agent_specs/spec-08-client-game-ui.md",
+      "bytes": 10790,
+      "sha256": "035a7013fdd4f282ec7c5c3785728ecfaa2700fc3480be8d0ec768c51f93e618"
+    },
+    {
+      "file": "docs/agent_specs/spec-10-e2e-integration-deploy.md",
+      "bytes": 11960,
+      "sha256": "72d0a77d700cb8ce4c23d14184e8c85879e599ef09b6c0b1f0e32a4cf4a73a83"
+    },
+    {
+      "file": "docs/cyberante_design_document.md",
+      "bytes": 47822,
+      "sha256": "4526d58e23f0cfc9b43593d017c4edbe5cef78a2f7f3c82027bfcabe3fa4681e"
+    },
+    {
+      "file": "docs/implementation_strategy.md",
+      "bytes": 42055,
+      "sha256": "2cf31d2e17d11301267af36f3fe79ab444a1455d78a0565d415ccaaf66e4bd87"
+    },
+    {
+      "file": "docs/qa/design_certification.md",
+      "bytes": 21735,
+      "sha256": "8bad57ba27df2f1f6806133ca9f919ae284b7a85f2a031b21335b09e18e6d482"
+    },
+    {
+      "file": "docs/qa/design_certification_2026-10-05.md",
+      "bytes": 7346,
+      "sha256": "8f55c248279cabb634cd9d1b1b01963cf8da0d70a847b7ffe0eab956ea355429"
+    },
+    {
+      "file": "docs/qa/release_acceptance.md",
+      "bytes": 1505,
+      "sha256": "bfd0ecfc6521f7fddf7bc52aeb135282cfa90c7485d264bcf3ea07235eba120f"
+    },
+    {
+      "file": "docs/qa/ui-redesign-desktop.png",
+      "bytes": 484276,
+      "sha256": "2f91de6ffd8e7e4a48984a78e0df38c494630cdd4af229d89156fc07b5a567ab"
+    },
+    {
+      "file": "docs/qa/ui-redesign-mobile.png",
+      "bytes": 254104,
+      "sha256": "d45d92372cc565256b83b67aaac6f7e2962561f2c6951708545015e4e2df0c0d"
+    },
+    {
+      "file": "docs/qa/ui_redesign.md",
+      "bytes": 3854,
+      "sha256": "cc3742868f24a854397842892aff131d286a292863953188a49565fc9367bd57"
+    },
+    {
+      "file": "docs/submission/README.md",
+      "bytes": 1730,
+      "sha256": "ba0afbbff58b5e4545cdea7a925b4da7128e63c0b1e288a190ffe8a1ecddf1e1"
+    },
+    {
+      "file": "docs/submission/cover.png",
+      "bytes": 1477890,
+      "sha256": "581c215e13a9cac565c59de67b1f7db034c7be4025e84af35e7121db5283e892"
+    },
+    {
+      "file": "e2e/audio.spec.ts",
+      "bytes": 7777,
+      "sha256": "27c673b32db15c8e4738c542279d22356078b60ff6f1a505f70485d9e8ac52b1"
+    },
+    {
+      "file": "e2e/designQa.spec.ts",
+      "bytes": 3417,
+      "sha256": "1d1dcc55661bb0b0f24f549a4398ecb0e63df2633825f8a23edfeebb19e191e3"
+    },
+    {
+      "file": "e2e/helpers.ts",
+      "bytes": 494,
+      "sha256": "33e7116191fbd05cee019d186d5746686f19089ae06481631cd84e50e8177744"
+    },
+    {
+      "file": "e2e/integration.spec.ts",
+      "bytes": 11627,
+      "sha256": "685c046e7131d377c81ad50e4a9092d08f0111780f0b852376be09bcca647048"
+    },
+    {
+      "file": "e2e/renderer.spec.ts",
+      "bytes": 7656,
+      "sha256": "0c43bd11d91a2dc7e19a17d71fffd28f5219e105372db66ac6c8131700a5385c"
+    },
+    {
+      "file": "e2e/tutorial.spec.ts",
+      "bytes": 15142,
+      "sha256": "b76daf92e81618eca5973737728aa13b892cd23c9ce65d7bd22473d7bf0095f6"
+    },
+    {
+      "file": "e2e/ui.spec.ts",
+      "bytes": 8782,
+      "sha256": "79f00c82275bb5340e45dc6fde1d9175712c12b6636769cb2b2bd49e30ba198f"
+    },
+    {
+      "file": "package-lock.json",
+      "bytes": 99600,
+      "sha256": "4ce2e40a52aeecce99381073f206e76d71e22f06bac9a9d1c320e23543a2813f"
+    },
+    {
+      "file": "package.json",
+      "bytes": 1348,
+      "sha256": "fe418299c57955ac910a4bceeced4af4140e0f5b7330ae7490727484accd5a58"
+    },
+    {
+      "file": "packages/client/dist/assets/benchmark-CFk9R_W2.js",
+      "bytes": 4491,
+      "sha256": "d95f6999e81c5534c19a623dbb7fa0478925b57141e07330f35177e5faaed94e"
+    },
+    {
+      "file": "packages/client/dist/assets/game-C74skRBm.css",
+      "bytes": 24775,
+      "sha256": "ca47a30e1d144c1d2653a9cdf216a1a65369b73c2221de3d565a25d16fbd416d"
+    },
+    {
+      "file": "packages/client/dist/assets/game-dZh0DkMa.js",
+      "bytes": 115924,
+      "sha256": "7139c78a384d94ac66f49b4819d8857dc1689be7405421458220cbe6445324f8"
+    },
+    {
+      "file": "packages/client/dist/assets/modulepreload-polyfill-B5Qt9EMX.js",
+      "bytes": 711,
+      "sha256": "d2a32840421496e872ade591618d2fa5c33797605d1aec04301717e5a90757d0"
+    },
+    {
+      "file": "packages/client/dist/assets/three-Cy3Tryvl.js",
+      "bytes": 462167,
+      "sha256": "dd69ffc73c0271f33ab5a82bd2e91ed9fd92060f18a05a989de14b999056a71f"
+    },
+    {
+      "file": "packages/client/dist/benchmark.html",
+      "bytes": 2793,
+      "sha256": "6cec137b453a8c4e85ab78dfe40c5efedc128fd8468aa58b0f4e87096e983382"
+    },
+    {
+      "file": "packages/client/dist/index.html",
+      "bytes": 2318,
+      "sha256": "9a6c909fbca3d2b9487eea4ca96416375f5d4104198b14228b85616dc711c3a5"
+    },
+    {
+      "file": "packages/client/src/__tests__/renderer.test.ts",
+      "bytes": 10744,
+      "sha256": "396ba7c10abeade443a14dced11f8a04097e21f68ca42bf9abeb4705805ee792"
+    },
+    {
+      "file": "packages/client/src/main.ts",
+      "bytes": 19027,
+      "sha256": "9b9ad643ac0f26491d4a4e2d2473af5000c529d8d9134157067169b5a755800f"
+    },
+    {
+      "file": "packages/client/src/render/ReactiveGrid.ts",
+      "bytes": 3386,
+      "sha256": "67580fe625c6c81baed1ec07d53eda3918b2fb5d711e4797eb9a852151ce2bae"
+    },
+    {
+      "file": "packages/client/src/render/VectorScene.ts",
+      "bytes": 16374,
+      "sha256": "a6cdb96e66b320a10a7d742f9a6203315e76619a5eda0c3b73607eb153fba2e8"
+    },
+    {
+      "file": "packages/client/src/render/shaders/gridDisplacement.glsl",
+      "bytes": 733,
+      "sha256": "a270b2fb85247ce9d02925a9422af6079269058fb915d909b7ef41d382c05384"
+    },
+    {
+      "file": "packages/client/src/tutorial/TutorialManager.ts",
+      "bytes": 6696,
+      "sha256": "f60bd748c49728489b4df26b6f9a5c270b0068d1337d8a342ef268835fc74ff7"
+    },
+    {
+      "file": "packages/client/src/ui/GameBoardOverlay.ts",
+      "bytes": 30028,
+      "sha256": "47bfb14fc2591d465494f6f0f9094d6fdb0101d89dcfa1c20a0befa6e79eb532"
+    },
+    {
+      "file": "packages/client/src/ui/ui.css",
+      "bytes": 28213,
+      "sha256": "2654a18af3cdc2f7cb65b298cd48b6aec89d218df2aa17fedb2b3d5ec7e63638"
+    },
+    {
+      "file": "playwright.config.ts",
+      "bytes": 489,
+      "sha256": "3218c4cf0177c861603dec9a5b88fe5c50856136e6ac03eb79757aabe5164272"
+    }
+  ]
+}

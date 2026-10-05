@@ -26,3 +26,11 @@ overwrite the committed submission artifact.
 
 These files are prepared locally. No contest submission or public deployment
 has been performed. A public game URL is still required.
+
+## Current cover provenance
+
+The cover was refreshed on 2026-10-05 from production sources at `6e25db8`,
+including Spec-07.1's viewport-scaled grid. The existing cover-capture browser
+case passed, and the resulting 1440×900 image was visually inspected before
+replacement. Current fingerprints are recorded in
+[`design_certification_2026-10-05_evidence.json`](../qa/design_certification_2026-10-05_evidence.json).

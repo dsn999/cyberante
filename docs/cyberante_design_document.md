@@ -6,10 +6,11 @@
 **Development Methodology:** Spec-Driven Agentic Implementation (Typed Stubs + OpenAI Codex)  
 **Document Role:** System Architecture Blueprint (Architect: AI / Project Manager: User)
 
-**QA status (2026-10-04):** Software verification passes. Full certification
+**QA status (2026-10-05):** Software verification passes for Spec-07.1. Full certification
 remains pending physical-device performance evidence and public deployment.
 The user approved retaining the detailed implementation specs and reconciling
-this blueprint to their refinements. See the [requirement-by-requirement QA report](qa/design_certification.md).
+this blueprint to their refinements. See the [current certification audit](qa/design_certification_2026-10-05.md)
+and the [earlier requirement-by-requirement matrix](qa/design_certification.md).
 
 **Contract precedence:** The ten detailed specs define implementation behavior.
 This blueprint summarizes their contracts. Contest scoring statements are
@@ -591,9 +592,9 @@ A rigorous cross-examination of the Handshake AI Skills Studio × OpenAI Multipl
 | **OpenAI Attribution Clarity** | The contest explicitly mandates: *"built with OpenAI: Create a Multiplayer Game mission in Handshake."* Earlier draft referenced non-OpenAI tooling. | **OpenAI Codex Spec-Driven Pipeline**: All references updated to OpenAI Codex. Implementation artifacts, prompt specifications, and git history explicitly document OpenAI Codex's role as the agentic coder implementation expert. |
 
 ### 10.2 Official Submission Deliverables Checklist
-As specified in Page 1 of the Contest Official Rules, entries must provide four specific components prior to the October 30, 2026 deadline:
+Page 1 of the [repository's contest-rules PDF](<../[AI Skills Studio Challenge] Contest Official Rules.pdf>) lists four entry components and an October 30, 2026, 11:59 PM Pacific deadline. This verifies the stored-document reference; current organizer rules and entrant eligibility require separate confirmation:
 
 *   [x] **a. Project Title:** `CYBERANTE: Procedural Vector Poker-Combat Matrix`
 *   [x] **b. Project Cover Image:** [Prepared WebGL clash capture](submission/cover.png) showcasing the neon vector grid, revealed cards and particle shockwave. Local artifact; not yet submitted.
 *   [x] **c. Project Description:** [Prepared description](submission/description.md) highlighting poker strategy, fighting-game stances, procedural WebGL/WebAudio, Solo/Multiplayer and OpenAI Codex. Local artifact; not yet submitted.
-*   [ ] **d. Project Link/URL:** Publicly accessible, zero-install game URL served by a Node.js host with HTTPS and WebSocket support. Verify gameplay through the public URL on the required desktop/mobile device classes before submission.
+*   [ ] **d. Project Link/URL:** `PUBLIC_GAME_URL_PENDING` (user-requested placeholder; hosting not secured). The completed deliverable is a publicly accessible, zero-install game URL served by a Node.js host with HTTPS and WebSocket support. Verify gameplay through the public URL on the required desktop/mobile device classes before submission. Track the open inputs in [release acceptance](qa/release_acceptance.md).

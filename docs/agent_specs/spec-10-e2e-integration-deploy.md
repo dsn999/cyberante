@@ -195,3 +195,21 @@ shutdown. That CLI path was removed; subsequent automated checks use SwiftShader
 software rendering with one worker. Software FPS does not prove physical-device
 acceptance. Spec-10B remains incomplete while the two hardware items are open;
 no further native GPU experiments through WSL are part of this workflow.
+
+### Current release audit (2026-10-05)
+
+The user-requested [Spec-07.1](spec-07.1-full-screen-arena-ui.md) revision is
+implemented in `6e25db8`. Its build, 358 unit/integration checks, 300 matches,
+153,026-byte gzip JS audit and 31 browser cases pass. Browser cases ran in three
+completed single-worker SwiftShader batches; the separate timing diagnostic was
+excluded. A fresh evaluator/combat coverage run measures all four metrics at 100%.
+
+The [current full-design audit](../qa/design_certification_2026-10-05.md) preserves
+the older requirements matrix and identifies release-specific evidence. Neither
+physical hardware checkbox above can be closed yet, and master §10.2's public
+game URL remains unverified. A new production-canvas cover is prepared locally;
+no hosting or contest submission is implied by this audit.
+
+The user requested `PUBLIC_GAME_URL_PENDING` while hosting is being secured.
+[Release acceptance](../qa/release_acceptance.md) tracks this placeholder and the
+missing device evidence. All corresponding acceptance items remain open.
